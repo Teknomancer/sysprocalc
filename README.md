@@ -1,7 +1,11 @@
 # sysprocalc
 System Programmer's Calculator Expression Evaluator
 
+*Project work-in-progress.*
+
 Rewrite of [https://github.com/Teknomancer/nopf]nopf written using Rust.
+
+This is my first time using Rust, so don't expect 100% idiomatic Rust. This is mainly to learn Rust and also to get something useful out of it.
 
 Build using
 ```
