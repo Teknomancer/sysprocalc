@@ -1,0 +1,19 @@
+[package]
+name = "sysprocalc"
+version = "1.0.0"
+authors = ["Ramshankar <v.ramshankar@gmail.com>"]
+
+description = "System Programmer's Calculator"
+#readme = "README.md"
+keywords = ["x86","expression","evaluator"]
+
+#repository = "https://github.com/ FILL IN THE URL later"
+license = "GPL-3.0"
+edition = "2018"
+
+[workspace]
+
+[dependencies]
+spc-expr = { path = "spc-expr" }
+log = "0.4"
+
