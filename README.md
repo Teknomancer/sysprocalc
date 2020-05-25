@@ -1,7 +1,7 @@
 # sysprocalc
 System Programmer's Calculator Expression Evaluator
 
-*Project work-in-progress.*
+**Project work-in-progress. Not fit for general use.**
 
 Rewrite of [https://github.com/Teknomancer/nopf]nopf written using Rust.
 
