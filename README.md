@@ -10,4 +10,4 @@ Build and run using:
 cargo build && cargo clippy && cargo test --all && cargo run
 ```
 
-The "--all" is required, otherwise only the main executable's tests will run and not the tests for the library.
+The `--all` is required, otherwise only the main executable's tests will run and not the tests for the library.
