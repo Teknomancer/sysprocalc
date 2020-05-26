@@ -21,12 +21,12 @@ use std::collections::VecDeque;
 use std::convert::TryFrom;
 use log::{trace, debug};   // others: {warn,info}
 
-const PRE_ALLOC_TOKENS: usize = 32;
+const PRE_ALLOC_TOKENS: usize = 16;
 
 static OPERATORS: [Operator<'static>; 30] = [
     // Precedence 1 (highest priority)
-    Operator { kind: OperatorKind::OpenParen,  prec: 1,  params: 0, assoc: OperatorAssoc::None,  name: "(",  syntax: "(<expr>)",           help: "Begin expression."             , func: oper_null },
-    Operator { kind: OperatorKind::CloseParen, prec: 1,  params: 0, assoc: OperatorAssoc::None,  name: ")",  syntax: "(<expr>)",           help: "End expression."               , func: oper_null },
+    Operator { kind: OperatorKind::OpenParen,  prec: 1,  params: 0, assoc: OperatorAssoc::Nil,   name: "(",  syntax: "(<expr>)",           help: "Begin expression."             , func: oper_null },
+    Operator { kind: OperatorKind::CloseParen, prec: 1,  params: 0, assoc: OperatorAssoc::Nil,   name: ")",  syntax: "(<expr>)",           help: "End expression."               , func: oper_null },
     Operator { kind: OperatorKind::Regular,    prec: 1,  params: 1, assoc: OperatorAssoc::Left,  name: "++", syntax: "<expr>++",           help: "Post-increment."               , func: oper_null },
     Operator { kind: OperatorKind::Regular,    prec: 1,  params: 1, assoc: OperatorAssoc::Left,  name: "--", syntax: "<expr>--",           help: "Post-decrement."               , func: oper_null },
     // Precendence 4 (appears in array before 2 because of parsing logic with unary operators)
@@ -72,21 +72,27 @@ static OPERATORS: [Operator<'static>; 30] = [
 
 const MAX_FN_PARAMS: u8 = u8::max_value();
 static FUNCTIONS: [Function<'static>; 3] = [
-    Function { name: "sum",
-               params: Range { start: 2, end: MAX_FN_PARAMS },
-               syntax: "<n1>,<n2>[,<n3>...<nX>]",
-               help: "Sum",
-               func: func_dummy },
-    Function { name: "avg",
-               params: Range { start: 2, end: MAX_FN_PARAMS },
-               syntax: "<n1>,<n2>[,<n3>...<nX>]",
-               help: "Average",
-               func: func_dummy },
-    Function { name: "if",
-               params: Range { start: 3, end: 4 },
-               syntax: "<cond>,<n1>,<n2>",
-               help: "If <cond> is true, returns <n1> else <n2>",
-               func: func_dummy },
+    Function {
+        name: "sum",
+        params: Range { start: 2, end: MAX_FN_PARAMS },
+        syntax: "<n1>,<n2>[,<n3>...<nX>]",
+        help: "Sum",
+        func: func_dummy
+    },
+    Function {
+        name: "avg",
+        params: Range { start: 2, end: MAX_FN_PARAMS },
+        syntax: "<n1>,<n2>[,<n3>...<nX>]",
+        help: "Average",
+        func: func_dummy
+    },
+    Function {
+        name: "if",
+        params: Range { start: 3, end: 4 },
+        syntax: "<cond>,<n1>,<n2>",
+        help: "If <cond> is true, returns <n1> else <n2>",
+        func: func_dummy
+    },
 ];
 
 #[derive(Debug)]
@@ -133,7 +139,7 @@ type PfnFunc = fn(&[Number]) -> Result<Number, Error>;
 
 #[derive(Eq, PartialEq, Ord, PartialOrd, Debug)]
 enum OperatorAssoc {
-    None,
+    Nil,
     Left,
     Right
 }
@@ -329,9 +335,30 @@ impl<'a> ExprCtx<'a> {
     // The reference to 'str_expr' must live at least as long as 'str_expr' in ExprCtx.
     // Expressed by bounds lifetime "'s: 'a".
     fn new<'s: 'a>(str_expr: &'s str) -> Self {
-        ExprCtx { str_expr,
-                  queue_output: VecDeque::with_capacity(PRE_ALLOC_TOKENS),
-                  stack_op: Vec::with_capacity(PRE_ALLOC_TOKENS) }
+        ExprCtx {
+            str_expr,
+            queue_output: VecDeque::with_capacity(PRE_ALLOC_TOKENS),
+            stack_op: Vec::with_capacity(PRE_ALLOC_TOKENS)
+        }
+    }
+
+    fn pop_token_to_output_queue(&mut self)
+    {
+        let token = self.stack_op.pop();
+        debug_assert!(token.is_some());
+        self.queue_output.push_back(token.unwrap());
+    }
+
+    fn push_to_output_queue(&mut self, token: Token, opt_prev_token: &mut Option<Token>)
+    {
+        self.queue_output.push_back(token);
+        *opt_prev_token = Some(token);
+    }
+
+    fn push_to_op_stack(&mut self, token: Token, opt_prev_token: &mut Option<Token>)
+    {
+        self.stack_op.push(token);
+        *opt_prev_token = Some(token);
     }
 }
 
@@ -340,34 +367,12 @@ pub enum Answer {
     Command(String),
 }
 
-#[inline(always)]
-fn pop_token_to_output_queue(expr_ctx: &mut ExprCtx)
-{
-    let token = expr_ctx.stack_op.pop();
-    debug_assert!(token.is_some());
-    expr_ctx.queue_output.push_back(token.unwrap());
-}
-
-#[inline(always)]
-fn push_to_output_queue(expr_ctx: &mut ExprCtx, opt_prev_token: &mut Option<Token>, token: Token)
-{
-    expr_ctx.queue_output.push_back(token);
-    *opt_prev_token = Some(token);
-}
-
-#[inline(always)]
-fn push_to_op_stack(expr_ctx: &mut ExprCtx, opt_prev_token: &mut Option<Token>, token: Token)
-{
-    expr_ctx.stack_op.push(token);
-    *opt_prev_token = Some(token);
-}
-
 fn process_parsed_operator(expr_ctx: &mut ExprCtx, opt_prev_token: &mut Option<Token>,
                            oper_token: OperatorToken) -> Result<(), Error> {
     debug_assert!(oper_token.idx_oper < OPERATORS.len());
     let operator = &OPERATORS[oper_token.idx_oper];
     if  operator.kind == OperatorKind::OpenParen {
-        push_to_op_stack(expr_ctx, opt_prev_token, Token::Operator(oper_token));
+        expr_ctx.push_to_op_stack(Token::Operator(oper_token), opt_prev_token);
     } else if operator.kind == OperatorKind::CloseParen {
         // Find the matching open paranthesis by walking the op stack (in reverse).
         let mut found_matching_paren = false;
@@ -395,7 +400,7 @@ fn process_parsed_operator(expr_ctx: &mut ExprCtx, opt_prev_token: &mut Option<T
                             debug_assert!(func_token.idx_func < FUNCTIONS.len());
                             let func = &FUNCTIONS[func_token.idx_func];
                             if func.params.contains(&func_token.params) {
-                                push_to_output_queue(expr_ctx, opt_prev_token, Token::Function(func_token));
+                                expr_ctx.push_to_output_queue(Token::Function(func_token), opt_prev_token);
                             } else {
                                 // Too many or too few parameters passed to the function, bail.
                                 let str_message = format!("for function '{}'. expects [{}..{}) parameters, got {} instead",
@@ -408,10 +413,10 @@ fn process_parsed_operator(expr_ctx: &mut ExprCtx, opt_prev_token: &mut Option<T
                         break;
                     }
                     // This isn't an open paranthesis, pop it to the output queue.
-                    pop_token_to_output_queue(expr_ctx);
+                    expr_ctx.pop_token_to_output_queue();
                 }
                 // Pop all other tokens to the output queue.
-                _ => pop_token_to_output_queue(expr_ctx),
+                _ => expr_ctx.pop_token_to_output_queue(),
             }
         }
 
@@ -436,7 +441,7 @@ fn process_parsed_operator(expr_ctx: &mut ExprCtx, opt_prev_token: &mut Option<T
                     // Pop operator with higher priority (depending on associativity) to the output queue.
                     if    token_stack_oper.prec < operator.prec
                        || operator.assoc == OperatorAssoc::Left && operator.prec == token_stack_oper.prec {
-                        pop_token_to_output_queue(expr_ctx);
+                        expr_ctx.pop_token_to_output_queue();
                     } else {
                         break;
                     }
@@ -445,7 +450,7 @@ fn process_parsed_operator(expr_ctx: &mut ExprCtx, opt_prev_token: &mut Option<T
             }
         }
 
-        push_to_op_stack(expr_ctx, opt_prev_token, Token::Operator(oper_token));
+        expr_ctx.push_to_op_stack(Token::Operator(oper_token), opt_prev_token);
     }
 
     Ok(())
@@ -620,7 +625,7 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, Error> {
             trace!("number  : {} (0x{:x})", number.integer, number.integer);
             len_token = len_str;
             let num_token = NumberToken { idx_expr: idx, number };
-            push_to_output_queue(&mut expr_ctx, &mut opt_prev_token, Token::Number(num_token));
+            expr_ctx.push_to_output_queue(Token::Number(num_token), &mut opt_prev_token);
         } else if let Some(idx_oper) = parse_operator(str_subexpr, &OPERATORS, &mut opt_prev_token) {
             debug_assert!(idx_oper < OPERATORS.len());
             trace!("operator: {}", &OPERATORS[idx_oper].name);
@@ -666,9 +671,9 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, Error> {
                                        kind: ErrorKind::ParenMismatch,
                                        message: str_message.to_string() });
                 }
-                pop_token_to_output_queue(&mut expr_ctx);
+                expr_ctx.pop_token_to_output_queue();
             }
-            _ => pop_token_to_output_queue(&mut expr_ctx),
+            _ => expr_ctx.pop_token_to_output_queue(),
         }
     }
 
@@ -830,7 +835,7 @@ mod tests {
             ("0o5",  5  ), ("0o6",  6  ), ("0o7",  7  ), ("0o7",  7  ),
             ("0o10", 8  ), ("0o11", 9  ),
             ("0o77", 63 ), ("0o100", 64),
-            ];
+        ];
         for int_res in pair_int_result {
             let (number, len_str) = parse_number(int_res.0);
             assert!(number.is_some(), "failed for ('{}', {})", int_res.0, int_res.1);
@@ -842,31 +847,34 @@ mod tests {
     #[test]
     fn test_parse_number_f64_ok() {
         let pair_float_result = vec![
-            ("0.0"  ,   0.0f64  ),
-            ("0.1"  ,   0.1f64  ),
-            ("0.2"  ,   0.2f64  ),
-            ("0.3"  ,   0.3f64  ),
-            ("0.4"  ,   0.4f64  ),
-            ("0.5"  ,   0.5f64  ),
-            ("0.6"  ,   0.6f64  ),
-            ("0.7"  ,   0.7f64  ),
-            ("0.8"  ,   0.8f64  ),
-            ("0.9"  ,   0.9f64  ),
-            ("1.0"  ,   1.0f64  ),
-            ("1.1"  ,   1.1f64  ),
-            ("1.2"  ,   1.2f64  ),
-            ("1.3"  ,   1.3f64  ),
-            ("1.4"  ,   1.4f64  ),
-            ("1.5"  ,   1.5f64  ),
-            ("1.6"  ,   1.6f64  ),
-            ("1.7"  ,   1.7f64  ),
-            ("1.8"  ,   1.8f64  ),
-            ("1.9"  ,   1.9f64  ),
-            ("10.0" ,  10.0f64  ),
-            ("10.1" ,  10.1f64  ),
-            ("16.0" ,  16.0f64  ),
-            ("015.0",  15.0f64  ),
-            ];
+            ("0.0"      , 0.0f64   ),
+            ("0.1"      , 0.1f64   ),
+            ("0.2"      , 0.2f64   ),
+            ("0.3"      , 0.3f64   ),
+            ("0.4"      , 0.4f64   ),
+            ("0.5"      , 0.5f64   ),
+            ("0.6"      , 0.6f64   ),
+            ("0.7"      , 0.7f64   ),
+            ("0.8"      , 0.8f64   ),
+            ("0.9"      , 0.9f64   ),
+            ("1.0"      , 1.0f64   ),
+            ("1.1"      , 1.1f64   ),
+            ("1.2"      , 1.2f64   ),
+            ("1.3"      , 1.3f64   ),
+            ("1.4"      , 1.4f64   ),
+            ("1.5"      , 1.5f64   ),
+            ("1.6"      , 1.6f64   ),
+            ("1.7"      , 1.7f64   ),
+            ("1.8"      , 1.8f64   ),
+            ("1.9"      , 1.9f64   ),
+            ("10.0"     , 10.0f64  ),
+            ("10.1"     , 10.1f64  ),
+            ("16.0"     , 16.0f64  ),
+            ("015.0"    , 15.0f64  ),
+            ("2.5e2"    , 250.0f64 ),
+            (".5e+2"    , 50.0f64  ),
+            ("1234.5e-2", 12.345f64),
+        ];
         for float_res in pair_float_result {
             let (number, len_str) = parse_number(float_res.0);
             assert!(number.is_some(), "failed for ('{}', {})", float_res.0, float_res.1);
@@ -890,7 +898,7 @@ mod tests {
             match oper.kind {
                 OperatorKind::OpenParen
                 | OperatorKind::CloseParen => {
-                    assert!(oper.assoc == OperatorAssoc::None,
+                    assert!(oper.assoc == OperatorAssoc::Nil,
                             "Paranthesis operator '{}' at {} must have no associativity.", oper.name, idx);
                 }
                 _ => (),
