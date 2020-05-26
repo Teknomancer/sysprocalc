@@ -2,13 +2,13 @@
 name = "sysprocalc"
 version = "1.0.0"
 authors = ["Ramshankar <v.ramshankar@gmail.com>"]
+license = "GPL-3.0"
+repository = "https://github.com/Teknomancer/sysprocalc"
 
 description = "System Programmer's Calculator"
-#readme = "README.md"
+readme = "README.md"
 keywords = ["x86","expression","evaluator"]
 
-repository = "https://github.com/Teknomancer/sysprocalc"
-license = "GPL-3.0"
 edition = "2018"
 
 [workspace]
