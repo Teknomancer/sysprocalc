@@ -7,7 +7,7 @@ description = "System Programmer's Calculator"
 #readme = "README.md"
 keywords = ["x86","expression","evaluator"]
 
-#repository = "https://github.com/ FILL IN THE URL later"
+repository = "https://github.com/Teknomancer/sysprocalc"
 license = "GPL-3.0"
 edition = "2018"
 
