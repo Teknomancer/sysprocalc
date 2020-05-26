@@ -1,4 +1,4 @@
-// SysProCalc - System Programmer's Calculator (Library)
+// SysProCalc - System Programmer's Calculator, Library.
 // Copyright (C) 2020 Ramshankar (aka Teknomancer)
 //
 // This program is free software: you can redistribute it and/or modify
@@ -8,11 +8,11 @@
 //
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 extern crate spc_expr;
 use std::io::{self, Write};     // Use std::io and std::io::write
