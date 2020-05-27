@@ -33,15 +33,15 @@ static OPERATORS: [Operator<'static>; 26] = [
     // Precedence 2
     Operator { kind: OperatorKind::Regular,    prec: 2,  params: 1, assoc: OperatorAssoc::Right, name: "+",  syntax: "+<expr>",            help: "Unary plus."                   , func: oper_null },
     Operator { kind: OperatorKind::Regular,    prec: 2,  params: 1, assoc: OperatorAssoc::Right, name: "-",  syntax: "-<expr>",            help: "Unary minus."                  , func: oper_unary_minus },
-    Operator { kind: OperatorKind::Regular,    prec: 2,  params: 1, assoc: OperatorAssoc::Right, name: "!",  syntax: "!<expr>",            help: "Logical NOT."                  , func: oper_null },
-    Operator { kind: OperatorKind::Regular,    prec: 2,  params: 1, assoc: OperatorAssoc::Right, name: "~",  syntax: "~<expr>",            help: "Bitwise NOT."                  , func: oper_null },
+    Operator { kind: OperatorKind::Regular,    prec: 2,  params: 1, assoc: OperatorAssoc::Right, name: "!",  syntax: "!<expr>",            help: "Logical NOT."                  , func: oper_logical_not },
+    Operator { kind: OperatorKind::Regular,    prec: 2,  params: 1, assoc: OperatorAssoc::Right, name: "~",  syntax: "~<expr>",            help: "Bitwise NOT."                  , func: oper_bit_not },
     // Precedence 3
-    Operator { kind: OperatorKind::Regular,    prec: 3,  params: 2, assoc: OperatorAssoc::Left,  name: "*",  syntax: "<expr> * <expr>",    help: "Multiplication."               , func: oper_mul  },
-    Operator { kind: OperatorKind::Regular,    prec: 3,  params: 2, assoc: OperatorAssoc::Left,  name: "/",  syntax: "<expr> / <expr>",    help: "Division."                     , func: oper_null },
-    Operator { kind: OperatorKind::Regular,    prec: 3,  params: 2, assoc: OperatorAssoc::Left,  name: "%",  syntax: "<expr> % <expr>",    help: "Remainder."                    , func: oper_null },
+    Operator { kind: OperatorKind::Regular,    prec: 3,  params: 2, assoc: OperatorAssoc::Left,  name: "*",  syntax: "<expr> * <expr>",    help: "Multiplication."               , func: oper_mul },
+    Operator { kind: OperatorKind::Regular,    prec: 3,  params: 2, assoc: OperatorAssoc::Left,  name: "/",  syntax: "<expr> / <expr>",    help: "Division."                     , func: oper_div },
+    Operator { kind: OperatorKind::Regular,    prec: 3,  params: 2, assoc: OperatorAssoc::Left,  name: "%",  syntax: "<expr> % <expr>",    help: "Remainder."                    , func: oper_rem },
     // Precedence 5
-    Operator { kind: OperatorKind::Regular,    prec: 5,  params: 2, assoc: OperatorAssoc::Left,  name: "<<", syntax: "<expr> << <expr>",   help: "Bitwise left-shift."           , func: oper_null },
-    Operator { kind: OperatorKind::Regular,    prec: 5,  params: 2, assoc: OperatorAssoc::Left,  name: ">>", syntax: "<expr> >> <expr>",   help: "Bitwise right-shift."          , func: oper_null },
+    Operator { kind: OperatorKind::Regular,    prec: 5,  params: 2, assoc: OperatorAssoc::Left,  name: "<<", syntax: "<expr> << <expr>",   help: "Bitwise left-shift."           , func: oper_bit_lshift },
+    Operator { kind: OperatorKind::Regular,    prec: 5,  params: 2, assoc: OperatorAssoc::Left,  name: ">>", syntax: "<expr> >> <expr>",   help: "Bitwise right-shift."          , func: oper_bit_rshift },
     // Precedence 6
     Operator { kind: OperatorKind::Regular,    prec: 6,  params: 2, assoc: OperatorAssoc::Left,  name: "<",  syntax: "<expr> < <expr>",    help: "Less-than."                    , func: oper_null },
     Operator { kind: OperatorKind::Regular,    prec: 6,  params: 2, assoc: OperatorAssoc::Left,  name: "<=", syntax: "<expr> <= <expr>",   help: "Less-than-or-equals."          , func: oper_null },
@@ -51,11 +51,11 @@ static OPERATORS: [Operator<'static>; 26] = [
     Operator { kind: OperatorKind::Regular,    prec: 7,  params: 2, assoc: OperatorAssoc::Left,  name: "==", syntax: "<expr> == <expr>",   help: "Equals."                       , func: oper_null },
     Operator { kind: OperatorKind::Regular,    prec: 7,  params: 2, assoc: OperatorAssoc::Left,  name: "!=", syntax: "<expr> != <expr>",   help: "Not-equals."                   , func: oper_null },
     // Precedence 8
-    Operator { kind: OperatorKind::Regular,    prec: 8,  params: 2, assoc: OperatorAssoc::Left,  name: "&",  syntax: "<expr> & <expr>",    help: "Bitwise AND."                  , func: oper_null },
+    Operator { kind: OperatorKind::Regular,    prec: 8,  params: 2, assoc: OperatorAssoc::Left,  name: "&",  syntax: "<expr> & <expr>",    help: "Bitwise AND."                  , func: oper_bit_and },
     // Precedence 9
-    Operator { kind: OperatorKind::Regular,    prec: 9,  params: 2, assoc: OperatorAssoc::Left,  name: "^",  syntax: "<expr> ^ <expr>",    help: "Bitwise XOR."                  , func: oper_null },
+    Operator { kind: OperatorKind::Regular,    prec: 9,  params: 2, assoc: OperatorAssoc::Left,  name: "^",  syntax: "<expr> ^ <expr>",    help: "Bitwise XOR."                  , func: oper_bit_xor },
     // Precedence 10
-    Operator { kind: OperatorKind::Regular,    prec: 10, params: 2, assoc: OperatorAssoc::Left,  name: "|",  syntax: "<expr> | <expr>",    help: "Bitwise OR."                   , func: oper_null },
+    Operator { kind: OperatorKind::Regular,    prec: 10, params: 2, assoc: OperatorAssoc::Left,  name: "|",  syntax: "<expr> | <expr>",    help: "Bitwise OR."                   , func: oper_bit_or },
     // Precedence 11
     Operator { kind: OperatorKind::Regular,    prec: 11, params: 2, assoc: OperatorAssoc::Left,  name: "&&", syntax: "<expr> && <expr>",   help: "Logical AND."                  , func: oper_null },
     // Precedence 12
@@ -239,9 +239,23 @@ fn oper_dec(nums: &[Number]) -> Result<Number, ExprError> {
 }
 
 fn oper_unary_minus(nums: &[Number]) -> Result<Number, ExprError> {
-    let lhs = nums[0];
-    let integer = lhs.integer.overflowing_neg().0;
-    let float = -lhs.float;
+    let rhs = nums[0];
+    let integer = rhs.integer.overflowing_neg().0;
+    let float = -rhs.float;
+    Ok(Number { integer, float })
+}
+
+fn oper_logical_not(nums: &[Number]) -> Result<Number, ExprError> {
+    let rhs = nums[0];
+    let integer = (rhs.integer == 0) as u64;
+    let float = integer as f64;
+    Ok(Number { integer, float })
+}
+
+fn oper_bit_not(nums: &[Number]) -> Result<Number, ExprError> {
+    let rhs = nums[0];
+    let integer = !rhs.integer;
+    let float = integer as f64;
     Ok(Number { integer, float })
 }
 
@@ -250,6 +264,62 @@ fn oper_mul(nums: &[Number]) -> Result<Number, ExprError> {
     let rhs = nums[1];
     let integer = lhs.integer.overflowing_mul(rhs.integer).0;
     let float = lhs.float * rhs.float;
+    Ok(Number { integer, float })
+}
+
+fn oper_div(nums: &[Number]) -> Result<Number, ExprError> {
+    let lhs = nums[0];
+    let rhs = nums[1];
+    let integer = lhs.integer.overflowing_div(rhs.integer).0;
+    let float = lhs.float / rhs.float;
+    Ok(Number { integer, float })
+}
+
+fn oper_rem(nums: &[Number]) -> Result<Number, ExprError> {
+    let lhs = nums[0];
+    let rhs = nums[1];
+    let integer = lhs.integer.overflowing_rem(rhs.integer).0;
+    let float = lhs.float % rhs.float;
+    Ok(Number { integer, float })
+}
+
+fn oper_bit_lshift(nums: &[Number]) -> Result<Number, ExprError> {
+    let lhs = nums[0];
+    let rhs = nums[1];
+    let integer = lhs.integer.overflowing_shl(rhs.integer as u32).0;
+    let float = integer as f64;
+    Ok(Number { integer, float })
+}
+
+fn oper_bit_rshift(nums: &[Number]) -> Result<Number, ExprError> {
+    let lhs = nums[0];
+    let rhs = nums[1];
+    let integer = lhs.integer.overflowing_shr(rhs.integer as u32).0;
+    let float = integer as f64;
+    Ok(Number { integer, float })
+}
+
+fn oper_bit_and(nums: &[Number]) -> Result<Number, ExprError> {
+    let lhs = nums[0];
+    let rhs = nums[1];
+    let integer = lhs.integer & rhs.integer;
+    let float = integer as f64;
+    Ok(Number { integer, float })
+}
+
+fn oper_bit_xor(nums: &[Number]) -> Result<Number, ExprError> {
+    let lhs = nums[0];
+    let rhs = nums[1];
+    let integer = lhs.integer ^ rhs.integer;
+    let float = integer as f64;
+    Ok(Number { integer, float })
+}
+
+fn oper_bit_or(nums: &[Number]) -> Result<Number, ExprError> {
+    let lhs = nums[0];
+    let rhs = nums[1];
+    let integer = lhs.integer | rhs.integer;
+    let float = integer as f64;
     Ok(Number { integer, float })
 }
 
