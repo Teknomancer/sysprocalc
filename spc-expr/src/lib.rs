@@ -360,100 +360,101 @@ impl<'a> ExprCtx<'a> {
         self.stack_op.push(token);
         *opt_prev_token = Some(token);
     }
+
+    fn process_parsed_operator(&mut self,
+                               oper_token: OperatorToken,
+                               opt_prev_token: &mut Option<Token>) -> Result<(), Error> {
+        debug_assert!(oper_token.idx_oper < OPERATORS.len());
+        let operator = &OPERATORS[oper_token.idx_oper];
+        if  operator.kind == OperatorKind::OpenParen {
+            self.push_to_op_stack(Token::Operator(oper_token), opt_prev_token);
+        } else if operator.kind == OperatorKind::CloseParen {
+            // Find the matching open paranthesis by walking the op stack (in reverse).
+            let mut found_matching_paren = false;
+            while let Some(ref_token) = self.stack_op.last() {
+                match ref_token {
+                    // Operator token, figure out if it's an  open paranthesis or not
+                    Token::Operator(OperatorToken { idx_expr: _, idx_oper }) => {
+                        if OPERATORS[*idx_oper].kind == OperatorKind::OpenParen {
+                            // This is the matching open paranthesis, discard it.
+                            found_matching_paren = true;
+                            self.stack_op.pop().unwrap();
+
+                            // If a function preceeds the open paranthesis, pop it to the output queue.
+                            if let Some(Token::Function(
+                                        FunctionToken { idx_expr: _,
+                                                        idx_func: _,
+                                                        params: _ })) = self.stack_op.last() {
+                                // We safely unwrap both the token from the stack as well as the result from
+                                // the try_from() because we've already checked that the token on the top of
+                                // the stack is a function token.
+                                let mut func_token = FunctionToken::try_from(self.stack_op.pop().unwrap()).unwrap();
+                                func_token.params += 1;
+
+                                // Verify that the function has the correct number of parameters passed to it.
+                                debug_assert!(func_token.idx_func < FUNCTIONS.len());
+                                let func = &FUNCTIONS[func_token.idx_func];
+                                if func.params.contains(&func_token.params) {
+                                    self.push_to_output_queue(Token::Function(func_token), opt_prev_token);
+                                } else {
+                                    // Too many or too few parameters passed to the function, bail.
+                                    let str_message = format!("for function '{}'. expects [{}..{}) parameters, got {} instead",
+                                                              func.name, func.params.start, func.params.end, func_token.params);
+                                    return Err(Error { idx_expr: func_token.idx_expr,
+                                                       kind: ErrorKind::ParamCountInvalid,
+                                                       message: str_message.to_string() });
+                                }
+                            }
+                            break;
+                        }
+                        // This isn't an open paranthesis, pop it to the output queue.
+                        self.pop_token_to_output_queue();
+                    }
+                    // Pop all other tokens to the output queue.
+                    _ => self.pop_token_to_output_queue(),
+                }
+            }
+
+            // If we didn't find a matching opening paranthesis, bail.
+            if !found_matching_paren {
+                trace!("failed to find opening paranthesis");
+                return Err(Error { idx_expr: oper_token.idx_expr,
+                                   kind: ErrorKind::ParenMismatch,
+                                   message: "for closing paranthesis".to_string() });
+            }
+        // TODO: Handle other operators.
+        } else {
+            while let Some(ref_token) = self.stack_op.last() {
+                match ref_token {
+                    Token::Operator(OperatorToken { idx_expr: _, idx_oper }) => {
+                        let token_stack_oper = &OPERATORS[*idx_oper];
+                        debug_assert!(token_stack_oper.kind != OperatorKind::CloseParen);
+                        if token_stack_oper.kind == OperatorKind::OpenParen {
+                            break;
+                        }
+
+                        // Pop operator with higher priority (depending on associativity) to the output queue.
+                        if    token_stack_oper.prec < operator.prec
+                           || operator.assoc == OperatorAssoc::Left && operator.prec == token_stack_oper.prec {
+                            self.pop_token_to_output_queue();
+                        } else {
+                            break;
+                        }
+                    }
+                    _ => break,
+                }
+            }
+
+            self.push_to_op_stack(Token::Operator(oper_token), opt_prev_token);
+        }
+
+        Ok(())
+    }
 }
 
 pub enum Answer {
     Value(Number),
     Command(String),
-}
-
-fn process_parsed_operator(expr_ctx: &mut ExprCtx, opt_prev_token: &mut Option<Token>,
-                           oper_token: OperatorToken) -> Result<(), Error> {
-    debug_assert!(oper_token.idx_oper < OPERATORS.len());
-    let operator = &OPERATORS[oper_token.idx_oper];
-    if  operator.kind == OperatorKind::OpenParen {
-        expr_ctx.push_to_op_stack(Token::Operator(oper_token), opt_prev_token);
-    } else if operator.kind == OperatorKind::CloseParen {
-        // Find the matching open paranthesis by walking the op stack (in reverse).
-        let mut found_matching_paren = false;
-        while let Some(ref_token) = expr_ctx.stack_op.last() {
-            match ref_token {
-                // Operator token, figure out if it's an  open paranthesis or not
-                Token::Operator(OperatorToken { idx_expr: _, idx_oper }) => {
-                    if OPERATORS[*idx_oper].kind == OperatorKind::OpenParen {
-                        // This is the matching open paranthesis, discard it.
-                        found_matching_paren = true;
-                        expr_ctx.stack_op.pop().unwrap();
-
-                        // If a function preceeds the open paranthesis, pop it to the output queue.
-                        if let Some(Token::Function(
-                                    FunctionToken { idx_expr: _,
-                                                    idx_func: _,
-                                                    params: _ })) = expr_ctx.stack_op.last() {
-                            // We safely unwrap both the token from the stack as well as the result from
-                            // the try_from() because we've already checked that the token on the top of
-                            // the stack is a function token.
-                            let mut func_token = FunctionToken::try_from(expr_ctx.stack_op.pop().unwrap()).unwrap();
-                            func_token.params += 1;
-
-                            // Verify that the function has the correct number of parameters passed to it.
-                            debug_assert!(func_token.idx_func < FUNCTIONS.len());
-                            let func = &FUNCTIONS[func_token.idx_func];
-                            if func.params.contains(&func_token.params) {
-                                expr_ctx.push_to_output_queue(Token::Function(func_token), opt_prev_token);
-                            } else {
-                                // Too many or too few parameters passed to the function, bail.
-                                let str_message = format!("for function '{}'. expects [{}..{}) parameters, got {} instead",
-                                                          func.name, func.params.start, func.params.end, func_token.params);
-                                return Err(Error { idx_expr: func_token.idx_expr,
-                                                   kind: ErrorKind::ParamCountInvalid,
-                                                   message: str_message.to_string() });
-                            }
-                        }
-                        break;
-                    }
-                    // This isn't an open paranthesis, pop it to the output queue.
-                    expr_ctx.pop_token_to_output_queue();
-                }
-                // Pop all other tokens to the output queue.
-                _ => expr_ctx.pop_token_to_output_queue(),
-            }
-        }
-
-        // If we didn't find a matching opening paranthesis, bail.
-        if !found_matching_paren {
-            trace!("failed to find opening paranthesis");
-            return Err(Error { idx_expr: oper_token.idx_expr,
-                               kind: ErrorKind::ParenMismatch,
-                               message: "for closing paranthesis".to_string() });
-        }
-    // TODO: Handle other operators.
-    } else {
-        while let Some(ref_token) = expr_ctx.stack_op.last() {
-            match ref_token {
-                Token::Operator(OperatorToken { idx_expr: _, idx_oper }) => {
-                    let token_stack_oper = &OPERATORS[*idx_oper];
-                    debug_assert!(token_stack_oper.kind != OperatorKind::CloseParen);
-                    if token_stack_oper.kind == OperatorKind::OpenParen {
-                        break;
-                    }
-
-                    // Pop operator with higher priority (depending on associativity) to the output queue.
-                    if    token_stack_oper.prec < operator.prec
-                       || operator.assoc == OperatorAssoc::Left && operator.prec == token_stack_oper.prec {
-                        expr_ctx.pop_token_to_output_queue();
-                    } else {
-                        break;
-                    }
-                }
-                _ => break,
-            }
-        }
-
-        expr_ctx.push_to_op_stack(Token::Operator(oper_token), opt_prev_token);
-    }
-
-    Ok(())
 }
 
 fn parse_number(str_expr: &str) -> (Option<Number>, usize) {
@@ -631,7 +632,7 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, Error> {
             trace!("operator: {}", &OPERATORS[idx_oper].name);
             len_token = OPERATORS[idx_oper].name.len();
             let oper_token = OperatorToken { idx_expr: idx, idx_oper };
-            process_parsed_operator(&mut expr_ctx, &mut opt_prev_token, oper_token)?;
+            expr_ctx.process_parsed_operator(oper_token, &mut opt_prev_token)?;
         } else {
             let str_message = format!("due to character at {}", idx);
             trace!("Expression invalid {}", str_message);
