@@ -51,8 +51,8 @@ fn print_value_answer(number: &spc_expr::Number) {
 
     // We want a binary ruler (for every 8 bits) to ease visual counting of bits.
     // There might be a more efficient way to do this with Rust's string/vector
-    // manipulation bits. But can't be bothered now, just get something working.
-    if number.integer >= 0xff {
+    // manipulation. But I can't be bothered now, just get something working.
+    if len_str_bin >= 8 {
         let mut str_bin_ruler = String::with_capacity(128);
         let arr_ruler: [&str; 8] = [
             "|  7:0  |",
@@ -64,7 +64,17 @@ fn print_value_answer(number: &spc_expr::Number) {
             "| 55:48 | ",
             "| 63:56 | ",
         ];
+
+        // A flag to indicate to pad binary digits (with spaces) at the start
+        // when the binary digit does not fall in a full chunk of 8-bits.
+        // E.g "11 1111 1111", we need to pad the first 2 digits from the left
+        // in the ruler.
         let mut needs_padding = true;
+
+        // Ensure if we ever add 128-bit support this code will at least assert.
+        debug_assert!(len_str_bin <= 64);
+
+        // Construct the binary ruler.
         for idx in (0..len_str_bin).rev() {
             if (idx + 1) % 8 == 0 {
                 str_bin_ruler.push_str(arr_ruler[((idx + 1) >> 3) - 1]);
@@ -76,9 +86,12 @@ fn print_value_answer(number: &spc_expr::Number) {
                 }
             }
         }
+
+        // Display the binary ruler.
         println!("     {}", str_bin_ruler);
     }
 
+    // An empty line so the output doesn't look too cramped with the next expression.
     println!("");
 }
 
@@ -107,7 +120,7 @@ fn main() -> std::io::Result<()> {
         // Needs to work on Windows (CR/LF), Linux (LF) and macOS (CR).
         let str_expr = string_input.trim_end_matches(&['\r', '\n'][..]);
 
-        // Process application commands.
+        // Handle application commands.
         match str_expr {
             "q" | "quit" | "exit" => return Ok(()),
             _ => (),
