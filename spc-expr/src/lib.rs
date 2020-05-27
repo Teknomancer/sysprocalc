@@ -23,18 +23,14 @@ use log::{trace, debug};   // others: {warn,info}
 
 const PRE_ALLOC_TOKENS: usize = 16;
 
-static OPERATORS: [Operator<'static>; 30] = [
+static OPERATORS: [Operator<'static>; 26] = [
     // Precedence 1 (highest priority)
     Operator { kind: OperatorKind::OpenParen,  prec: 1,  params: 0, assoc: OperatorAssoc::Nil,   name: "(",  syntax: "(<expr>)",           help: "Begin expression."             , func: oper_null },
     Operator { kind: OperatorKind::CloseParen, prec: 1,  params: 0, assoc: OperatorAssoc::Nil,   name: ")",  syntax: "(<expr>)",           help: "End expression."               , func: oper_null },
-    Operator { kind: OperatorKind::Regular,    prec: 1,  params: 1, assoc: OperatorAssoc::Left,  name: "++", syntax: "<expr>++",           help: "Post-increment."               , func: oper_null },
-    Operator { kind: OperatorKind::Regular,    prec: 1,  params: 1, assoc: OperatorAssoc::Left,  name: "--", syntax: "<expr>--",           help: "Post-decrement."               , func: oper_null },
     // Precendence 4 (appears in array before 2 because of parsing logic with unary operators)
     Operator { kind: OperatorKind::Regular,    prec: 4,  params: 2, assoc: OperatorAssoc::Left,  name: "+",  syntax: "<expr> + <expr>",    help: "Addition."                     , func: oper_add },
     Operator { kind: OperatorKind::Regular,    prec: 4,  params: 2, assoc: OperatorAssoc::Left,  name: "-",  syntax: "<expr> - <expr>",    help: "Subtraction."                  , func: oper_sub },
     // Precedence 2
-    Operator { kind: OperatorKind::Regular,    prec: 2,  params: 1, assoc: OperatorAssoc::Right, name: "++", syntax: "++<expr>",           help: "Pre-increment."                , func: oper_pre_inc },
-    Operator { kind: OperatorKind::Regular,    prec: 2,  params: 1, assoc: OperatorAssoc::Right, name: "--", syntax: "--<expr>",           help: "Pre-decrement."                , func: oper_null },
     Operator { kind: OperatorKind::Regular,    prec: 2,  params: 1, assoc: OperatorAssoc::Right, name: "+",  syntax: "+<expr>",            help: "Unary plus."                   , func: oper_null },
     Operator { kind: OperatorKind::Regular,    prec: 2,  params: 1, assoc: OperatorAssoc::Right, name: "-",  syntax: "-<expr>",            help: "Unary minus."                  , func: oper_unary_minus },
     Operator { kind: OperatorKind::Regular,    prec: 2,  params: 1, assoc: OperatorAssoc::Right, name: "!",  syntax: "!<expr>",            help: "Logical NOT."                  , func: oper_null },
@@ -65,9 +61,9 @@ static OPERATORS: [Operator<'static>; 30] = [
     // Precedence 12
     Operator { kind: OperatorKind::Regular,    prec: 12, params: 2, assoc: OperatorAssoc::Left,  name: "||", syntax: "<expr> || <expr>",   help: "Logical OR."                   , func: oper_null },
     // Precedence 13
-    Operator { kind: OperatorKind::VarAssign,  prec: 13, params: 1, assoc: OperatorAssoc::Left,  name: "=",  syntax: "<var> = <expr>",     help: "Variable assignment."          , func: oper_null },
+    Operator { kind: OperatorKind::VarAssign,  prec: 13, params: 2, assoc: OperatorAssoc::Left,  name: "=",  syntax: "<var> = <expr>",     help: "Variable assignment."          , func: oper_null },
     // Precedence 14
-    Operator { kind: OperatorKind::ParamSep,   prec: 14, params: 0, assoc: OperatorAssoc::Left,  name: ",",  syntax: "<param1>, <param2>", help: "Function parameter separator." , func: oper_null },
+    Operator { kind: OperatorKind::ParamSep,   prec: 14, params: 1, assoc: OperatorAssoc::Left,  name: ",",  syntax: "<param1>, <param2>", help: "Function parameter separator." , func: oper_null },
 ];
 
 const MAX_FN_PARAMS: u8 = u8::max_value();
@@ -95,32 +91,39 @@ static FUNCTIONS: [Function<'static>; 3] = [
     },
 ];
 
-#[derive(Debug)]
-pub enum ErrorKind {
-    ParenMismatch,
-    ParamTypeInvalid,
-    ParamCountInvalid,
-    ExprInvalid,
-    ExprMissing,
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum ExprErrorKind {
+    EmptyExpr,
+    InvalidExpr,
+    InvalidParamType,
+    InvalidParamCount,
+    MismatchParenthesis,
     FatalInternal,
 }
 
-#[derive(Debug)]
-pub struct Error {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExprError {
     pub idx_expr: usize,
-    pub kind: ErrorKind,
+    pub kind: ExprErrorKind,
     pub message: String,
 }
 
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let str_errkind = match &self.kind {
-            ErrorKind::ParenMismatch => "Paranthesis mismatch",
-            ErrorKind::ParamTypeInvalid => "Parameter type invalid",
-            ErrorKind::ParamCountInvalid => "Parameter count invalid",
-            ErrorKind::ExprInvalid => "Invalid expression",
-            ErrorKind::ExprMissing => "Missing expression",
-            ErrorKind::FatalInternal => "Fatal internal error",
+impl ExprError {
+    pub fn kind(&self) -> &ExprErrorKind {
+        &self.kind
+    }
+}
+
+impl fmt::Display for ExprError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let str_errkind = match self.kind {
+            ExprErrorKind::EmptyExpr => "expression empty",
+            ExprErrorKind::InvalidExpr => "invalid character",
+            ExprErrorKind::InvalidParamType => "invalid parameter type",
+            ExprErrorKind::InvalidParamCount => "incorrect number of parameters",
+            ExprErrorKind::MismatchParenthesis => "paranthesis mismatch",
+            ExprErrorKind::FatalInternal => "fatal internal error",
         };
         write!(f, "{} {}", str_errkind, self.message)
     }
@@ -132,10 +135,8 @@ pub struct Number {
     pub float: f64,
 }
 
-type PfnOper = fn(&[Number]) -> Result<Number, Error>;
-
-type PfnFunc = fn(&[Number]) -> Result<Number, Error>;
-
+type PfnOper = fn(&[Number]) -> Result<Number, ExprError>;
+type PfnFunc = fn(&[Number]) -> Result<Number, ExprError>;
 
 #[derive(Eq, PartialEq, Ord, PartialOrd, Debug)]
 enum OperatorAssoc {
@@ -203,11 +204,11 @@ impl<'a> PartialOrd for Operator<'a> {
     }
 }
 
-fn oper_null(nums: &[Number]) -> Result<Number, Error> {
+fn oper_null(nums: &[Number]) -> Result<Number, ExprError> {
     Ok (nums[0])
 }
 
-fn oper_add(nums: &[Number]) -> Result<Number, Error> {
+fn oper_add(nums: &[Number]) -> Result<Number, ExprError> {
     let lhs = nums[0];
     let rhs = nums[1];
     let integer = lhs.integer.overflowing_add(rhs.integer).0;
@@ -215,7 +216,7 @@ fn oper_add(nums: &[Number]) -> Result<Number, Error> {
     Ok(Number { integer, float })
 }
 
-fn oper_sub(nums: &[Number]) -> Result<Number, Error> {
+fn oper_sub(nums: &[Number]) -> Result<Number, ExprError> {
     let lhs = nums[0];
     let rhs = nums[1];
     let integer = lhs.integer.overflowing_sub(rhs.integer).0;
@@ -223,21 +224,28 @@ fn oper_sub(nums: &[Number]) -> Result<Number, Error> {
     Ok(Number { integer, float })
 }
 
-fn oper_pre_inc(nums: &[Number]) -> Result<Number, Error> {
+fn oper_inc(nums: &[Number]) -> Result<Number, ExprError> {
     let lhs = nums[0];
     let integer = lhs.integer.overflowing_add(1).0;
     let float = lhs.float + 1f64;
     Ok(Number { integer, float })
 }
 
-fn oper_unary_minus(nums: &[Number]) -> Result<Number, Error> {
+fn oper_dec(nums: &[Number]) -> Result<Number, ExprError> {
+    let lhs = nums[0];
+    let integer = lhs.integer.overflowing_sub(1).0;
+    let float = lhs.float - 1f64;
+    Ok(Number { integer, float })
+}
+
+fn oper_unary_minus(nums: &[Number]) -> Result<Number, ExprError> {
     let lhs = nums[0];
     let integer = lhs.integer.overflowing_neg().0;
     let float = -lhs.float;
     Ok(Number { integer, float })
 }
 
-fn oper_mul(nums: &[Number]) -> Result<Number, Error> {
+fn oper_mul(nums: &[Number]) -> Result<Number, ExprError> {
     let lhs = nums[0];
     let rhs = nums[1];
     let integer = lhs.integer.overflowing_mul(rhs.integer).0;
@@ -245,7 +253,7 @@ fn oper_mul(nums: &[Number]) -> Result<Number, Error> {
     Ok(Number { integer, float })
 }
 
-fn func_dummy(_nums: &[Number]) -> Result<Number, Error> {
+fn func_dummy(_nums: &[Number]) -> Result<Number, ExprError> {
     Ok (Number { integer: 0u64, float: 0f64 })
 }
 
@@ -306,7 +314,7 @@ impl TryFrom<Token> for NumberToken {
     fn try_from(value: Token) -> Result<Self, Self::Error> {
         match value {
             Token::Number(num_token) => Ok(num_token),
-            _ => Err("Not a number token!"),
+            _ => Err("not a number token"),
         }
     }
 }
@@ -316,7 +324,7 @@ impl TryFrom<Token> for OperatorToken {
     fn try_from(value: Token) -> Result<Self, Self::Error> {
         match value {
             Token::Operator(oper_token) => Ok(oper_token),
-            _ => Err("Not an operator token!"),
+            _ => Err("not an operator token"),
         }
     }
 }
@@ -326,7 +334,7 @@ impl TryFrom<Token> for FunctionToken {
     fn try_from(value: Token) -> Result<Self, Self::Error> {
         match value {
             Token::Function(func_token) => Ok(func_token),
-            _ => Err("Not a function token!"),
+            _ => Err("not a function token"),
         }
     }
 }
@@ -363,7 +371,7 @@ impl<'a> ExprCtx<'a> {
 
     fn process_parsed_operator(&mut self,
                                oper_token: OperatorToken,
-                               opt_prev_token: &mut Option<Token>) -> Result<(), Error> {
+                               opt_prev_token: &mut Option<Token>) -> Result<(), ExprError> {
         debug_assert!(oper_token.idx_oper < OPERATORS.len());
         let operator = &OPERATORS[oper_token.idx_oper];
         if  operator.kind == OperatorKind::OpenParen {
@@ -400,9 +408,9 @@ impl<'a> ExprCtx<'a> {
                                     // Too many or too few parameters passed to the function, bail.
                                     let str_message = format!("for function '{}'. expects [{}..{}) parameters, got {} instead",
                                                               func.name, func.params.start, func.params.end, func_token.params);
-                                    return Err(Error { idx_expr: func_token.idx_expr,
-                                                       kind: ErrorKind::ParamCountInvalid,
-                                                       message: str_message.to_string() });
+                                    return Err(ExprError { idx_expr: func_token.idx_expr,
+                                                           kind: ExprErrorKind::InvalidParamCount,
+                                                           message: str_message.to_string() });
                                 }
                             }
                             break;
@@ -417,10 +425,11 @@ impl<'a> ExprCtx<'a> {
 
             // If we didn't find a matching opening paranthesis, bail.
             if !found_matching_paren {
-                trace!("failed to find opening paranthesis");
-                return Err(Error { idx_expr: oper_token.idx_expr,
-                                   kind: ErrorKind::ParenMismatch,
-                                   message: "for closing paranthesis".to_string() });
+                let str_message = format!("for closing paranthesis at {}", oper_token.idx_expr);
+                trace!("Paranthesis mismatch {}", str_message);
+                return Err(ExprError { idx_expr: oper_token.idx_expr,
+                                       kind: ExprErrorKind::MismatchParenthesis,
+                                       message: str_message });
             }
         // TODO: Handle other operators.
         } else {
@@ -573,7 +582,7 @@ fn parse_operator(str_expr: &str, operators: &[Operator], opt_prev_token: &mut O
         if str_expr.starts_with(op.name)
            && (   !is_found
                || op.name.len() > operators[idx_found].name.len()) {
-            // Is this a left associative operator ensure a previous token exists and that
+            // Is this a left associative operator, ensure a previous token exists and that
             // it's not an operator (other than close paranthesis). Since the close paranthesis
             // is never added to the op stack, it's excluded here but asserted for paranoia.
             if op.assoc == OperatorAssoc::Left {
@@ -584,7 +593,27 @@ fn parse_operator(str_expr: &str, operators: &[Operator], opt_prev_token: &mut O
                     Some(Token::Operator(OperatorToken { idx_expr: _, idx_oper })) => {
                         debug_assert!(*idx_oper < operators.len());
                         debug_assert!(operators[*idx_oper].kind != OperatorKind::CloseParen);
-                        continue;
+                        // E.g: "5++ * 4", we should parse "*" rather than skip it.
+                        // If previous operator is left associative unary, don't skip.
+                        if operators[*idx_oper].assoc != OperatorAssoc::Left || operators[*idx_oper].params != 1 {
+                            continue;
+                        }
+                    }
+                    _ => (),
+                }
+            }
+            // If this is a right associative operator, ensure if a previous token exists
+            // that it's not a right associative unary operator. If it is, it's a malformed
+            // expression like "2+++4". Note: "2++4" is 2+(+4), i.e. 2 plus unary plus 4 which is valid.
+            else if op.assoc == OperatorAssoc::Right {
+                match opt_prev_token {
+                    None => (),
+                    // E.g. "++4" when previous token was a unary "+" operator.
+                    Some(Token::Operator(OperatorToken { idx_expr: _, idx_oper })) => {
+                        if operators[*idx_oper].assoc == OperatorAssoc::Right && operators[*idx_oper].params == 1 {
+                            is_found = false;
+                            break;
+                        }
                     }
                     _ => (),
                 }
@@ -602,7 +631,7 @@ fn parse_operator(str_expr: &str, operators: &[Operator], opt_prev_token: &mut O
     }
 }
 
-pub fn parse(str_expr: &str) -> Result<ExprCtx, Error> {
+pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
     // We iterate by characters here because we want to know the index of every token.
     // The index is primarily for reporting parsing and evaluation errors.
     // If we didn't need to store the index, we can easily loop, trim_start whitespaces,
@@ -634,19 +663,19 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, Error> {
             let oper_token = OperatorToken { idx_expr: idx, idx_oper };
             expr_ctx.process_parsed_operator(oper_token, &mut opt_prev_token)?;
         } else {
-            let str_message = format!("due to character at {}", idx);
-            trace!("Expression invalid {}", str_message);
-            return Err(Error { idx_expr: idx,
-                               kind: ErrorKind::ExprInvalid,
-                               message: str_message.to_string() });
+            let str_message = format!("at {}", idx);
+            trace!("{:?} {}", ExprErrorKind::InvalidExpr, str_message);
+            return Err(ExprError { idx_expr: idx,
+                                    kind: ExprErrorKind::InvalidExpr,
+                                    message: str_message.to_string() });
         }
     }
 
     if expr_ctx.stack_op.is_empty() && expr_ctx.queue_output.is_empty() {
-        trace!("Expression missing/empty");
-        return Err(Error { idx_expr: 0,
-                           kind: ErrorKind::ExprMissing,
-                           message: "".to_string() });
+        trace!("'{:?}", ExprErrorKind::EmptyExpr);
+        return Err(ExprError { idx_expr: 0,
+                               kind: ExprErrorKind::EmptyExpr,
+                               message: "".to_string() });
     }
 
     debug!("Op Stack:");
@@ -666,11 +695,11 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, Error> {
                 debug_assert!(*idx_oper < OPERATORS.len());
                 let operator = &OPERATORS[*idx_oper];
                 if operator.kind == OperatorKind::OpenParen {
-                    let str_message = format!("for paranthesis at {}", *idx_expr);
+                    let str_message = format!("for opening paranthesis at {}", *idx_expr);
                     trace!("Paranthesis mismatch {}", str_message);
-                    return Err(Error { idx_expr: *idx_expr,
-                                       kind: ErrorKind::ParenMismatch,
-                                       message: str_message.to_string() });
+                    return Err(ExprError { idx_expr: *idx_expr,
+                                           kind: ExprErrorKind::MismatchParenthesis,
+                                           message: str_message.to_string() });
                 }
                 expr_ctx.pop_token_to_output_queue();
             }
@@ -681,7 +710,7 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, Error> {
     Ok(expr_ctx)
 }
 
-pub fn evaluate(expr_ctx: &mut ExprCtx) -> Result<Answer, Error> {
+pub fn evaluate(expr_ctx: &mut ExprCtx) -> Result<Answer, ExprError> {
     let mut stack_output: Vec<Number> = Vec::with_capacity(PRE_ALLOC_TOKENS);
 
     // Pop tokens from the output queue and process them.
@@ -700,9 +729,9 @@ pub fn evaluate(expr_ctx: &mut ExprCtx) -> Result<Answer, Error> {
                     } else {
                         let str_message = format!("for operator '{}' at {}", operator.name, idx_expr);
                         trace!("insufficient parameters {}", str_message);
-                        return Err(Error { idx_expr,
-                                           kind: ErrorKind::ParamCountInvalid,
-                                           message: str_message.to_string() });
+                        return Err(ExprError { idx_expr,
+                                               kind: ExprErrorKind::InvalidParamCount,
+                                               message: str_message.to_string() });
                     }
                 }
 
@@ -725,9 +754,9 @@ pub fn evaluate(expr_ctx: &mut ExprCtx) -> Result<Answer, Error> {
 
     let str_message = format!("evaluation failed");
     trace!("evaluation failed");
-    return Err(Error { idx_expr: 0,
-                       kind: ErrorKind::ExprInvalid,
-                       message: str_message.to_string() });
+    return Err(ExprError { idx_expr: 0,
+                           kind: ExprErrorKind::InvalidExpr,
+                           message: str_message.to_string() });
 }
 
 #[cfg(test)]

@@ -140,8 +140,9 @@ fn main() -> std::io::Result<()> {
             // Evaluate the parsed expression.
             let mut expr_ctx = res_parse.unwrap();
             let res_eval = spc_expr::evaluate(&mut expr_ctx);
-            if res_eval.is_err() {
-                println!("Evaluation failed. todo fix with err reporting");
+            if let Err(e) = res_eval {
+                println!("{:width$}^", " ", width = e.idx_expr + BSTR_PROMPT.len());
+                println!("{:width$}Error: {errdesc}", " ", width = BSTR_PROMPT.len(), errdesc = e);
                 continue;
             }
 
