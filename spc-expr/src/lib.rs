@@ -224,20 +224,6 @@ fn oper_sub(nums: &[Number]) -> Result<Number, ExprError> {
     Ok(Number { integer, float })
 }
 
-fn oper_inc(nums: &[Number]) -> Result<Number, ExprError> {
-    let lhs = nums[0];
-    let integer = lhs.integer.overflowing_add(1).0;
-    let float = lhs.float + 1f64;
-    Ok(Number { integer, float })
-}
-
-fn oper_dec(nums: &[Number]) -> Result<Number, ExprError> {
-    let lhs = nums[0];
-    let integer = lhs.integer.overflowing_sub(1).0;
-    let float = lhs.float - 1f64;
-    Ok(Number { integer, float })
-}
-
 fn oper_unary_minus(nums: &[Number]) -> Result<Number, ExprError> {
     let rhs = nums[0];
     let integer = rhs.integer.overflowing_neg().0;
@@ -675,6 +661,7 @@ fn parse_operator(str_expr: &str, operators: &[Operator], opt_prev_token: &mut O
             // If this is a right associative operator, ensure if a previous token exists
             // that it's not a right associative unary operator. If it is, it's a malformed
             // expression like "2+++4". Note: "2++4" is 2+(+4), i.e. 2 plus unary plus 4 which is valid.
+            // NOTE: I've got rid of post/pre inc/dec. but this does handle the case if I add it back.
             else if op.assoc == OperatorAssoc::Right {
                 match opt_prev_token {
                     None => (),
