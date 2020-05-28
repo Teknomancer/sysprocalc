@@ -14,14 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-extern crate spc_expr;
+extern crate spceval;
 use std::io::{self, Write};     // Use std::io and std::io::write
 use std::collections::VecDeque;
 
 #[cfg(debug_assertions)]
 mod logger;
 
-fn print_value_answer(number: &spc_expr::Number) {
+fn print_value_answer(number: &spceval::Number) {
     // Format as hex
     let str_hex_zfill = format!("{:#016x}", number.integer);
     let str_hex = format!("{:#x}", number.integer);
@@ -135,7 +135,7 @@ fn main() -> std::io::Result<()> {
         // Otherwise, the evaluator will return a missing expression error.
         if !str_expr.is_empty() {
             // Parse the expression.
-            let res_parse = spc_expr::parse(&str_expr);
+            let res_parse = spceval::parse(&str_expr);
             if let Err(e) = res_parse {
                 println!("{:width$}^", " ", width = e.idx_expr + BSTR_PROMPT.len());
                 println!("{:width$}Error: {errdesc}", " ", width = BSTR_PROMPT.len(), errdesc = e);
@@ -144,7 +144,7 @@ fn main() -> std::io::Result<()> {
 
             // Evaluate the parsed expression.
             let mut expr_ctx = res_parse.unwrap();
-            let res_eval = spc_expr::evaluate(&mut expr_ctx);
+            let res_eval = spceval::evaluate(&mut expr_ctx);
             if let Err(e) = res_eval {
                 println!("{:width$}^", " ", width = e.idx_expr + BSTR_PROMPT.len());
                 println!("{:width$}Error: {errdesc}", " ", width = BSTR_PROMPT.len(), errdesc = e);
@@ -154,8 +154,8 @@ fn main() -> std::io::Result<()> {
             // Handle the result of the expression evaluation.
             let answer = res_eval.unwrap();
             match answer {
-                spc_expr::Answer::Value(number) => print_value_answer(&number),
-                spc_expr::Answer::Command(cmd) => println!("Result: {}", cmd),
+                spceval::Answer::Value(number) => print_value_answer(&number),
+                spceval::Answer::Command(cmd) => println!("Result: {}", cmd),
             }
         }
     }

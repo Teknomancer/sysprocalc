@@ -1,9 +1,9 @@
 [package]
-name = "spc-expr"
+name = "spceval"
 version = "1.0.0"
 authors = ["Ramshankar <v.ramshankar@gmail.com>"]
 
-description = "System Programmer's Calculator Expression Evaluator Library"
+description = "System Programmer's Calculator - Evaluator Library"
 keywords = ["x86","expression","evaluator"]
 
 #repository = "https://github.com/ FILL IN THE URL later"
