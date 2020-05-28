@@ -16,7 +16,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "spc-expr"
+name = "spceval"
 version = "1.0.0"
 dependencies = [
  "log",
@@ -27,5 +27,5 @@ name = "sysprocalc"
 version = "1.0.0"
 dependencies = [
  "log",
- "spc-expr",
+ "spceval",
 ]

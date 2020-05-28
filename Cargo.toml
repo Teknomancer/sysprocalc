@@ -14,6 +14,6 @@ edition = "2018"
 [workspace]
 
 [dependencies]
-spc-expr = { path = "spc-expr" }
+spceval = { path = "spceval" }
 log = "0.4"
 
