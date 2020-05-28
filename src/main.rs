@@ -15,13 +15,13 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 extern crate spceval;
-use std::io::{self, Write};     // Use std::io and std::io::write
+use std::io::{self, Write};
 use std::collections::VecDeque;
 
 #[cfg(debug_assertions)]
 mod logger;
 
-fn print_value_answer(number: &spceval::Number) {
+fn print_number_result(number: &spceval::Number) {
     // Format as hex
     let str_hex_zfill = format!("{:#016x}", number.integer);
     let str_hex = format!("{:#x}", number.integer);
@@ -44,9 +44,9 @@ fn print_value_answer(number: &spceval::Number) {
     let str_bin_sfill = queue_bin.iter().collect::<String>();
 
     // Display the formatted strings
-    println!("Dec: {:>24} (U64)  {:>26} (N)", number.integer, number.float);
-    println!("Hex: {:>24} (U64)  {:>26} (N)", str_hex_zfill, str_hex);
-    println!("Oct: {:>24} (U64)  {:>26} (N)", str_oct_zfill, str_oct);
+    println!("Dec: {:>24} (u64)  {:>26} (n)", number.integer, number.float);
+    println!("Hex: {:>24} (u64)  {:>26} (n)", str_hex_zfill, str_hex);
+    println!("Oct: {:>24} (u64)  {:>26} (n)", str_oct_zfill, str_oct);
     println!("Bin: {} ({} bits)", str_bin_sfill, len_str_bin);
 
     // We want a binary ruler (for every 8 bits) to ease visual counting of bits.
@@ -95,9 +95,6 @@ fn print_value_answer(number: &spceval::Number) {
         // Display the binary ruler.
         println!("     {}", str_bin_ruler);
     }
-
-    // An empty line so the output doesn't look too cramped with the next expression.
-    println!("");
 }
 
 fn main() -> std::io::Result<()> {
@@ -152,11 +149,14 @@ fn main() -> std::io::Result<()> {
             }
 
             // Handle the result of the expression evaluation.
-            let answer = res_eval.unwrap();
-            match answer {
-                spceval::Answer::Value(number) => print_value_answer(&number),
-                spceval::Answer::Command(cmd) => println!("Result: {}", cmd),
+            let res_expr = res_eval.unwrap();
+            match res_expr {
+                spceval::ExprResult::Number(n) => print_number_result(&n),
+                spceval::ExprResult::Command(c) => println!("Result: {}", c),
             }
+
+            // An empty line so the output doesn't look too cramped with the next input.
+            println!("");
         }
     }
 }
