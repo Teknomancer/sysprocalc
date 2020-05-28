@@ -666,15 +666,6 @@ fn parse_operator(str_expr: &str, operators: &[Operator], opt_prev_token: &mut O
         if str_expr.starts_with(op.name)
            && (   !is_found
                || op.name.len() > operators[idx_found].name.len()) {
-
-            // If the previous token is a function, this has to be an open paranthesis.
-            //if let Some(prev_token) = Token::Function(FunctionToken { idx_expr: _, idx_func: _, params: _ }) {
-            //    if op.kind != OperatorKind::OpenParen {
-            //        trace!("No paranthesis following function token");
-            //        None
-            //    }
-            //}
-
             // Is this a left associative operator, ensure a previous token exists and that
             // it's not an operator (other than close paranthesis). Since the close paranthesis
             // is never added to the op stack, it's excluded here but asserted for paranoia.
