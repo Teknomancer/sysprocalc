@@ -69,10 +69,10 @@ fn print_value_answer(number: &spc_expr::Number) {
         debug_assert!(len_str_bin <= 64);
 
         // Construct the binary ruler
-        // First we need to pad binary digits (with space) at the start
-        // when the binary digit does not fall in a full chunk of 8-bits.
-        // E.g "11 1111 1111", we need to pad the first 2 digits from the left
-        // in the ruler. We first iterate until we no longer need to pad digits.
+        // First we need to pad binary digits (with space) at the start when the
+        // binary digit does not fall within a full chunk of 8-bits (in arr_ruler).
+        // For e.g. "11 1111 1111", we need to pad the first 2 digits (plus 1 space)
+        // from the left. We iterate below until we no longer need to pad digits.
         let mut pad_chars = 0;
         for idx in (0..len_str_bin).rev() {
             if (idx + 1) % 8 != 0 {
