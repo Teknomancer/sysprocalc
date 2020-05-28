@@ -53,7 +53,7 @@ fn print_value_answer(number: &spc_expr::Number) {
     // There might be a more efficient way to do this with Rust's string/vector
     // manipulation. But I can't be bothered now, just get something working.
     if len_str_bin >= 8 {
-        let mut str_bin_ruler = String::with_capacity(128);
+        let mut str_bin_ruler = String::with_capacity(96);
         let arr_ruler: [&str; 8] = [
             "|  7:0  |",
             "| 15:8  | ",
@@ -65,26 +65,31 @@ fn print_value_answer(number: &spc_expr::Number) {
             "| 63:56 | ",
         ];
 
-        // A flag to indicate to pad binary digits (with spaces) at the start
-        // when the binary digit does not fall in a full chunk of 8-bits.
-        // E.g "11 1111 1111", we need to pad the first 2 digits from the left
-        // in the ruler.
-        let mut needs_padding = true;
-
         // Ensure if we ever add 128-bit support this code will at least assert.
         debug_assert!(len_str_bin <= 64);
 
-        // Construct the binary ruler.
+        // Construct the binary ruler
+        // First we need to pad binary digits (with space) at the start
+        // when the binary digit does not fall in a full chunk of 8-bits.
+        // E.g "11 1111 1111", we need to pad the first 2 digits from the left
+        // in the ruler. We first iterate until we no longer need to pad digits.
+        let mut pad_chars = 0;
         for idx in (0..len_str_bin).rev() {
-            if (idx + 1) % 8 == 0 {
-                str_bin_ruler.push_str(arr_ruler[((idx + 1) >> 3) - 1]);
-                needs_padding = false;
-            } else if needs_padding {
+            if (idx + 1) % 8 != 0 {
                 str_bin_ruler.push(' ');
+                pad_chars += 1;
                 if idx % 4 == 0 {
                     str_bin_ruler.push(' ');
                 }
             }
+            else {
+                break;
+            }
+        }
+
+        // Next iterate over chunks of 8-bits and construct the ruler string.
+        for idx in (pad_chars..len_str_bin).rev().step_by(8) {
+            str_bin_ruler.push_str(arr_ruler[((idx + 1) >> 3) - 1]);
         }
 
         // Display the binary ruler.
@@ -110,15 +115,15 @@ fn main() -> std::io::Result<()> {
         stdout.write_all(BSTR_PROMPT)?;
         stdout.flush()?;
 
-        let mut string_input = String::new();
-        if let Err(e) = io::stdin().read_line(&mut string_input) {
+        let mut str_input = String::new();
+        if let Err(e) = io::stdin().read_line(&mut str_input) {
             println!("Error: {}", e);
             return Err(e)
         }
 
         // Get a slice to the input string after trimming trailing newlines.
         // Needs to work on Windows (CR/LF), Linux (LF) and macOS (CR).
-        let str_expr = string_input.trim_end_matches(&['\r', '\n'][..]);
+        let str_expr = str_input.trim_end_matches(&['\r', '\n'][..]);
 
         // Handle application commands.
         match str_expr {
