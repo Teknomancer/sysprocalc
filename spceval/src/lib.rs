@@ -21,7 +21,12 @@ use std::collections::VecDeque;
 use std::convert::TryFrom;
 use log::{trace, debug};   // others: {warn,info}
 
+// Number of tokens to pre-allocate per ExprCtx.
 const PRE_ALLOC_TOKENS: usize = 16;
+
+// Maximum number of characters allowed in a function.
+// This is useful to know while parsing.
+const MAX_FUNC_NAME: usize = 32;
 
 static OPERATORS: [Operator<'static>; 26] = [
     // Precedence 1 (highest priority)
@@ -96,6 +101,7 @@ static FUNCTIONS: [Function<'static>; 3] = [
 pub enum ExprErrorKind {
     EmptyExpr,
     InvalidExpr,
+    MissingParanthesis,
     InvalidParamType,
     InvalidParamCount,
     MismatchParenthesis,
@@ -120,6 +126,7 @@ impl fmt::Display for ExprError {
         let str_errkind = match self.kind {
             ExprErrorKind::EmptyExpr => "expression empty",
             ExprErrorKind::InvalidExpr => "invalid character",
+            ExprErrorKind::MissingParanthesis => "paranthesis missing",
             ExprErrorKind::InvalidParamType => "invalid parameter type",
             ExprErrorKind::InvalidParamCount => "incorrect number of parameters",
             ExprErrorKind::MismatchParenthesis => "paranthesis mismatch",
@@ -359,8 +366,12 @@ enum Token {
     Function(FunctionToken),
 }
 
-pub struct ExprCtx<'a> {
-    str_expr: &'a str,
+pub enum ExprResult {
+    Number(Number),
+    Command(String),
+}
+
+pub struct ExprCtx {
     queue_output: VecDeque<Token>,
     stack_op: Vec<Token>,
 }
@@ -395,12 +406,9 @@ impl TryFrom<Token> for FunctionToken {
     }
 }
 
-impl<'a> ExprCtx<'a> {
-    // The reference to 'str_expr' must live at least as long as 'str_expr' in ExprCtx.
-    // Expressed by bounds lifetime "'s: 'a".
-    fn new<'s: 'a>(str_expr: &'s str) -> Self {
+impl ExprCtx {
+    fn new() -> Self {
         ExprCtx {
-            str_expr,
             queue_output: VecDeque::with_capacity(PRE_ALLOC_TOKENS),
             stack_op: Vec::with_capacity(PRE_ALLOC_TOKENS)
         }
@@ -517,9 +525,29 @@ impl<'a> ExprCtx<'a> {
     }
 }
 
-pub enum Answer {
-    Value(Number),
-    Command(String),
+fn parse_function(str_expr: &str, functions: &[Function]) -> Option<usize>
+{
+    debug_assert_eq!(str_expr.trim_start_matches(char::is_whitespace), str_expr);
+
+    // All functions must be succeeded by an open paranthesis.
+    // Gather function name till we find an open paranthesis and then check if that function
+    // exists in the function table.
+    let mut is_found = false;
+    let mut idx_found = 0;
+    for (idx, func) in functions.iter().enumerate() {
+        if str_expr.starts_with(func.name) {
+            idx_found = idx;
+            is_found = true;
+            break;
+        }
+    }
+
+    if is_found {
+        trace!("found {}", functions[idx_found].help);
+        Some(idx_found)
+    } else {
+        None
+    }
 }
 
 fn parse_number(str_expr: &str) -> (Option<Number>, usize) {
@@ -638,6 +666,15 @@ fn parse_operator(str_expr: &str, operators: &[Operator], opt_prev_token: &mut O
         if str_expr.starts_with(op.name)
            && (   !is_found
                || op.name.len() > operators[idx_found].name.len()) {
+
+            // If the previous token is a function, this has to be an open paranthesis.
+            //if let Some(prev_token) = Token::Function(FunctionToken { idx_expr: _, idx_func: _, params: _ }) {
+            //    if op.kind != OperatorKind::OpenParen {
+            //        trace!("No paranthesis following function token");
+            //        None
+            //    }
+            //}
+
             // Is this a left associative operator, ensure a previous token exists and that
             // it's not an operator (other than close paranthesis). Since the close paranthesis
             // is never added to the op stack, it's excluded here but asserted for paranoia.
@@ -688,13 +725,27 @@ fn parse_operator(str_expr: &str, operators: &[Operator], opt_prev_token: &mut O
     }
 }
 
+fn verify_prev_token_not_a_function(opt_prev_token: &Option<Token>, idx_expr: usize) -> Result<(), ExprError>
+{
+    match opt_prev_token {
+        Some(Token::Function(FunctionToken { idx_expr: _, idx_func, params: _ })) => {
+            let str_message = format!("for function '{}' at {}", &FUNCTIONS[*idx_func].name, idx_expr);
+            trace!("{:?} {}", ExprErrorKind::MissingParanthesis, str_message);
+            return Err(ExprError { idx_expr,
+                                    kind: ExprErrorKind::MissingParanthesis,
+                                    message: str_message.to_string() });
+        }
+        _ => Ok(())
+    }
+}
+
 pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
     // We iterate by characters here because we want to know the index of every token.
     // The index is primarily for reporting parsing and evaluation errors.
     // If we didn't need to store the index, we can easily loop, trim_start whitespaces,
     // and just re-assign 'str_subexpr' to the string slice given by parse_number().
     let mut len_token = 0;
-    let mut expr_ctx = ExprCtx::new(str_expr);
+    let mut expr_ctx = ExprCtx::new();
     let mut opt_prev_token: Option<Token> = None;
 
     for (idx, chr) in str_expr.chars().enumerate() {
@@ -709,16 +760,46 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
         }
         let str_subexpr = str_expr.get(idx..).unwrap();
         if let (Some(number), len_str) = parse_number(str_subexpr) {
+            // If the previous token was a function, we have an invalid expression.
+            // E.g "avg 32.5".
+            if let Err(e) = verify_prev_token_not_a_function(&opt_prev_token, idx) {
+                return Err(e);
+            }
             trace!("number  : {} (0x{:x})", number.integer, number.integer);
             len_token = len_str;
             let num_token = NumberToken { idx_expr: idx, number };
             expr_ctx.push_to_output_queue(Token::Number(num_token), &mut opt_prev_token);
         } else if let Some(idx_oper) = parse_operator(str_subexpr, &OPERATORS, &mut opt_prev_token) {
             debug_assert!(idx_oper < OPERATORS.len());
+            // If the previous token was a function, this must be an open paranthesis
+            // E.g "avg +".
+            match opt_prev_token {
+                Some(Token::Function(FunctionToken { idx_expr: _, idx_func, params: _ })) => {
+                    if OPERATORS[idx_oper].kind != OperatorKind::OpenParen {
+                        let str_message = format!("for function '{}' at {}", &FUNCTIONS[idx_func].name, idx);
+                        trace!("{:?} {}", ExprErrorKind::MissingParanthesis, str_message);
+                        return Err(ExprError { idx_expr: idx,
+                                               kind: ExprErrorKind::MissingParanthesis,
+                                               message: str_message.to_string() });
+                    }
+                }
+                _ => (),
+            }
             trace!("operator: {}", &OPERATORS[idx_oper].name);
             len_token = OPERATORS[idx_oper].name.len();
             let oper_token = OperatorToken { idx_expr: idx, idx_oper };
             expr_ctx.process_parsed_operator(oper_token, &mut opt_prev_token)?;
+        } else if let Some(idx_func) = parse_function(str_subexpr, &FUNCTIONS) {
+            debug_assert!(idx_func < FUNCTIONS.len());
+            // If the previous token was a function, we have an invalid expression.
+            // E.g "avg avg".
+            if let Err(e) = verify_prev_token_not_a_function(&opt_prev_token, idx) {
+                return Err(e);
+            }
+            trace!("function: {}", &FUNCTIONS[idx_func].name);
+            len_token = FUNCTIONS[idx_func].name.len();
+            let func_token = FunctionToken { idx_expr: idx, idx_func, params: 0 };
+            expr_ctx.push_to_op_stack(Token::Function(func_token), &mut opt_prev_token);
         } else {
             let str_message = format!("at {}", idx);
             trace!("{:?} {}", ExprErrorKind::InvalidExpr, str_message);
@@ -767,7 +848,7 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
     Ok(expr_ctx)
 }
 
-pub fn evaluate(expr_ctx: &mut ExprCtx) -> Result<Answer, ExprError> {
+pub fn evaluate(expr_ctx: &mut ExprCtx) -> Result<ExprResult, ExprError> {
     let mut stack_output: Vec<Number> = Vec::with_capacity(PRE_ALLOC_TOKENS);
 
     // Pop tokens from the output queue and process them.
@@ -798,15 +879,15 @@ pub fn evaluate(expr_ctx: &mut ExprCtx) -> Result<Answer, ExprError> {
                 // Call the operator's evaluator but ensure that if a number type cannot
                 // be represented, it stays that way even after the evaluator completes.
                 debug_assert!(parameters.len() == operator.params as usize);
-                let res_answer = (operator.func)(&parameters)?;
-                stack_output.push(res_answer);
+                let res_expr = (operator.func)(&parameters)?;
+                stack_output.push(res_expr);
             }
             _ => break,
         }
     }
 
     if let Some(token) = stack_output.pop() {
-        return Ok(Answer::Value(token));
+        return Ok(ExprResult::Number(token));
     }
 
     let str_message = format!("evaluation failed");
@@ -972,6 +1053,10 @@ mod tests {
 
     #[test]
     fn test_operator_table() {
+        let mut open_paren_count = 0;
+        let mut close_paren_count = 0;
+        let mut var_assign_count = 0;
+        let mut param_sep_count = 0;
         for (idx, oper) in OPERATORS.iter().enumerate() {
             // Ensure parameters can at most be 2 for operators.
             assert!(oper.params < 3, "Operator '{}' at {} has {} parameters. \
@@ -983,11 +1068,18 @@ mod tests {
 
             // Ensure open and close paranthesis operators do not have left or right associativity.
             match oper.kind {
-                OperatorKind::OpenParen
-                | OperatorKind::CloseParen => {
+                OperatorKind::OpenParen => {
                     assert!(oper.assoc == OperatorAssoc::Nil,
-                            "Paranthesis operator '{}' at {} must have no associativity.", oper.name, idx);
-                }
+                            "Open paranthesis operator '{}' at {} must have no associativity.", oper.name, idx);
+                    open_paren_count += 1;
+                },
+                OperatorKind::CloseParen => {
+                    assert!(oper.assoc == OperatorAssoc::Nil,
+                            "Close paranthesis operator '{}' at {} must have no associativity.", oper.name, idx);
+                    close_paren_count += 1;
+                },
+                OperatorKind::VarAssign => var_assign_count += 1,
+                OperatorKind::ParamSep => param_sep_count += 1,
                 _ => (),
             }
 
@@ -1019,6 +1111,12 @@ mod tests {
                 }
             }
         }
+
+        // Ensure there's exactly one of the following operators in the table.
+        assert_eq!(open_paren_count, 1);
+        assert_eq!(close_paren_count, 1);
+        assert_eq!(var_assign_count, 1);
+        assert_eq!(param_sep_count, 1);
     }
 
     #[test]
@@ -1029,10 +1127,11 @@ mod tests {
                     "Function '{}' at {} exceeds maximum parameters of {}. Use/alter the maximum.",
                     func.name, idx, MAX_FN_PARAMS);
 
-            // Ensure function names cannot begin a '0' (to avoid parsing conflicts
-            // with a number prefix).
+            // Ensure function names cannot begin a '0' or '_' to avoid parsing conflicts
+            // with a number prefix or a variable name.
             assert!(!func.name.chars().count() > 0);
             assert!(!func.name.chars().next().unwrap().is_digit(10));
+            assert!(func.name.chars().next().unwrap() != '_');
 
             // Ensure no duplicate functions.
             for (idxcmp, funccmp) in FUNCTIONS.iter().enumerate() {
