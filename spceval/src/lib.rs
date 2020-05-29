@@ -1,19 +1,3 @@
-// SysProCalc - System Programmer's Calculator, Library.
-// Copyright (C) 2020 Ramshankar (aka Teknomancer)
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program. If not, see <https://www.gnu.org/licenses/>.
-
 use std::fmt;
 use std::ops::Range;
 use std::cmp::Ordering;
@@ -595,10 +579,6 @@ fn parse_number(str_expr: &str) -> (Option<Number>, usize) {
             if chr.is_digit(10) {
                 // Valid decimal digit but can't yet infer this as a decimal number.
                 str_num.push(chr);
-            //} else if chr.is_digit(16) {
-            //    // Valid hex-only digit i.e. [A-Fa-f] we can infer this as a hex number.
-            //    str_num.push(chr);
-            //    radix = 16;
             } else if chr == '.' && !has_dec_pt {
                 // Valid decimal point and is the first one, infer decimal number.
                 has_dec_pt = true;
@@ -904,6 +884,7 @@ mod tests {
 
     #[test]
     fn test_parse_number_err() {
+        // Number prefixes and improper decimals shouldn't be parsed as valid numbers.
         let mut vec_nums = vec!["",
                             "x" ,
                             "X" ,
@@ -918,10 +899,14 @@ mod tests {
                             "3.",
                             "4.",
                             "5.",
-                            "0.."];
+                            "0..",
+                            "..5"
+        ];
+        // Make sure we never parse operators as valid numbers.
         for i in 0..OPERATORS.len() {
             vec_nums.push(OPERATORS[i].name);
         }
+        // Make sure we never parse functions as valid numbers.
         for i in 0..FUNCTIONS.len() {
             vec_nums.push(FUNCTIONS[i].name);
         }
