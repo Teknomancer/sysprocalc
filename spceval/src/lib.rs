@@ -716,13 +716,14 @@ fn parse_operator(str_expr: &str, operators: &[Operator], opt_prev_token: &mut O
     }
 }
 
-fn verify_prev_token_not_a_function(opt_prev_token: &Option<Token>, idx_expr: usize) -> Result<(), ExprError>
+fn verify_prev_token_not_a_function(opt_prev_token: &Option<Token>) -> Result<(), ExprError>
 {
     match opt_prev_token {
-        Some(Token::Function(FunctionToken { idx_expr: _, idx_func, params: _ })) => {
-            let str_message = format!("at {} for function '{}'", idx_expr, &FUNCTIONS[*idx_func].name);
+        Some(Token::Function(FunctionToken { idx_expr, idx_func, params: _ })) => {
+            let idx_open_paren = idx_expr + &FUNCTIONS[*idx_func].name.len();
+            let str_message = format!("at {} for function '{}'", idx_open_paren, &FUNCTIONS[*idx_func].name);
             trace!("{:?} {}", ExprErrorKind::MissingParanthesis, str_message);
-            return Err(ExprError { idx_expr,
+            return Err(ExprError { idx_expr: idx_open_paren,
                                     kind: ExprErrorKind::MissingParanthesis,
                                     message: str_message.to_string() });
         }
@@ -736,6 +737,7 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
     // If we didn't need to store the index, we can easily loop, trim_start whitespaces,
     // and just re-assign 'str_subexpr' to the string slice given by parse_number().
     let mut len_token = 0;
+    let mut idx_token = 0;
     let mut expr_ctx = ExprCtx::new();
     let mut opt_prev_token: Option<Token> = None;
 
@@ -753,9 +755,10 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
         if let (Some(number), len_str) = parse_number(str_subexpr) {
             // If the previous token was a function, we have an invalid expression.
             // E.g "avg 32.5"; functions must be followed by open paranthesis only.
-            verify_prev_token_not_a_function(&opt_prev_token, idx)?;
+            verify_prev_token_not_a_function(&opt_prev_token)?;
             trace!("number  : {} (0x{:x})", number.integer, number.integer);
             len_token = len_str;
+            idx_token = idx;
             let num_token = NumberToken { idx_expr: idx, number };
             expr_ctx.push_to_output_queue(Token::Number(num_token), &mut opt_prev_token);
         } else if let Some(idx_oper) = parse_operator(str_subexpr, &OPERATORS, &mut opt_prev_token) {
@@ -763,11 +766,16 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
             // If the previous token was a function, this must be an open paranthesis.
             // E.g "avg +"; otherwise this is an invalid expression.
             match opt_prev_token {
-                Some(Token::Function(FunctionToken { idx_expr: _, idx_func, params: _ })) => {
+                Some(Token::Function(FunctionToken { idx_expr: idx_expr_func, idx_func, params: _ })) => {
+                    // Calculate where the open paranthesis must appear, we don't use "idx" because
+                    // it includes all the whitespace after the function name. We want to report the
+                    // character immediately after the name of the function
+                    // E.g we want position X in "avgX   Y+" rather than position Y.
+                    let idx_open_paren = idx_expr_func + &FUNCTIONS[idx_func].name.len();
                     if OPERATORS[idx_oper].kind != OperatorKind::OpenParen {
-                        let str_message = format!("at {} for function '{}'", idx, &FUNCTIONS[idx_func].name);
+                        let str_message = format!("at {} for function '{}'", idx_open_paren, &FUNCTIONS[idx_func].name);
                         trace!("{:?} {}", ExprErrorKind::MissingParanthesis, str_message);
-                        return Err(ExprError { idx_expr: idx,
+                        return Err(ExprError { idx_expr: idx_open_paren,
                                                kind: ExprErrorKind::MissingParanthesis,
                                                message: str_message.to_string() });
                     }
@@ -776,15 +784,17 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
             }
             trace!("operator: {}", &OPERATORS[idx_oper].name);
             len_token = OPERATORS[idx_oper].name.len();
+            idx_token = idx;
             let oper_token = OperatorToken { idx_expr: idx, idx_oper };
             expr_ctx.process_parsed_operator(oper_token, &mut opt_prev_token)?;
         } else if let Some(idx_func) = parse_function(str_subexpr, &FUNCTIONS) {
             debug_assert!(idx_func < FUNCTIONS.len());
             // If the previous token was a function, we have an invalid expression.
             // E.g "avg avg"; functions must be followed by open paranthesis only.
-            verify_prev_token_not_a_function(&opt_prev_token, idx)?;
+            verify_prev_token_not_a_function(&opt_prev_token)?;
             trace!("function: {}", &FUNCTIONS[idx_func].name);
             len_token = FUNCTIONS[idx_func].name.len();
+            idx_token = idx;
             let func_token = FunctionToken { idx_expr: idx, idx_func, params: 0 };
             expr_ctx.push_to_op_stack(Token::Function(func_token), &mut opt_prev_token);
         } else {
@@ -798,17 +808,7 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
 
     // If the last parsed token was a function, that's an invalid expression.
     // E.g "23 + avg".
-    match opt_prev_token {
-        Some(Token::Function(FunctionToken { idx_expr, idx_func, params: _ })) => {
-            let idx_missing_paren = idx_expr + &FUNCTIONS[idx_func].name.len();
-            let str_message = format!("at {} for function '{}'", idx_missing_paren, &FUNCTIONS[idx_func].name);
-            trace!("{:?} {}", ExprErrorKind::MissingParanthesis, str_message);
-            return Err(ExprError { idx_expr: idx_missing_paren,
-                                   kind: ExprErrorKind::MissingParanthesis,
-                                   message: str_message.to_string() });
-        }
-        _ => (),
-    }
+    verify_prev_token_not_a_function(&opt_prev_token)?;
 
     if expr_ctx.stack_op.is_empty() && expr_ctx.queue_output.is_empty() {
         trace!("'{:?}", ExprErrorKind::EmptyExpr);
