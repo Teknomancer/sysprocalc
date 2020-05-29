@@ -595,10 +595,10 @@ fn parse_number(str_expr: &str) -> (Option<Number>, usize) {
             if chr.is_digit(10) {
                 // Valid decimal digit but can't yet infer this as a decimal number.
                 str_num.push(chr);
-            } else if chr.is_digit(16) {
-                // Valid hex-only digit i.e. [A-Fa-f] we can infer this as a hex number.
-                str_num.push(chr);
-                radix = 16;
+            //} else if chr.is_digit(16) {
+            //    // Valid hex-only digit i.e. [A-Fa-f] we can infer this as a hex number.
+            //    str_num.push(chr);
+            //    radix = 16;
             } else if chr == '.' && !has_dec_pt {
                 // Valid decimal point and is the first one, infer decimal number.
                 has_dec_pt = true;
@@ -922,6 +922,9 @@ mod tests {
         for i in 0..OPERATORS.len() {
             vec_nums.push(OPERATORS[i].name);
         }
+        for i in 0..FUNCTIONS.len() {
+            vec_nums.push(FUNCTIONS[i].name);
+        }
         for num_res in vec_nums {
             let (number, len_str) = parse_number(num_res);
             assert!(number.is_none());
@@ -932,16 +935,12 @@ mod tests {
     #[test]
     fn test_parse_number_u64_ok() {
         let pair_int_result = vec![
-            // 0-9, aA-fF.
+            // 0-9
             ("0", 0  ), ("1", 1  ), ("2", 2  ), ("3", 3  ), ("4", 4  ), ("5", 5  ),
-            ("6", 6  ), ("7", 7  ), ("8", 8  ), ("9", 9  ), ("a", 0xa), ("A", 0xa),
-            ("b", 0xb), ("B", 0xb), ("c", 0xc), ("C", 0xc), ("d", 0xd), ("D", 0xd),
-            ("e", 0xe), ("E", 0xe), ("f", 0xf), ("F", 0xf),
-            // 00-00, 0aA-0fF.
+            ("6", 6  ), ("7", 7  ), ("8", 8  ), ("9", 9  ),
+            // 00-09
             ("01", 1  ), ("02", 2  ), ("03", 3  ), ("04", 4  ), ("05", 5  ),
-            ("06", 6  ), ("07", 7  ), ("08", 8  ), ("09", 9  ), ("0a", 0xa),
-            ("0A", 0xa), ("0b", 0xb), ("0B", 0xb), ("0c", 0xc), ("0C", 0xc),
-            ("0d", 0xd), ("0D", 0xd), ("0e", 0xe), ("0E", 0xe), ("0f", 0xf), ("0F", 0xf),
+            ("06", 6  ), ("07", 7  ), ("08", 8  ), ("09", 9  ),
             // 10, 010.
             ("10", 10), ("010", 10),
             // 077, 088.
@@ -977,22 +976,22 @@ mod tests {
             ("0x00000000fff"     , 0x00000000fff     ),
             ("0x00000000ff"      , 0x00000000ff      ),
             ("0x00000000f"       , 0x00000000f       ),
-            ("ffffffff"          , 0xffffffff        ),
-            ("0fffffff"          , 0x0fffffff        ),
-            ("1fffffff"          , 0x1fffffff        ),
-            ("7fffffff"          , 0x7fffffff        ),
-            ("fffffff0"          , 0xfffffff0        ),
-            ("fffffff1"          , 0xfffffff1        ),
-            ("fffffff7"          , 0xfffffff7        ),
-            ("ffffffffffffffff"  , 0xffffffffffffffff),
-            ("0fffffffffffffff"  , 0x0fffffffffffffff),
-            ("1fffffffffffffff"  , 0x1fffffffffffffff),
-            ("7fffffffffffffff"  , 0x7fffffffffffffff),
-            ("fffffffffffffff0"  , 0xfffffffffffffff0),
-            ("fffffffffffffff1"  , 0xfffffffffffffff1),
-            ("fffffffffffffff7"  , 0xfffffffffffffff7),
-            ("abcdefabcdefabcd"  , 0xabcdefabcdefabcd),
-            ("FEDCBAFEDCBAFEDC"  , 0xfedcbafedcbafedc),
+            ("0xffffffff"        , 0xffffffff        ),
+            ("0x0fffffff"        , 0x0fffffff        ),
+            ("0x1fffffff"        , 0x1fffffff        ),
+            ("0x7fffffff"        , 0x7fffffff        ),
+            ("0xfffffff0"        , 0xfffffff0        ),
+            ("0xfffffff1"        , 0xfffffff1        ),
+            ("0xfffffff7"        , 0xfffffff7        ),
+            ("0xffffffffffffffff", 0xffffffffffffffff),
+            ("0x0fffffffffffffff", 0x0fffffffffffffff),
+            ("0x1fffffffffffffff", 0x1fffffffffffffff),
+            ("0x7fffffffffffffff", 0x7fffffffffffffff),
+            ("0xfffffffffffffff0", 0xfffffffffffffff0),
+            ("0xfffffffffffffff1", 0xfffffffffffffff1),
+            ("0xfffffffffffffff7", 0xfffffffffffffff7),
+            ("0xabcdefabcdefabcd", 0xabcdefabcdefabcd),
+            ("0xFEDCBAFEDCBAFEDC", 0xfedcbafedcbafedc),
             // Binary prefix
             ("0n0",  0  ), ("0n1",  1  ), ("0n10", 2  ), ("0n11", 3  ), ("0n100", 4 ),
             ("0n11111111111111111111111111111111", 0xffffffff),
