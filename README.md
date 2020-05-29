@@ -5,11 +5,9 @@
 # sysprocalc
 System Programmer's Calculator Expression Evaluator
 
-**Project work-in-progress. Not fit for general use.**
-
 My old C project [nopf](https://github.com/Teknomancer/nopf) re-written using Rust.
 
-**This is my first time using Rust, don't expect idiomatic Rust. This is mainly to learn Rust and also to get something useful out of it.**
+**This is my first time using Rust, don't expect 100% idiomatic Rust. This is mainly to learn Rust while hopefully getting something useful out of it. Work-in-progress. Not fit for general use.**
 
 Build and run using:
 ```
