@@ -537,7 +537,7 @@ fn parse_function(str_expr: &str, functions: &[Function]) -> Option<usize>
 fn parse_number(str_expr: &str) -> (Option<Number>, usize) {
     debug_assert_eq!(str_expr.trim_start_matches(char::is_whitespace), str_expr);
 
-    let mut radix: u32 = 0;
+    let mut radix: u32 = 10;
     let mut len_prefix = 0;
     let mut iter_expr = str_expr.chars().peekable();
 
@@ -566,6 +566,7 @@ fn parse_number(str_expr: &str) -> (Option<Number>, usize) {
     let mut has_dec_pt = false;
     let mut is_fp_exp_notation = false;
 
+    debug_assert!(radix != 0);
     for (idx, chr) in iter_expr.enumerate() {
         // Make sure we are not in the middle of a UTF-8 sequence.
         debug_assert!(str_expr.is_char_boundary(idx));
@@ -574,27 +575,19 @@ fn parse_number(str_expr: &str) -> (Option<Number>, usize) {
             continue;
         }
 
-        if radix == 0 {
-            // Order of the two 'is_digit' checks is significant.
-            if chr.is_digit(10) {
-                // Valid decimal digit but can't yet infer this as a decimal number.
-                str_num.push(chr);
-            } else if chr == '.' && !has_dec_pt {
-                // Valid decimal point and is the first one, infer decimal number.
-                has_dec_pt = true;
-                radix = 10;
-                str_num.push(chr);
-            } else {
-                break;
-            }
-        } else if chr.is_digit(radix) {
-            // Valid digit for the explicit or inferred radix.
+        if chr.is_digit(radix) {
+            // Valid digit for the radix.
+            str_num.push(chr);
+        } else if chr == '.' && radix == 10 && !has_dec_pt {
+            // Valid decimal point for decimal number and is the first decimal point.
+            has_dec_pt = true;
             str_num.push(chr);
         } else if has_dec_pt && (chr == 'e' || chr == 'E') {
-            // Floating point exponent notation ("2.5e10" or "2.5e-10").
+            // Floating point exponent notation ("2.5e10" or "2.5E-10").
             str_num.push(chr);
             is_fp_exp_notation = true;
         } else if is_fp_exp_notation && (chr == '+' || chr == '-') {
+            // FP exponent notation +/- power-of character.
             str_num.push(chr);
         } else {
             break;
@@ -611,10 +604,6 @@ fn parse_number(str_expr: &str) -> (Option<Number>, usize) {
 
     if !has_dec_pt {
         // Parse as integer.
-        // If no radix was determined but we recognized a number, it implies decimal integer.
-        if radix == 0 {
-            radix = 10;
-        }
         match u64::from_str_radix(&str_num, radix) {
             Ok(v) => return (Some(Number { integer: v, float: v as f64 }), consumed),
             _ => return (None, 0),
@@ -900,7 +889,11 @@ mod tests {
                             "4.",
                             "5.",
                             "0..",
-                            "..5"
+                            "..5",
+                            "2.5ee4",
+                            "2.5e++4",
+                            "2.5ee++4",
+                            "2.5e--5"
         ];
         // Make sure we never parse operators as valid numbers.
         for i in 0..OPERATORS.len() {
