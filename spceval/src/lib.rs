@@ -796,27 +796,25 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
         }
     }
 
+    // If the last parsed token was a function, that's an invalid expression.
+    // E.g "23 + avg".
+    match opt_prev_token {
+        Some(Token::Function(FunctionToken { idx_expr, idx_func, params: _ })) => {
+            let idx_missing_paren = idx_expr + &FUNCTIONS[idx_func].name.len();
+            let str_message = format!("at {} for function '{}'", idx_missing_paren, &FUNCTIONS[idx_func].name);
+            trace!("{:?} {}", ExprErrorKind::MissingParanthesis, str_message);
+            return Err(ExprError { idx_expr: idx_missing_paren,
+                                   kind: ExprErrorKind::MissingParanthesis,
+                                   message: str_message.to_string() });
+        }
+        _ => (),
+    }
+
     if expr_ctx.stack_op.is_empty() && expr_ctx.queue_output.is_empty() {
         trace!("'{:?}", ExprErrorKind::EmptyExpr);
         return Err(ExprError { idx_expr: 0,
                                kind: ExprErrorKind::EmptyExpr,
                                message: "".to_string() });
-    }
-
-    // If the last parsed token was a function, that's an invalid expression.
-    // E.g "23 + avg".
-    if let Some(token) = expr_ctx.stack_op.last() {
-        match opt_prev_token {
-            Some(Token::Function(FunctionToken { idx_expr, idx_func, params: _ })) => {
-                let idx_missing_paren = idx_expr + &FUNCTIONS[idx_func].name.len();
-                let str_message = format!("at {} for function '{}'", idx_missing_paren, &FUNCTIONS[idx_func].name);
-                trace!("{:?} {}", ExprErrorKind::MissingParanthesis, str_message);
-                return Err(ExprError { idx_expr: idx_missing_paren,
-                                       kind: ExprErrorKind::MissingParanthesis,
-                                       message: str_message.to_string() });
-            }
-            _ => (),
-        }
     }
 
     debug!("Op Stack:");
