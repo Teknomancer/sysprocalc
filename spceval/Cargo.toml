@@ -2,12 +2,12 @@
 name = "spceval"
 version = "1.0.0"
 authors = ["Ramshankar <v.ramshankar@gmail.com>"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/Teknomancer/sysprocalc"
 
-description = "System Programmer's Calculator - Evaluator Library"
+description = "System Programmer's Calculator's Evaluation Library"
 keywords = ["x86","expression","evaluator"]
 
-#repository = "https://github.com/ FILL IN THE URL later"
-license = "GPL-3.0"
 edition = "2018"
 
 [dependencies]

@@ -6,8 +6,8 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/Teknomancer/sysprocalc"
 
 description = "System Programmer's Calculator"
-readme = "README.md"
 keywords = ["x86","expression","evaluator"]
+readme = "README.md"
 
 edition = "2018"
 
