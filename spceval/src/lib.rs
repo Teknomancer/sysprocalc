@@ -52,7 +52,7 @@ static OPERATORS: [Operator<'static>; 26] = [
     // Precedence 13
     Operator { kind: OperatorKind::VarAssign,  prec: 13, params: 2, assoc: OperatorAssoc::Left,  name: "=",  syntax: "<var> = <expr>",     help: "Variable assignment."          , func: oper_null },
     // Precedence 14
-    Operator { kind: OperatorKind::ParamSep,   prec: 14, params: 1, assoc: OperatorAssoc::Left,  name: ",",  syntax: "<param1>, <param2>", help: "Function parameter separator." , func: oper_null },
+    Operator { kind: OperatorKind::ParamSep,   prec: 14, params: 2, assoc: OperatorAssoc::Left,  name: ",",  syntax: "<param1>, <param2>", help: "Function parameter separator." , func: oper_null },
 ];
 
 const MAX_FN_PARAMS: u8 = u8::max_value();
@@ -85,10 +85,11 @@ static FUNCTIONS: [Function<'static>; 3] = [
 pub enum ExprErrorKind {
     EmptyExpr,
     InvalidExpr,
-    MissingParanthesis,
-    InvalidParamType,
     InvalidParamCount,
+    InvalidParamType,
     MismatchParenthesis,
+    MissingFunction,
+    MissingParanthesis,
     FatalInternal,
 }
 
@@ -110,10 +111,11 @@ impl fmt::Display for ExprError {
         let str_errkind = match self.kind {
             ExprErrorKind::EmptyExpr => "expression empty",
             ExprErrorKind::InvalidExpr => "invalid character",
-            ExprErrorKind::MissingParanthesis => "paranthesis missing",
-            ExprErrorKind::InvalidParamType => "invalid parameter type",
             ExprErrorKind::InvalidParamCount => "incorrect number of parameters",
+            ExprErrorKind::InvalidParamType => "invalid parameter type",
             ExprErrorKind::MismatchParenthesis => "paranthesis mismatch",
+            ExprErrorKind::MissingFunction => "function missing",
+            ExprErrorKind::MissingParanthesis => "paranthesis missing",
             ExprErrorKind::FatalInternal => "fatal internal error",
         };
         write!(f, "{} {}", str_errkind, self.message)
@@ -417,6 +419,36 @@ impl ExprCtx {
         *opt_prev_token = Some(token);
     }
 
+    fn push_func_to_op_stack(&mut self, func_token: FunctionToken) -> Result<(), ExprError> {
+        let func = &FUNCTIONS[func_token.idx_func];
+        if func.params.contains(&func_token.params) {
+            self.stack_op.push(Token::Function(func_token));
+            Ok(())
+        } else {
+            // Too many or too few parameters passed to the function, bail.
+            let str_message = format!("for function '{}'. expects [{}..{}) parameters, got {} instead",
+                                      func.name, func.params.start, func.params.end, func_token.params);
+            Err(ExprError { idx_expr: func_token.idx_expr,
+                                   kind: ExprErrorKind::InvalidParamCount,
+                                   message: str_message.to_string() })
+        }
+    }
+
+    fn pop_func_from_stack(&mut self) -> Option<FunctionToken> {
+        // If a function preceeds the open paranthesis, pop it to the output queue.
+        if let Some(Token::Function(
+                    FunctionToken { idx_expr: _,
+                                    idx_func: _,
+                                    params: _ })) = self.stack_op.last() {
+            // We safely unwrap both the token from the stack as well as the result from
+            // the try_from() because we've already checked that the token on the top of
+            // the stack is a function token.
+            Some(FunctionToken::try_from(self.stack_op.pop().unwrap()).unwrap())
+        } else {
+            None
+        }
+    }
+
     fn process_parsed_operator(&mut self,
                                oper_token: OperatorToken,
                                opt_prev_token: &mut Option<Token>) -> Result<(), ExprError> {
@@ -436,35 +468,19 @@ impl ExprCtx {
                             found_matching_paren = true;
                             self.stack_op.pop().unwrap();
 
-                            // If a function preceeds the open paranthesis, pop it to the output queue.
-                            if let Some(Token::Function(
-                                        FunctionToken { idx_expr: _,
-                                                        idx_func: _,
-                                                        params: _ })) = self.stack_op.last() {
-                                // We safely unwrap both the token from the stack as well as the result from
-                                // the try_from() because we've already checked that the token on the top of
-                                // the stack is a function token.
-                                let mut func_token = FunctionToken::try_from(self.stack_op.pop().unwrap()).unwrap();
+                            // If a function preceeds the open paranthesis, increment its parameter count
+                            // E.g "avg(5,6)". We would have already incremented previous parameters while
+                            // parsing the parameter separator operator. Now we need to increment it for
+                            // the function's last parameter.
+                            if let Some(mut func_token) = self.pop_func_from_stack() {
                                 func_token.params += 1;
-
-                                // Verify that the function has the correct number of parameters passed to it.
-                                debug_assert!(func_token.idx_func < FUNCTIONS.len());
-                                let func = &FUNCTIONS[func_token.idx_func];
-                                if func.params.contains(&func_token.params) {
-                                    self.push_to_output_queue(Token::Function(func_token), opt_prev_token);
-                                } else {
-                                    // Too many or too few parameters passed to the function, bail.
-                                    let str_message = format!("for function '{}'. expects [{}..{}) parameters, got {} instead",
-                                                              func.name, func.params.start, func.params.end, func_token.params);
-                                    return Err(ExprError { idx_expr: func_token.idx_expr,
-                                                           kind: ExprErrorKind::InvalidParamCount,
-                                                           message: str_message.to_string() });
-                                }
+                                self.push_func_to_op_stack(func_token)?;
                             }
                             break;
+                        } else {
+                            // This operator token isn't an open paranthesis, pop it to the output queue.
+                            self.pop_token_to_output_queue();
                         }
-                        // This isn't an open paranthesis, pop it to the output queue.
-                        self.pop_token_to_output_queue();
                     }
                     // Pop all other tokens to the output queue.
                     _ => self.pop_token_to_output_queue(),
@@ -479,7 +495,52 @@ impl ExprCtx {
                                        kind: ExprErrorKind::MismatchParenthesis,
                                        message: str_message });
             }
-        // TODO: Handle other operators.
+        } else if operator.kind == OperatorKind::ParamSep {
+            // Find the previous open paranthesis.
+            while let Some(ref_token) = self.stack_op.last() {
+                match ref_token {
+                    Token::Operator(
+                        OperatorToken { idx_expr: _,
+                                        idx_oper }) if OPERATORS[*idx_oper].kind == OperatorKind::OpenParen => break,
+                    _ => self.pop_token_to_output_queue(),
+                }
+            }
+
+            // If a token exists at the top of the op stack, it's an open paranthesis (due to the loop above).
+            // This is debug asserted below for paranoia.
+            if let Some(ref_paren_token) = self.stack_op.last() {
+                let paren_token = self.stack_op.pop().unwrap();
+                #[cfg(debug_assertions)]
+                {
+                    let oper_paren = OperatorToken::try_from(paren_token).unwrap();
+                    debug_assert!(OPERATORS[oper_paren.idx_oper].kind == OperatorKind::OpenParen);
+                }
+
+                // If a function preceeds the open paranthesis, increment its parameter count by 1
+                // and re-push the function and the previously popped open paranthesis back to the
+                // op stack. It is important we do -NOT- update "opt_prev_token" while doing this
+                // temporary modification of a token's data in stack.
+                if let Some(mut func_token) = self.pop_func_from_stack() {
+                    func_token.params += 1;
+                    self.push_func_to_op_stack(func_token)?;
+                    self.stack_op.push(paren_token);
+                } else {
+                    // No function preceeding open paranthesis for a parameter separator.
+                    // Perhaps user forgot to mention function name. E.g "(32,5)"
+                    let str_message = format!("for parameter separator '{}' at {}", operator.name, oper_token.idx_oper);
+                    trace!("{:?} {}", ExprErrorKind::MissingFunction, str_message);
+                    return Err(ExprError { idx_expr: 0,
+                                           kind: ExprErrorKind::MissingFunction,
+                                           message: str_message.to_string() });
+                }
+            } else {
+                // No matching open paranthesis for the parameter separator. E.g "32,4".
+                let str_message = format!("for parameter separator '{}' at {}", operator.name, oper_token.idx_oper);
+                trace!("{:?} {}", ExprErrorKind::MissingParanthesis, str_message);
+                return Err(ExprError { idx_expr: 0,
+                                       kind: ExprErrorKind::MissingParanthesis,
+                                       message: str_message.to_string() });
+            }
         } else {
             while let Some(ref_token) = self.stack_op.last() {
                 match ref_token {
@@ -640,7 +701,7 @@ fn parse_operator(str_expr: &str, operators: &[Operator], opt_prev_token: &mut O
             // is never added to the op stack, it's excluded here but asserted for paranoia.
             if op.assoc == OperatorAssoc::Left {
                 match opt_prev_token {
-                    // E.g. "-4"
+                    // E.g. "-4", this also handles ",5" by not finding it as a valid operator.
                     None => continue,
                     // E.g. "(-4", "=-4" or ",-4)" when previous token was an operator.
                     Some(Token::Operator(OperatorToken { idx_expr: _, idx_oper })) => {
@@ -678,7 +739,7 @@ fn parse_operator(str_expr: &str, operators: &[Operator], opt_prev_token: &mut O
     }
 
     if is_found {
-        trace!("found {}", operators[idx_found].help);
+        trace!("found '{}' - {}", operators[idx_found].name, operators[idx_found].help);
         Some(idx_found)
     } else {
         None
