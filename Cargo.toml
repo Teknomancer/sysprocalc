@@ -4,14 +4,13 @@ version = "1.0.0"
 authors = ["Ramshankar <v.ramshankar@gmail.com>"]
 description = "System Programmer's Calculator"
 # documentation =
-# homepage = "https://github.com/Teknomancer/sysprocalc"
+homepage = "https://github.com/Teknomancer/sysprocalc"
 repository = "https://github.com/Teknomancer/sysprocalc"
 readme = "README.md"
 keywords = ["x86","expression","evaluator"]
 license = "MIT OR Apache-2.0"
 categories = ["command-line-utilities"]
 exclude = ["/.github"]
-
 edition = "2018"
 
 [workspace]
