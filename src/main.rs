@@ -140,7 +140,7 @@ fn main() -> std::io::Result<()> {
             }
 
             // An empty line so the output doesn't look too cramped with the next input.
-            println!("");
+            println!();
         }
     }
 }
