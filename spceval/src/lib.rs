@@ -314,7 +314,11 @@ fn oper_eq(nums: &[Number]) -> Result<Number, ExprError> {
     let abs_lhs = lhs.float.abs();
     let abs_rhs = rhs.float.abs();
     let abs_diff = (lhs.float - rhs.float).abs();
-    let abs_cmp = if abs_lhs > abs_rhs { abs_rhs } else { abs_lhs };
+    let abs_cmp = if abs_lhs > abs_rhs {
+        abs_rhs
+    } else {
+        abs_lhs
+    };
     let float = (abs_diff <= abs_cmp * std::f64::EPSILON) as u64 as f64;
     Ok(Number { integer, float })
 }
@@ -797,8 +801,8 @@ fn parse_operator(str_expr: &str, operators: &[Operator], opt_prev_token: &mut O
         // Otherwise, record the currently found operator only if its length exceeds that
         // of a previously found (i.e., we should be able to find "<<" and not stop at "<"),
         if str_expr.starts_with(op.name)
-           && (   !is_found
-               || op.name.len() > operators[idx_found].name.len()) {
+           && (!is_found
+                || op.name.len() > operators[idx_found].name.len()) {
             // Is this a left associative operator, ensure a previous token exists and that
             // it's not an operator (other than close paranthesis). Since the close paranthesis
             // is never added to the op stack, it's excluded here but asserted for paranoia.
