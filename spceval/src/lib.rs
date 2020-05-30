@@ -314,11 +314,7 @@ fn oper_eq(nums: &[Number]) -> Result<Number, ExprError> {
     let abs_lhs = lhs.float.abs();
     let abs_rhs = rhs.float.abs();
     let abs_diff = (lhs.float - rhs.float).abs();
-    let abs_cmp = if abs_lhs > abs_rhs {
-          abs_rhs
-      } else {
-          abs_lhs
-    };
+    let abs_cmp = if abs_lhs > abs_rhs { abs_rhs } else { abs_lhs };
     let float = (abs_diff <= abs_cmp * std::f64::EPSILON) as u64 as f64;
     Ok(Number { integer, float })
 }
