@@ -10,13 +10,13 @@ const PRE_ALLOC_TOKENS: usize = 16;
 
 static OPERATORS: [Operator<'static>; 26] = [
     // Precedence 1 (highest priority)
-    Operator { kind: OperatorKind::OpenParen,  prec: 1,  params: 0, assoc: OperatorAssoc::Nil,   name: "(",  syntax: "(<expr>)",           help: "Begin expression."             , func: oper_null },
-    Operator { kind: OperatorKind::CloseParen, prec: 1,  params: 0, assoc: OperatorAssoc::Nil,   name: ")",  syntax: "(<expr>)",           help: "End expression."               , func: oper_null },
+    Operator { kind: OperatorKind::OpenParen,  prec: 1,  params: 0, assoc: OperatorAssoc::Nil,   name: "(",  syntax: "(<expr>)",           help: "Begin expression."             , func: oper_nop },
+    Operator { kind: OperatorKind::CloseParen, prec: 1,  params: 0, assoc: OperatorAssoc::Nil,   name: ")",  syntax: "(<expr>)",           help: "End expression."               , func: oper_nop },
     // Precendence 4 (appears in array before 2 because of parsing logic with unary operators)
     Operator { kind: OperatorKind::Regular,    prec: 4,  params: 2, assoc: OperatorAssoc::Left,  name: "+",  syntax: "<expr> + <expr>",    help: "Addition."                     , func: oper_add },
     Operator { kind: OperatorKind::Regular,    prec: 4,  params: 2, assoc: OperatorAssoc::Left,  name: "-",  syntax: "<expr> - <expr>",    help: "Subtraction."                  , func: oper_sub },
     // Precedence 2
-    Operator { kind: OperatorKind::Regular,    prec: 2,  params: 1, assoc: OperatorAssoc::Right, name: "+",  syntax: "+<expr>",            help: "Unary plus."                   , func: oper_null },
+    Operator { kind: OperatorKind::Regular,    prec: 2,  params: 1, assoc: OperatorAssoc::Right, name: "+",  syntax: "+<expr>",            help: "Unary plus."                   , func: oper_nop },
     Operator { kind: OperatorKind::Regular,    prec: 2,  params: 1, assoc: OperatorAssoc::Right, name: "-",  syntax: "-<expr>",            help: "Unary minus."                  , func: oper_unary_minus },
     Operator { kind: OperatorKind::Regular,    prec: 2,  params: 1, assoc: OperatorAssoc::Right, name: "!",  syntax: "!<expr>",            help: "Logical NOT."                  , func: oper_logical_not },
     Operator { kind: OperatorKind::Regular,    prec: 2,  params: 1, assoc: OperatorAssoc::Right, name: "~",  syntax: "~<expr>",            help: "Bitwise NOT."                  , func: oper_bit_not },
@@ -28,13 +28,13 @@ static OPERATORS: [Operator<'static>; 26] = [
     Operator { kind: OperatorKind::Regular,    prec: 5,  params: 2, assoc: OperatorAssoc::Left,  name: "<<", syntax: "<expr> << <expr>",   help: "Bitwise left-shift."           , func: oper_bit_lshift },
     Operator { kind: OperatorKind::Regular,    prec: 5,  params: 2, assoc: OperatorAssoc::Left,  name: ">>", syntax: "<expr> >> <expr>",   help: "Bitwise right-shift."          , func: oper_bit_rshift },
     // Precedence 6
-    Operator { kind: OperatorKind::Regular,    prec: 6,  params: 2, assoc: OperatorAssoc::Left,  name: "<",  syntax: "<expr> < <expr>",    help: "Less-than."                    , func: oper_null },
-    Operator { kind: OperatorKind::Regular,    prec: 6,  params: 2, assoc: OperatorAssoc::Left,  name: "<=", syntax: "<expr> <= <expr>",   help: "Less-than-or-equals."          , func: oper_null },
-    Operator { kind: OperatorKind::Regular,    prec: 6,  params: 2, assoc: OperatorAssoc::Left,  name: ">",  syntax: "<expr> > <expr>",    help: "Greater-than."                 , func: oper_null },
-    Operator { kind: OperatorKind::Regular,    prec: 6,  params: 2, assoc: OperatorAssoc::Left,  name: ">=", syntax: "<expr> >= <expr>",   help: "Greater-than-or-equals."       , func: oper_null },
+    Operator { kind: OperatorKind::Regular,    prec: 6,  params: 2, assoc: OperatorAssoc::Left,  name: "<",  syntax: "<expr> < <expr>",    help: "Less-than."                    , func: oper_lt },
+    Operator { kind: OperatorKind::Regular,    prec: 6,  params: 2, assoc: OperatorAssoc::Left,  name: "<=", syntax: "<expr> <= <expr>",   help: "Less-than-or-equals."          , func: oper_lte },
+    Operator { kind: OperatorKind::Regular,    prec: 6,  params: 2, assoc: OperatorAssoc::Left,  name: ">",  syntax: "<expr> > <expr>",    help: "Greater-than."                 , func: oper_gt },
+    Operator { kind: OperatorKind::Regular,    prec: 6,  params: 2, assoc: OperatorAssoc::Left,  name: ">=", syntax: "<expr> >= <expr>",   help: "Greater-than-or-equals."       , func: oper_gte },
     // Precedence 7
-    Operator { kind: OperatorKind::Regular,    prec: 7,  params: 2, assoc: OperatorAssoc::Left,  name: "==", syntax: "<expr> == <expr>",   help: "Equals."                       , func: oper_null },
-    Operator { kind: OperatorKind::Regular,    prec: 7,  params: 2, assoc: OperatorAssoc::Left,  name: "!=", syntax: "<expr> != <expr>",   help: "Not-equals."                   , func: oper_null },
+    Operator { kind: OperatorKind::Regular,    prec: 7,  params: 2, assoc: OperatorAssoc::Left,  name: "==", syntax: "<expr> == <expr>",   help: "Equals."                       , func: oper_eq },
+    Operator { kind: OperatorKind::Regular,    prec: 7,  params: 2, assoc: OperatorAssoc::Left,  name: "!=", syntax: "<expr> != <expr>",   help: "Not-equals."                   , func: oper_ne },
     // Precedence 8
     Operator { kind: OperatorKind::Regular,    prec: 8,  params: 2, assoc: OperatorAssoc::Left,  name: "&",  syntax: "<expr> & <expr>",    help: "Bitwise AND."                  , func: oper_bit_and },
     // Precedence 9
@@ -42,13 +42,13 @@ static OPERATORS: [Operator<'static>; 26] = [
     // Precedence 10
     Operator { kind: OperatorKind::Regular,    prec: 10, params: 2, assoc: OperatorAssoc::Left,  name: "|",  syntax: "<expr> | <expr>",    help: "Bitwise OR."                   , func: oper_bit_or },
     // Precedence 11
-    Operator { kind: OperatorKind::Regular,    prec: 11, params: 2, assoc: OperatorAssoc::Left,  name: "&&", syntax: "<expr> && <expr>",   help: "Logical AND."                  , func: oper_null },
+    Operator { kind: OperatorKind::Regular,    prec: 11, params: 2, assoc: OperatorAssoc::Left,  name: "&&", syntax: "<expr> && <expr>",   help: "Logical AND."                  , func: oper_nop },
     // Precedence 12
-    Operator { kind: OperatorKind::Regular,    prec: 12, params: 2, assoc: OperatorAssoc::Left,  name: "||", syntax: "<expr> || <expr>",   help: "Logical OR."                   , func: oper_null },
+    Operator { kind: OperatorKind::Regular,    prec: 12, params: 2, assoc: OperatorAssoc::Left,  name: "||", syntax: "<expr> || <expr>",   help: "Logical OR."                   , func: oper_nop },
     // Precedence 13
-    Operator { kind: OperatorKind::VarAssign,  prec: 13, params: 2, assoc: OperatorAssoc::Left,  name: "=",  syntax: "<var> = <expr>",     help: "Variable assignment."          , func: oper_null },
+    Operator { kind: OperatorKind::VarAssign,  prec: 13, params: 2, assoc: OperatorAssoc::Left,  name: "=",  syntax: "<var> = <expr>",     help: "Variable assignment."          , func: oper_nop },
     // Precedence 14
-    Operator { kind: OperatorKind::ParamSep,   prec: 14, params: 2, assoc: OperatorAssoc::Left,  name: ",",  syntax: "<param1>, <param2>", help: "Function parameter separator." , func: oper_null },
+    Operator { kind: OperatorKind::ParamSep,   prec: 14, params: 2, assoc: OperatorAssoc::Left,  name: ",",  syntax: "<param1>, <param2>", help: "Function parameter separator." , func: oper_nop },
 ];
 
 const MAX_FN_PARAMS: u8 = u8::max_value();
@@ -193,7 +193,7 @@ impl<'a> PartialOrd for Operator<'a> {
     }
 }
 
-fn oper_null(nums: &[Number]) -> Result<Number, ExprError> {
+fn oper_nop(nums: &[Number]) -> Result<Number, ExprError> {
     Ok (nums[0])
 }
 
@@ -272,6 +272,61 @@ fn oper_bit_rshift(nums: &[Number]) -> Result<Number, ExprError> {
     let integer = lhs.integer.overflowing_shr(rhs.integer as u32).0;
     let float = integer as f64;
     Ok(Number { integer, float })
+}
+
+fn oper_lt(nums: &[Number]) -> Result<Number, ExprError> {
+    let lhs = nums[0];
+    let rhs = nums[1];
+    let integer = (lhs.integer < rhs.integer) as u64;
+    let float = (lhs.float < rhs.float) as u64 as f64;
+    Ok(Number { integer, float })
+}
+
+fn oper_lte(nums: &[Number]) -> Result<Number, ExprError> {
+    let lhs = nums[0];
+    let rhs = nums[1];
+    let integer = (lhs.integer <= rhs.integer) as u64;
+    let float = (lhs.float <= rhs.float) as u64 as f64;
+    Ok(Number { integer, float })
+}
+
+fn oper_gt(nums: &[Number]) -> Result<Number, ExprError> {
+    let lhs = nums[0];
+    let rhs = nums[1];
+    let integer = (lhs.integer > rhs.integer) as u64;
+    let float = (lhs.float > rhs.float) as u64 as f64;
+    Ok(Number { integer, float })
+}
+
+fn oper_gte(nums: &[Number]) -> Result<Number, ExprError> {
+    let lhs = nums[0];
+    let rhs = nums[1];
+    let integer = (lhs.integer >= rhs.integer) as u64;
+    let float = (lhs.float >= rhs.float) as u64 as f64;
+    Ok(Number { integer, float })
+}
+
+fn oper_eq(nums: &[Number]) -> Result<Number, ExprError> {
+    let lhs = nums[0];
+    let rhs = nums[1];
+    let integer = (lhs.integer == rhs.integer) as u64;
+    // I don't want to use a crate for this. Perhaps push this to some helper function.
+    let abs_lhs = lhs.float.abs();
+    let abs_rhs = rhs.float.abs();
+    let abs_diff = (lhs.float - rhs.float).abs();
+    let abs_cmp = if abs_lhs > abs_rhs {
+          abs_rhs
+      } else {
+          abs_lhs
+    };
+    let float = (abs_diff <= abs_cmp * std::f64::EPSILON) as u64 as f64;
+    Ok(Number { integer, float })
+}
+
+fn oper_ne(nums: &[Number]) -> Result<Number, ExprError> {
+    let res = oper_eq(nums)?;
+    let integer = !res.integer;
+    Ok(Number { integer, float: integer as f64 })
 }
 
 fn oper_bit_and(nums: &[Number]) -> Result<Number, ExprError> {
@@ -496,11 +551,10 @@ impl ExprCtx {
         } else if operator.kind == OperatorKind::CloseParen {
             // Find the matching open paranthesis by walking the op stack (in reverse).
             let mut found_matching_paren = false;
-            let mut idx_expr_param_sep = 0;
             while let Some(ref_token) = self.stack_op.last() {
                 match ref_token {
                     // Operator token, figure out if it's an  open paranthesis or not
-                    Token::Operator(OperatorToken { idx_expr, idx_oper }) => {
+                    Token::Operator(OperatorToken { idx_expr: _, idx_oper }) => {
                         if OPERATORS[*idx_oper].kind == OperatorKind::OpenParen {
                             // This is the matching open paranthesis, discard it.
                             found_matching_paren = true;
