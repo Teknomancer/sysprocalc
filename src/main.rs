@@ -28,7 +28,7 @@ fn print_number_result(number: &spceval::Number) {
     let str_bin_sfill = queue_bin.iter().collect::<String>();
 
     // Display the formatted strings
-    println!("Dec: {:>24} (u64)  {:>26} (n)", number.integer, number.float);
+    println!("Dec: {:>24} (u64)  {:>26} (f)", number.integer, number.float);
     println!("Hex: {:>24} (u64)  {:>26} (n)", str_hex_zfill, str_hex);
     println!("Oct: {:>24} (u64)  {:>26} (n)", str_oct_zfill, str_oct);
     println!("Bin: {} ({} bits)", str_bin_sfill, len_str_bin);
