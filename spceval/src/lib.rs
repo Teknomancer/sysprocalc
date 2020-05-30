@@ -533,6 +533,22 @@ impl ExprCtx {
         }
     }
 
+    fn collect_params(&mut self, params: usize, stack_output: &mut Vec<Number>) -> Option<Vec<Number>> {
+        debug_assert!(params > 0);
+        let mut parameters = Vec::with_capacity(params);
+        for _ in 0..params {
+            if let Some(param) = stack_output.pop() {
+                parameters.push(param);
+            } else {
+                return None;
+            }
+        }
+
+        // Reverse the parameters so left and right parameters are correct.
+        parameters.reverse();
+        Some(parameters)
+    }
+
     fn process_parsed_operator(&mut self,
                                oper_token: OperatorToken,
                                opt_prev_token: &mut Option<Token>) -> Result<(), ExprError> {
@@ -665,7 +681,7 @@ fn parse_function(str_expr: &str, functions: &[Function]) -> Option<usize> {
     debug_assert_eq!(str_expr.trim_start_matches(char::is_whitespace), str_expr);
 
     // All functions must be succeeded by an open paranthesis.
-    // Gather function name till we find an open paranthesis and then check if that function
+    // Collect function name till we find an open paranthesis and then check if that function
     // exists in the function table.
     let mut is_found = false;
     let mut idx_found = 0;
@@ -885,8 +901,8 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
             if let Some(Token::Function(FunctionToken { idx_expr: idx_expr_func, idx_func, params: _ })) = opt_prev_token {
                 // Calculate where the open paranthesis must appear, we don't use "idx" because
                 // it includes all the whitespace after the function name. We want to report the
-                // character immediately after the name of the function
-                // E.g we want position X in "avgX   Y+" rather than position Y.
+                // character immediately after the name of the function.
+                // E.g we want position X in "avgX Y+" rather than position Y.
                 let idx_open_paren = idx_expr_func + FUNCTIONS[idx_func].name.len();
                 if OPERATORS[idx_oper].kind != OperatorKind::OpenParen {
                     let message = format!("at {} for function '{}'", idx_open_paren, &FUNCTIONS[idx_func].name);
@@ -945,76 +961,57 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
 }
 
 pub fn evaluate(expr_ctx: &mut ExprCtx) -> Result<ExprResult, ExprError> {
+    // Pop tokens from the output queue to an output stack and process them.
     let mut stack_output: Vec<Number> = Vec::with_capacity(PRE_ALLOC_TOKENS);
-
-    // Pop tokens from the output queue and process them.
     while let Some(token) = expr_ctx.queue_output.pop_front() {
         match token {
-            Token::Number(NumberToken { idx_expr: _, number }) => stack_output.push(number),
+            Token::Number(NumberToken { idx_expr: _, number }) => {
+                stack_output.push(number);
+            }
+
             Token::Operator(OperatorToken { idx_expr, idx_oper }) => {
                 debug_assert!(idx_oper < OPERATORS.len());
                 let operator = &OPERATORS[idx_oper];
-
-                // Collect parameters for calling the operator's evaluator.
-                let mut parameters = Vec::with_capacity(operator.params as usize);
-                for _ in 0..operator.params {
-                    if let Some(param) = stack_output.pop() {
-                        parameters.push(param);
-                    } else {
-                        let message = format!("for operator '{}' at {}", operator.name, idx_expr);
-                        trace!("insufficient parameters {}", message);
-                        return Err(ExprError { idx_expr,
-                                               kind: ExprErrorKind::InvalidParamCount,
-                                               message });
-                    }
+                if let Some(parameters) = expr_ctx.collect_params(operator.params as usize, &mut stack_output) {
+                    debug_assert!(parameters.len() == operator.params as usize);
+                    let res_expr = (operator.func)(&parameters)?;
+                    stack_output.push(res_expr);
+                } else {
+                    let message = format!("for operator '{}' at {}", operator.name, idx_expr);
+                    trace!("{:?} {}", ExprErrorKind::InvalidParamCount, message);
+                    return Err(ExprError { idx_expr,
+                                           kind: ExprErrorKind::InvalidParamCount,
+                                           message });
                 }
-
-                // Reverse the parameters so left and right parameters are correct.
-                parameters.reverse();
-
-                // Call the operator's evaluator.
-                debug_assert!(parameters.len() == operator.params as usize);
-                let res_expr = (operator.func)(&parameters)?;
-                stack_output.push(res_expr);
             }
+
             Token::Function(FunctionToken { idx_expr, idx_func, params }) => {
                 debug_assert!(idx_func < FUNCTIONS.len());
                 let function = &FUNCTIONS[idx_func];
-
-                // Collect parameters for calling the function's evaluator.
-                let mut parameters = Vec::with_capacity(params as usize);
-                for _ in 0..params {
-                    if let Some(param) = stack_output.pop() {
-                        parameters.push(param);
-                    } else {
-                        let message = format!("for function '{}' at {}", function.name, idx_expr);
-                        trace!("{:?} {}", ExprErrorKind::InvalidParamCount, message);
-                        return Err(ExprError { idx_expr,
-                                               kind: ExprErrorKind::InvalidParamCount,
-                                               message });
-                    }
+                if let Some(parameters) = expr_ctx.collect_params(params as usize, &mut stack_output) {
+                    debug_assert!(parameters.len() == params as usize);
+                    let res_expr = (function.func)(&parameters)?;
+                    stack_output.push(res_expr);
+                } else {
+                    let message = format!("for function '{}' at {}", function.name, idx_expr);
+                    trace!("{:?} {}", ExprErrorKind::InvalidParamCount, message);
+                    return Err(ExprError { idx_expr,
+                                           kind: ExprErrorKind::InvalidParamCount,
+                                           message });
                 }
-
-                // Reverse the parameters so left and right parameters are correct.
-                parameters.reverse();
-
-                // Call the functions's evaluator.
-                debug_assert!(parameters.len() == params as usize);
-                let res_expr = (function.func)(&parameters)?;
-                stack_output.push(res_expr);
             }
         }
     }
 
     if let Some(token) = stack_output.pop() {
-        return Ok(ExprResult::Number(token));
+        Ok(ExprResult::Number(token))
+    } else {
+        let message = "evaluation failed".to_string();
+        trace!("{}", message);
+        Err(ExprError { idx_expr: 0,
+                        kind: ExprErrorKind::InvalidExpr,
+                        message })
     }
-
-    let message = "evaluation failed".to_string();
-    trace!("{}", message);
-    Err(ExprError { idx_expr: 0,
-                    kind: ExprErrorKind::InvalidExpr,
-                    message })
 }
 
 #[cfg(test)]
