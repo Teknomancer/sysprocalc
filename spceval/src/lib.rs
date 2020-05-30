@@ -8,10 +8,6 @@ use log::{trace, debug};   // others: {warn,info}
 // Number of tokens to pre-allocate per ExprCtx.
 const PRE_ALLOC_TOKENS: usize = 16;
 
-// Maximum number of characters allowed in a function.
-// This is useful to know while parsing.
-const MAX_FUNC_NAME: usize = 32;
-
 static OPERATORS: [Operator<'static>; 26] = [
     // Precedence 1 (highest priority)
     Operator { kind: OperatorKind::OpenParen,  prec: 1,  params: 0, assoc: OperatorAssoc::Nil,   name: "(",  syntax: "(<expr>)",           help: "Begin expression."             , func: oper_null },
@@ -400,7 +396,7 @@ impl ExprCtx {
         }
     }
 
-    fn pop_token_to_output_queue(&mut self)
+    fn pop_move_to_output_queue(&mut self)
     {
         let token = self.stack_op.pop();
         debug_assert!(token.is_some());
@@ -426,12 +422,37 @@ impl ExprCtx {
             Ok(())
         } else {
             // Too many or too few parameters passed to the function, bail.
-            let str_message = format!("for function '{}'. expects [{}..{}) parameters, got {} instead",
-                                      func.name, func.params.start, func.params.end, func_token.params);
+            let message = format!("for function '{}'. expects [{}..{}) parameters, got {} instead",
+                                  func.name, func.params.start, func.params.end, func_token.params);
             Err(ExprError { idx_expr: func_token.idx_expr,
-                                   kind: ExprErrorKind::InvalidParamCount,
-                                   message: str_message.to_string() })
+                            kind: ExprErrorKind::InvalidParamCount,
+                            message })
         }
+    }
+
+    fn pop_move_all_to_output_queue(&mut self) -> Result<(), ExprError>
+    {
+        while let Some(ref_token) = self.stack_op.last() {
+            // If the stack has an open paranthesis, we have a paranthesis mismatch.
+            match ref_token {
+                Token::Operator(OperatorToken { idx_expr, idx_oper }) => {
+                    debug_assert!(*idx_oper < OPERATORS.len());
+                    let operator = &OPERATORS[*idx_oper];
+                    if operator.kind == OperatorKind::OpenParen {
+                        let message = format!("for opening paranthesis at {}", *idx_expr);
+                        trace!("Paranthesis mismatch {}", message);
+                        return Err(ExprError { idx_expr: *idx_expr,
+                                               kind: ExprErrorKind::MismatchParenthesis,
+                                               message });
+                    } else {
+                        self.pop_move_to_output_queue();
+                    }
+                }
+                _ => self.pop_move_to_output_queue(),
+            }
+        }
+
+        Ok(())
     }
 
     fn pop_func_from_stack(&mut self) -> Option<FunctionToken> {
@@ -479,21 +500,21 @@ impl ExprCtx {
                             break;
                         } else {
                             // This operator token isn't an open paranthesis, pop it to the output queue.
-                            self.pop_token_to_output_queue();
+                            self.pop_move_to_output_queue();
                         }
                     }
                     // Pop all other tokens to the output queue.
-                    _ => self.pop_token_to_output_queue(),
+                    _ => self.pop_move_to_output_queue(),
                 }
             }
 
             // If we didn't find a matching opening paranthesis, bail.
             if !found_matching_paren {
-                let str_message = format!("for closing paranthesis at {}", oper_token.idx_expr);
-                trace!("Paranthesis mismatch {}", str_message);
+                let message = format!("for closing paranthesis at {}", oper_token.idx_expr);
+                trace!("Paranthesis mismatch {}", message);
                 return Err(ExprError { idx_expr: oper_token.idx_expr,
                                        kind: ExprErrorKind::MismatchParenthesis,
-                                       message: str_message });
+                                       message });
             }
         } else if operator.kind == OperatorKind::ParamSep {
             // Find the previous open paranthesis.
@@ -502,13 +523,13 @@ impl ExprCtx {
                     Token::Operator(
                         OperatorToken { idx_expr: _,
                                         idx_oper }) if OPERATORS[*idx_oper].kind == OperatorKind::OpenParen => break,
-                    _ => self.pop_token_to_output_queue(),
+                    _ => self.pop_move_to_output_queue(),
                 }
             }
 
             // If a token exists at the top of the op stack, it's an open paranthesis (due to the loop above).
             // This is debug asserted below for paranoia.
-            if let Some(ref_paren_token) = self.stack_op.last() {
+            if self.stack_op.last().is_some() {
                 let paren_token = self.stack_op.pop().unwrap();
                 #[cfg(debug_assertions)]
                 {
@@ -527,19 +548,19 @@ impl ExprCtx {
                 } else {
                     // No function preceeding open paranthesis for a parameter separator.
                     // Perhaps user forgot to mention function name. E.g "(32,5)"
-                    let str_message = format!("for parameter separator '{}' at {}", operator.name, oper_token.idx_oper);
-                    trace!("{:?} {}", ExprErrorKind::MissingFunction, str_message);
+                    let message = format!("for parameter separator '{}' at {}", operator.name, oper_token.idx_oper);
+                    trace!("{:?} {}", ExprErrorKind::MissingFunction, message);
                     return Err(ExprError { idx_expr: 0,
                                            kind: ExprErrorKind::MissingFunction,
-                                           message: str_message.to_string() });
+                                           message });
                 }
             } else {
                 // No matching open paranthesis for the parameter separator. E.g "32,4".
-                let str_message = format!("for parameter separator '{}' at {}", operator.name, oper_token.idx_oper);
-                trace!("{:?} {}", ExprErrorKind::MissingParanthesis, str_message);
+                let message = format!("for parameter separator '{}' at {}", operator.name, oper_token.idx_oper);
+                trace!("{:?} {}", ExprErrorKind::MissingParanthesis, message);
                 return Err(ExprError { idx_expr: 0,
                                        kind: ExprErrorKind::MissingParanthesis,
-                                       message: str_message.to_string() });
+                                       message });
             }
         } else {
             while let Some(ref_token) = self.stack_op.last() {
@@ -554,7 +575,7 @@ impl ExprCtx {
                         // Pop operator with higher priority (depending on associativity) to the output queue.
                         if    token_stack_oper.prec < operator.prec
                            || operator.assoc == OperatorAssoc::Left && operator.prec == token_stack_oper.prec {
-                            self.pop_token_to_output_queue();
+                            self.pop_move_to_output_queue();
                         } else {
                             break;
                         }
@@ -666,8 +687,8 @@ fn parse_number(str_expr: &str) -> (Option<Number>, usize) {
     if !has_dec_pt {
         // Parse as integer.
         match u64::from_str_radix(&str_num, radix) {
-            Ok(v) => return (Some(Number { integer: v, float: v as f64 }), consumed),
-            _ => return (None, 0),
+            Ok(v) => (Some(Number { integer: v, float: v as f64 }), consumed),
+            _ => (None, 0),
         }
     } else {
         // Parse as float.
@@ -677,8 +698,8 @@ fn parse_number(str_expr: &str) -> (Option<Number>, usize) {
         // TODO: We might also want to consider aborting parsing here in the Inf/NaN case.
         use std::str::FromStr;
         match f64::from_str(&str_num) {
-            Ok(v) => return (Some(Number { integer: v as u64, float: v }), consumed),
-            _ => return (None, 0),
+            Ok(v) => (Some(Number { integer: v as u64, float: v }), consumed),
+            _ => (None, 0),
         }
     }
 }
@@ -750,12 +771,12 @@ fn verify_prev_token_not_a_function(opt_prev_token: &Option<Token>) -> Result<()
 {
     match opt_prev_token {
         Some(Token::Function(FunctionToken { idx_expr, idx_func, params: _ })) => {
-            let idx_open_paren = idx_expr + &FUNCTIONS[*idx_func].name.len();
-            let str_message = format!("at {} for function '{}'", idx_open_paren, &FUNCTIONS[*idx_func].name);
-            trace!("{:?} {}", ExprErrorKind::MissingParanthesis, str_message);
-            return Err(ExprError { idx_expr: idx_open_paren,
-                                    kind: ExprErrorKind::MissingParanthesis,
-                                    message: str_message.to_string() });
+            let idx_open_paren = idx_expr + FUNCTIONS[*idx_func].name.len();
+            let message = format!("at {} for function '{}'", idx_open_paren, &FUNCTIONS[*idx_func].name);
+            trace!("{:?} {}", ExprErrorKind::MissingParanthesis, message);
+            Err(ExprError { idx_expr: idx_open_paren,
+                            kind: ExprErrorKind::MissingParanthesis,
+                            message })
         }
         _ => Ok(())
     }
@@ -767,7 +788,6 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
     // If we didn't need to store the index, we can easily loop, trim_start whitespaces,
     // and just re-assign 'str_subexpr' to the string slice given by parse_number().
     let mut len_token = 0;
-    let mut idx_token = 0;
     let mut expr_ctx = ExprCtx::new();
     let mut opt_prev_token: Option<Token> = None;
 
@@ -788,33 +808,28 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
             verify_prev_token_not_a_function(&opt_prev_token)?;
             trace!("number  : {} (0x{:x})", number.integer, number.integer);
             len_token = len_str;
-            idx_token = idx;
             let num_token = NumberToken { idx_expr: idx, number };
             expr_ctx.push_to_output_queue(Token::Number(num_token), &mut opt_prev_token);
         } else if let Some(idx_oper) = parse_operator(str_subexpr, &OPERATORS, &mut opt_prev_token) {
             debug_assert!(idx_oper < OPERATORS.len());
             // If the previous token was a function, this must be an open paranthesis.
             // E.g "avg +"; otherwise this is an invalid expression.
-            match opt_prev_token {
-                Some(Token::Function(FunctionToken { idx_expr: idx_expr_func, idx_func, params: _ })) => {
-                    // Calculate where the open paranthesis must appear, we don't use "idx" because
-                    // it includes all the whitespace after the function name. We want to report the
-                    // character immediately after the name of the function
-                    // E.g we want position X in "avgX   Y+" rather than position Y.
-                    let idx_open_paren = idx_expr_func + &FUNCTIONS[idx_func].name.len();
-                    if OPERATORS[idx_oper].kind != OperatorKind::OpenParen {
-                        let str_message = format!("at {} for function '{}'", idx_open_paren, &FUNCTIONS[idx_func].name);
-                        trace!("{:?} {}", ExprErrorKind::MissingParanthesis, str_message);
-                        return Err(ExprError { idx_expr: idx_open_paren,
-                                               kind: ExprErrorKind::MissingParanthesis,
-                                               message: str_message.to_string() });
-                    }
+            if let Some(Token::Function(FunctionToken { idx_expr: idx_expr_func, idx_func, params: _ })) = opt_prev_token {
+                // Calculate where the open paranthesis must appear, we don't use "idx" because
+                // it includes all the whitespace after the function name. We want to report the
+                // character immediately after the name of the function
+                // E.g we want position X in "avgX   Y+" rather than position Y.
+                let idx_open_paren = idx_expr_func + FUNCTIONS[idx_func].name.len();
+                if OPERATORS[idx_oper].kind != OperatorKind::OpenParen {
+                    let message = format!("at {} for function '{}'", idx_open_paren, &FUNCTIONS[idx_func].name);
+                    trace!("{:?} {}", ExprErrorKind::MissingParanthesis, message);
+                    return Err(ExprError { idx_expr: idx_open_paren,
+                                           kind: ExprErrorKind::MissingParanthesis,
+                                           message });
                 }
-                _ => (),
             }
             trace!("operator: {}", &OPERATORS[idx_oper].name);
             len_token = OPERATORS[idx_oper].name.len();
-            idx_token = idx;
             let oper_token = OperatorToken { idx_expr: idx, idx_oper };
             expr_ctx.process_parsed_operator(oper_token, &mut opt_prev_token)?;
         } else if let Some(idx_func) = parse_function(str_subexpr, &FUNCTIONS) {
@@ -824,15 +839,14 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
             verify_prev_token_not_a_function(&opt_prev_token)?;
             trace!("function: {}", &FUNCTIONS[idx_func].name);
             len_token = FUNCTIONS[idx_func].name.len();
-            idx_token = idx;
             let func_token = FunctionToken { idx_expr: idx, idx_func, params: 0 };
             expr_ctx.push_to_op_stack(Token::Function(func_token), &mut opt_prev_token);
         } else {
-            let str_message = format!("at {}", idx);
-            trace!("{:?} {}", ExprErrorKind::InvalidExpr, str_message);
+            let message = format!("at {}", idx);
+            trace!("{:?} {}", ExprErrorKind::InvalidExpr, message);
             return Err(ExprError { idx_expr: idx,
                                     kind: ExprErrorKind::InvalidExpr,
-                                    message: str_message.to_string() });
+                                    message });
         }
     }
 
@@ -856,25 +870,8 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
         debug!("  queue[{}]: {:?}", idx, token);
     }
 
-    // Pop remaining tokens to the output queue.
-    while let Some(ref_token) = expr_ctx.stack_op.last() {
-        // If the stack has an open paranthesis, we have a paranthesis mismatch.
-        match ref_token {
-            Token::Operator(OperatorToken { idx_expr, idx_oper }) => {
-                debug_assert!(*idx_oper < OPERATORS.len());
-                let operator = &OPERATORS[*idx_oper];
-                if operator.kind == OperatorKind::OpenParen {
-                    let str_message = format!("for opening paranthesis at {}", *idx_expr);
-                    trace!("Paranthesis mismatch {}", str_message);
-                    return Err(ExprError { idx_expr: *idx_expr,
-                                           kind: ExprErrorKind::MismatchParenthesis,
-                                           message: str_message.to_string() });
-                }
-                expr_ctx.pop_token_to_output_queue();
-            }
-            _ => expr_ctx.pop_token_to_output_queue(),
-        }
-    }
+    // Pop and move remaining tokens from op stack to the output queue.
+    expr_ctx.pop_move_all_to_output_queue()?;
 
     Ok(expr_ctx)
 }
@@ -896,11 +893,11 @@ pub fn evaluate(expr_ctx: &mut ExprCtx) -> Result<ExprResult, ExprError> {
                     if let Some(param) = stack_output.pop() {
                         parameters.push(param);
                     } else {
-                        let str_message = format!("for operator '{}' at {}", operator.name, idx_expr);
-                        trace!("insufficient parameters {}", str_message);
+                        let message = format!("for operator '{}' at {}", operator.name, idx_expr);
+                        trace!("insufficient parameters {}", message);
                         return Err(ExprError { idx_expr,
                                                kind: ExprErrorKind::InvalidParamCount,
-                                               message: str_message.to_string() });
+                                               message });
                     }
                 }
 
@@ -921,11 +918,11 @@ pub fn evaluate(expr_ctx: &mut ExprCtx) -> Result<ExprResult, ExprError> {
         return Ok(ExprResult::Number(token));
     }
 
-    let str_message = format!("evaluation failed");
-    trace!("evaluation failed");
-    return Err(ExprError { idx_expr: 0,
-                           kind: ExprErrorKind::InvalidExpr,
-                           message: str_message.to_string() });
+    let message = "evaluation failed".to_string();
+    trace!("{}", message);
+    Err(ExprError { idx_expr: 0,
+                    kind: ExprErrorKind::InvalidExpr,
+                    message })
 }
 
 #[cfg(test)]
@@ -1134,7 +1131,7 @@ mod tests {
                     // E.g., binary "-" is ordered before unary "-".
                     // However if they have the same number of parameters (e.g, post and
                     // pre-increment "++", then we don't care about order.
-                    if (oper.name == opercmp.name && oper.params != opercmp.params) {
+                    if oper.name == opercmp.name && oper.params != opercmp.params {
                         if oper.params > opercmp.params {
                             assert!(idx < idxcmp,
                                     "Invalid ordering of '{}' at {} and {}.\
