@@ -514,7 +514,6 @@ impl ExprCtx {
                 _ => self.pop_move_to_output_queue(),
             }
         }
-
         Ok(())
     }
 
@@ -543,7 +542,6 @@ impl ExprCtx {
                 return None;
             }
         }
-
         // Reverse the parameters so left and right parameters are correct.
         parameters.reverse();
         Some(parameters)
@@ -560,14 +558,14 @@ impl ExprCtx {
             }
 
             OperatorKind::CloseParen => {
-                let mut found_matching_paren = false;
+                let mut found_open_paren = false;
                 while let Some(ref_token) = self.stack_op.last() {
                     match ref_token {
                         // Operator token, figure out if it's an  open paranthesis or not
                         Token::Operator(OperatorToken { idx_expr: _, idx_oper }) => {
                             if OPERATORS[*idx_oper].kind == OperatorKind::OpenParen {
                                 // This is the matching open paranthesis, discard it.
-                                found_matching_paren = true;
+                                found_open_paren = true;
                                 self.stack_op.pop().unwrap();
                                 break;
                             } else {
@@ -580,7 +578,7 @@ impl ExprCtx {
                     }
                 }
 
-                if found_matching_paren {
+                if found_open_paren {
                     // If a function preceeds the open paranthesis, increment its parameter count by 1.
                     // E.g "avg(5,6,7)". We've already incremented parameter count when there are more
                     // than one parameter when we handle the parameter separator operator. This is for
@@ -629,8 +627,7 @@ impl ExprCtx {
                         self.stack_op.push(Token::Function(func_token));
                         self.stack_op.push(paren_token);
                     } else {
-                        // No function preceeding open paranthesis for a parameter separator.
-                        // Perhaps user forgot to mention function name. E.g "(32,5)"
+                        // No function preceeding open paranthesis for a parameter separator. E.g "(32,5)"
                         let message = format!("for parameter separator '{}' at {}", operator.name, oper_token.idx_oper);
                         trace!("{:?} {}", ExprErrorKind::MissingFunction, message);
                         return Err(ExprError { idx_expr: 0,
