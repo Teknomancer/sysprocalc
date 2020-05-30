@@ -131,12 +131,12 @@ type PfnFunc = fn(&[Number]) -> Result<Number, ExprError>;
 enum OperatorAssoc {
     Nil,
     Left,
-    Right
+    Right,
 }
 
 #[derive(Eq, PartialEq, Ord, PartialOrd, Debug)]
 enum OperatorKind {
-    Regular = 0,
+    Regular,
     OpenParen,
     CloseParen,
     ParamSep,
@@ -372,13 +372,13 @@ fn func_avg(nums: &[Number]) -> Result<Number, ExprError> {
 #[derive(Debug, Copy, Clone)]
 struct NumberToken {
     idx_expr: usize,
-    number: Number
+    number: Number,
 }
 
 #[derive(Copy, Clone)]
 struct OperatorToken {
     idx_expr: usize,
-    idx_oper: usize
+    idx_oper: usize,
 }
 
 impl fmt::Debug for OperatorToken {
@@ -1197,12 +1197,12 @@ mod tests {
                     assert!(oper.assoc == OperatorAssoc::Nil,
                             "Open paranthesis operator '{}' at {} must have no associativity.", oper.name, idx);
                     open_paren_count += 1;
-                },
+                }
                 OperatorKind::CloseParen => {
                     assert!(oper.assoc == OperatorAssoc::Nil,
                             "Close paranthesis operator '{}' at {} must have no associativity.", oper.name, idx);
                     close_paren_count += 1;
-                },
+                }
                 OperatorKind::VarAssign => var_assign_count += 1,
                 OperatorKind::ParamSep => param_sep_count += 1,
                 _ => (),
