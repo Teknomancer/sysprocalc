@@ -1,11 +1,24 @@
-extern crate spceval;
+use spceval::*;
+use atty;
+use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 use std::io::{self, Write};
 use std::collections::VecDeque;
 
 #[cfg(debug_assertions)]
 mod logger;
 
-fn print_number_result(number: &spceval::Number) {
+const BSTR_PROMPT: &[u8; 2] = b"> ";
+
+fn write_color(stream: &mut StandardStream, s: &str, col: Color, is_intense: bool) -> std::io::Result<()> {
+    stream.set_color(ColorSpec::new()
+                     .set_fg(Some(col))
+                     .set_intense(is_intense))?;
+    write!(stream, "{}", s)?;
+    stream.reset()?;
+    Ok(())
+}
+
+fn print_number_result(stream: &mut StandardStream, number: &spceval::Number) {
     // Format as hex
     let str_hex_zfill = format!("{:#016x}", number.integer);
     let str_hex = format!("{:#x}", number.integer);
@@ -28,10 +41,17 @@ fn print_number_result(number: &spceval::Number) {
     let str_bin_sfill = queue_bin.iter().collect::<String>();
 
     // Display the formatted strings
-    println!("Dec: {:>24} (u64)  {:>26} (f)", number.integer, number.float);
-    println!("Hex: {:>24} (u64)  {:>26} (n)", str_hex_zfill, str_hex);
-    println!("Oct: {:>24} (u64)  {:>26} (n)", str_oct_zfill, str_oct);
-    println!("Bin: {} ({} bits)", str_bin_sfill, len_str_bin);
+    write_color(stream, "Dec:", Color::Cyan, true);
+    write!(stream, " {:>24} (u64)  {:>26} (f)\n", number.integer, number.float);
+
+    write_color(stream, "Hex:", Color::Cyan, true);
+    write!(stream, " {:>24} (u64)  {:>26} (n)\n", str_hex_zfill, str_hex);
+
+    write_color(stream, "Oct:", Color::Cyan, true);
+    write!(stream, " {:>24} (u64)  {:>26} (n)\n", str_oct_zfill, str_oct);
+
+    write_color(stream, "Bin:", Color::Cyan, true);
+    write!(stream, " {} ({} bits)\n", str_bin_sfill, len_str_bin);
 
     // We want a binary ruler (for every 8 bits) to ease visual counting of bits.
     // There might be a more efficient way to do this with Rust's string/vector
@@ -81,6 +101,18 @@ fn print_number_result(number: &spceval::Number) {
     }
 }
 
+fn print_error(stream: &mut StandardStream, err: ExprError) {
+    // Write caret
+    write!(stream, "{:width$}", " ", width = err.idx_expr + BSTR_PROMPT.len());
+    write_color(stream, "^", Color::Red, true);
+    write!(stream, "\n");
+
+    // Write error
+    write!(stream, "{:width$}", " ", width = BSTR_PROMPT.len());
+    write_color(stream, "Error:", Color::Red, true);
+    write!(stream, " {}\n", err);
+}
+
 fn main() -> std::io::Result<()> {
     // Initialize the logger only on debug builds
     #[cfg(debug_assertions)]
@@ -88,11 +120,18 @@ fn main() -> std::io::Result<()> {
         println!("error initializing logger: {:?}", e)
     }
 
-    let mut stdout = io::stdout();
+    // Detect presence of a terminal to determine automatic color output.
+    // Later allow forcing color option via command-line arguments.
+    let color_choice = if atty::is(atty::Stream::Stdout) {
+        ColorChoice::Auto
+    } else {
+        ColorChoice::Never
+    };
+
+    let mut stdout = StandardStream::stdout(color_choice);
     loop {
         // print! macro has buffered behavior. Therefore, manually write and flush stdout so we
         // have a prompt on the same line that the user can input text.
-        const BSTR_PROMPT: &[u8; 2] = b"> ";
         stdout.write_all(BSTR_PROMPT)?;
         stdout.flush()?;
 
@@ -118,8 +157,7 @@ fn main() -> std::io::Result<()> {
             // Parse the expression.
             let res_parse = spceval::parse(&str_expr);
             if let Err(e) = res_parse {
-                println!("{:width$}^", " ", width = e.idx_expr + BSTR_PROMPT.len());
-                println!("{:width$}Error: {errdesc}", " ", width = BSTR_PROMPT.len(), errdesc = e);
+                print_error(&mut stdout, e);
                 continue;
             }
 
@@ -127,15 +165,14 @@ fn main() -> std::io::Result<()> {
             let mut expr_ctx = res_parse.unwrap();
             let res_eval = spceval::evaluate(&mut expr_ctx);
             if let Err(e) = res_eval {
-                println!("{:width$}^", " ", width = e.idx_expr + BSTR_PROMPT.len());
-                println!("{:width$}Error: {errdesc}", " ", width = BSTR_PROMPT.len(), errdesc = e);
+                print_error(&mut stdout, e);
                 continue;
             }
 
             // Handle the result of the expression evaluation.
             let res_expr = res_eval.unwrap();
             match res_expr {
-                spceval::ExprResult::Number(n) => print_number_result(&n),
+                spceval::ExprResult::Number(n) => print_number_result(&mut stdout, &n),
                 spceval::ExprResult::Command(c) => println!("Result: {}", c),
             }
 
