@@ -463,21 +463,18 @@ impl ExprCtx {
         }
     }
 
-    fn pop_move_to_output_queue(&mut self)
-    {
+    fn pop_move_to_output_queue(&mut self) {
         let token = self.stack_op.pop();
         debug_assert!(token.is_some());
         self.queue_output.push_back(token.unwrap());
     }
 
-    fn push_to_output_queue(&mut self, token: Token, opt_prev_token: &mut Option<Token>)
-    {
+    fn push_to_output_queue(&mut self, token: Token, opt_prev_token: &mut Option<Token>) {
         self.queue_output.push_back(token);
         *opt_prev_token = Some(token);
     }
 
-    fn push_to_op_stack(&mut self, token: Token, opt_prev_token: &mut Option<Token>)
-    {
+    fn push_to_op_stack(&mut self, token: Token, opt_prev_token: &mut Option<Token>) {
         self.stack_op.push(token);
         *opt_prev_token = Some(token);
     }
@@ -497,8 +494,7 @@ impl ExprCtx {
         }
     }
 
-    fn pop_move_all_to_output_queue(&mut self) -> Result<(), ExprError>
-    {
+    fn pop_move_all_to_output_queue(&mut self) -> Result<(), ExprError> {
         while let Some(ref_token) = self.stack_op.last() {
             // If the stack has an open paranthesis, we have a paranthesis mismatch.
             match ref_token {
@@ -542,124 +538,130 @@ impl ExprCtx {
                                opt_prev_token: &mut Option<Token>) -> Result<(), ExprError> {
         debug_assert!(oper_token.idx_oper < OPERATORS.len());
         let operator = &OPERATORS[oper_token.idx_oper];
-        if  operator.kind == OperatorKind::OpenParen {
-            self.push_to_op_stack(Token::Operator(oper_token), opt_prev_token);
-        } else if operator.kind == OperatorKind::CloseParen {
-            // Find the matching open paranthesis by walking the op stack (in reverse).
-            let mut found_matching_paren = false;
-            while let Some(ref_token) = self.stack_op.last() {
-                match ref_token {
-                    // Operator token, figure out if it's an  open paranthesis or not
-                    Token::Operator(OperatorToken { idx_expr: _, idx_oper }) => {
-                        if OPERATORS[*idx_oper].kind == OperatorKind::OpenParen {
-                            // This is the matching open paranthesis, discard it.
-                            found_matching_paren = true;
-                            self.stack_op.pop().unwrap();
-                            break;
-                        } else {
-                            // This operator token isn't an open paranthesis, pop it to the output queue.
-                            self.pop_move_to_output_queue();
+        match operator.kind {
+            OperatorKind::OpenParen => {
+                self.push_to_op_stack(Token::Operator(oper_token), opt_prev_token);
+            }
+
+            OperatorKind::CloseParen => {
+                let mut found_matching_paren = false;
+                while let Some(ref_token) = self.stack_op.last() {
+                    match ref_token {
+                        // Operator token, figure out if it's an  open paranthesis or not
+                        Token::Operator(OperatorToken { idx_expr: _, idx_oper }) => {
+                            if OPERATORS[*idx_oper].kind == OperatorKind::OpenParen {
+                                // This is the matching open paranthesis, discard it.
+                                found_matching_paren = true;
+                                self.stack_op.pop().unwrap();
+                                break;
+                            } else {
+                                // This operator token isn't an open paranthesis, pop it to the output queue.
+                                self.pop_move_to_output_queue();
+                            }
                         }
+                        // Pop all other tokens to the output queue.
+                        _ => self.pop_move_to_output_queue(),
                     }
-                    // Pop all other tokens to the output queue.
-                    _ => self.pop_move_to_output_queue(),
-                }
-            }
-
-            if found_matching_paren {
-                // If a function preceeds the open paranthesis, increment its parameter count by 1.
-                // E.g "avg(5,6,7)". We've already incremented parameter count when there are more
-                // than one parameter when we handle the parameter separator operator. This is for
-                // the function's first parameter (left to right).
-                if let Some(mut func_token) = self.pop_func_from_stack() {
-                    func_token.params += 1;
-                    self.verify_and_push_func_to_op_stack(func_token)?;
-                }
-            } else {
-                // If we didn't find a matching opening paranthesis, bail.
-                let message = format!("for closing paranthesis at {}", oper_token.idx_expr);
-                trace!("Paranthesis mismatch {}", message);
-                return Err(ExprError { idx_expr: oper_token.idx_expr,
-                                       kind: ExprErrorKind::MismatchParenthesis,
-                                       message });
-            }
-        } else if operator.kind == OperatorKind::ParamSep {
-            // Find the previous open paranthesis.
-            while let Some(ref_token) = self.stack_op.last() {
-                match ref_token {
-                    Token::Operator(
-                        OperatorToken { idx_expr: _,
-                                        idx_oper }) if OPERATORS[*idx_oper].kind == OperatorKind::OpenParen => break,
-                    _ => self.pop_move_to_output_queue(),
-                }
-            }
-
-            // If a token exists at the top of the op stack, it's an open paranthesis (due to the loop above).
-            // This is debug asserted below for paranoia.
-            if self.stack_op.last().is_some() {
-                let paren_token = self.stack_op.pop().unwrap();
-                #[cfg(debug_assertions)]
-                {
-                    let oper_paren = OperatorToken::try_from(paren_token).unwrap();
-                    debug_assert!(OPERATORS[oper_paren.idx_oper].kind == OperatorKind::OpenParen);
                 }
 
-                // If a function preceeds the open paranthesis, increment its parameter count by 1
-                // and re-push the function and the previously popped open paranthesis back to the
-                // op stack. It is important we do -NOT- update "opt_prev_token" while doing this
-                // temporary modification of a token's data in stack.
-                if let Some(mut func_token) = self.pop_func_from_stack() {
-                    func_token.params += 1;
-                    self.stack_op.push(Token::Function(func_token));
-                    self.stack_op.push(paren_token);
+                if found_matching_paren {
+                    // If a function preceeds the open paranthesis, increment its parameter count by 1.
+                    // E.g "avg(5,6,7)". We've already incremented parameter count when there are more
+                    // than one parameter when we handle the parameter separator operator. This is for
+                    // the function's first parameter (left to right).
+                    if let Some(mut func_token) = self.pop_func_from_stack() {
+                        func_token.params += 1;
+                        self.verify_and_push_func_to_op_stack(func_token)?;
+                    }
                 } else {
-                    // No function preceeding open paranthesis for a parameter separator.
-                    // Perhaps user forgot to mention function name. E.g "(32,5)"
-                    let message = format!("for parameter separator '{}' at {}", operator.name, oper_token.idx_oper);
-                    trace!("{:?} {}", ExprErrorKind::MissingFunction, message);
-                    return Err(ExprError { idx_expr: 0,
-                                           kind: ExprErrorKind::MissingFunction,
+                    // If we didn't find a matching opening paranthesis, bail.
+                    let message = format!("for closing paranthesis at {}", oper_token.idx_expr);
+                    trace!("Paranthesis mismatch {}", message);
+                    return Err(ExprError { idx_expr: oper_token.idx_expr,
+                                           kind: ExprErrorKind::MismatchParenthesis,
                                            message });
                 }
-            } else {
-                // No matching open paranthesis for the parameter separator. E.g "32,4".
-                let message = format!("for parameter separator '{}' at {}", operator.name, oper_token.idx_oper);
-                trace!("{:?} {}", ExprErrorKind::MissingParanthesis, message);
-                return Err(ExprError { idx_expr: 0,
-                                       kind: ExprErrorKind::MissingParanthesis,
-                                       message });
             }
-        } else {
-            while let Some(ref_token) = self.stack_op.last() {
-                match ref_token {
-                    Token::Operator(OperatorToken { idx_expr: _, idx_oper }) => {
-                        let token_stack_oper = &OPERATORS[*idx_oper];
-                        debug_assert!(token_stack_oper.kind != OperatorKind::CloseParen);
-                        if token_stack_oper.kind == OperatorKind::OpenParen {
-                            break;
-                        }
 
-                        // Pop operator with higher priority (depending on associativity) to the output queue.
-                        if    token_stack_oper.prec < operator.prec
-                           || operator.assoc == OperatorAssoc::Left && operator.prec == token_stack_oper.prec {
-                            self.pop_move_to_output_queue();
-                        } else {
-                            break;
-                        }
+            OperatorKind::ParamSep => {
+                // Find the previous open paranthesis.
+                while let Some(ref_token) = self.stack_op.last() {
+                    match ref_token {
+                        Token::Operator(
+                            OperatorToken { idx_expr: _,
+                                            idx_oper }) if OPERATORS[*idx_oper].kind == OperatorKind::OpenParen => break,
+                        _ => self.pop_move_to_output_queue(),
                     }
-                    _ => break,
+                }
+
+                // If a token exists at the top of the op stack, it's an open paranthesis (due to the loop above).
+                // This is debug asserted below for paranoia.
+                if self.stack_op.last().is_some() {
+                    let paren_token = self.stack_op.pop().unwrap();
+                    #[cfg(debug_assertions)]
+                    {
+                        let oper_paren = OperatorToken::try_from(paren_token).unwrap();
+                        debug_assert!(OPERATORS[oper_paren.idx_oper].kind == OperatorKind::OpenParen);
+                    }
+
+                    // If a function preceeds the open paranthesis, increment its parameter count by 1
+                    // and re-push the function and the previously popped open paranthesis back to the
+                    // op stack. It is important we do -NOT- update "opt_prev_token" while doing this
+                    // temporary modification of a token's data in stack.
+                    if let Some(mut func_token) = self.pop_func_from_stack() {
+                        func_token.params += 1;
+                        self.stack_op.push(Token::Function(func_token));
+                        self.stack_op.push(paren_token);
+                    } else {
+                        // No function preceeding open paranthesis for a parameter separator.
+                        // Perhaps user forgot to mention function name. E.g "(32,5)"
+                        let message = format!("for parameter separator '{}' at {}", operator.name, oper_token.idx_oper);
+                        trace!("{:?} {}", ExprErrorKind::MissingFunction, message);
+                        return Err(ExprError { idx_expr: 0,
+                                               kind: ExprErrorKind::MissingFunction,
+                                               message });
+                    }
+                } else {
+                    // No matching open paranthesis for the parameter separator. E.g "32,4".
+                    let message = format!("for parameter separator '{}' at {}", operator.name, oper_token.idx_oper);
+                    trace!("{:?} {}", ExprErrorKind::MissingParanthesis, message);
+                    return Err(ExprError { idx_expr: 0,
+                                           kind: ExprErrorKind::MissingParanthesis,
+                                           message });
                 }
             }
 
-            self.push_to_op_stack(Token::Operator(oper_token), opt_prev_token);
+            _ => {
+                while let Some(ref_token) = self.stack_op.last() {
+                    match ref_token {
+                        Token::Operator(OperatorToken { idx_expr: _, idx_oper }) => {
+                            let token_stack_oper = &OPERATORS[*idx_oper];
+                            debug_assert!(token_stack_oper.kind != OperatorKind::CloseParen);
+                            if token_stack_oper.kind == OperatorKind::OpenParen {
+                                break;
+                            }
+
+                            // Pop operator with higher priority (depending on associativity) to the output queue.
+                            if    token_stack_oper.prec < operator.prec
+                               || operator.assoc == OperatorAssoc::Left && operator.prec == token_stack_oper.prec {
+                                self.pop_move_to_output_queue();
+                            } else {
+                                break;
+                            }
+                        }
+                        _ => break,
+                    }
+                }
+
+                self.push_to_op_stack(Token::Operator(oper_token), opt_prev_token);
+            }
         }
 
         Ok(())
     }
 }
 
-fn parse_function(str_expr: &str, functions: &[Function]) -> Option<usize>
-{
+fn parse_function(str_expr: &str, functions: &[Function]) -> Option<usize> {
     debug_assert_eq!(str_expr.trim_start_matches(char::is_whitespace), str_expr);
 
     // All functions must be succeeded by an open paranthesis.
@@ -834,8 +836,7 @@ fn parse_operator(str_expr: &str, operators: &[Operator], opt_prev_token: &mut O
     }
 }
 
-fn verify_prev_token_not_a_function(opt_prev_token: &Option<Token>) -> Result<(), ExprError>
-{
+fn verify_prev_token_not_a_function(opt_prev_token: &Option<Token>) -> Result<(), ExprError> {
     match opt_prev_token {
         Some(Token::Function(FunctionToken { idx_expr, idx_func, params: _ })) => {
             let idx_open_paren = idx_expr + FUNCTIONS[*idx_func].name.len();
