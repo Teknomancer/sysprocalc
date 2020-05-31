@@ -1020,7 +1020,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_parse_number_err() {
+    fn parse_invalid_numbers() {
         // Number prefixes and improper decimals shouldn't be parsed as valid numbers.
         let mut vec_nums = vec!["",
                             "x" ,
@@ -1059,7 +1059,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_number_u64_ok() {
+    fn parse_valid_number_u64() {
         let pair_int_result = vec![
             // 0-9
             ("0", 0  ), ("1", 1  ), ("2", 2  ), ("3", 3  ), ("4", 4  ), ("5", 5  ),
@@ -1139,7 +1139,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_number_f64_ok() {
+    fn parse_valid_number_f64() {
         let pair_float_result = vec![
             ("0.0"      , 0.0f64   ),
             ("0.1"      , 0.1f64   ),
@@ -1178,7 +1178,7 @@ mod tests {
     }
 
     #[test]
-    fn test_operator_table() {
+    fn is_operator_table_valid() {
         let mut open_paren_count = 0;
         let mut close_paren_count = 0;
         let mut var_assign_count = 0;
@@ -1246,7 +1246,7 @@ mod tests {
     }
 
     #[test]
-    fn test_function_table() {
+    fn is_function_table_valid() {
         for (idx, func) in FUNCTIONS.iter().enumerate() {
             // Ensure parameter is within maximum range.
             assert!(!func.params.contains(&MAX_FN_PARAMS),
