@@ -4,7 +4,6 @@ use spceval::{self, Number};
 fn valid_expressions() {
     let expr_results = vec![
         ("2+2", Number{ integer: 4, float: 4.0 }),
-        ("2-2", Number{ integer: 0, float: 0.0 }),
         ("(2+2)", Number{ integer: 4, float: 4.0 }),
         ("1+2*3", Number{ integer: 7, float: 7.0 }),
         ("(1+2)*3", Number{ integer: 9, float: 9.0 }),
@@ -14,6 +13,7 @@ fn valid_expressions() {
         ("0o11 + 1", Number{ integer: 10, float: 10.0 }),
         ("0xf << 1", Number{ integer: 0x1e, float: 30.0 }),
         ("((0x128)) + 0n111", Number{ integer: 303, float: 303.0 }),
+        ("1*4+(0n1+0xf)", Number{ integer: 20, float: 20.0 }),
     ];
 
     for expr_res in expr_results {
