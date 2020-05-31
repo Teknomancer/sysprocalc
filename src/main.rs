@@ -1,5 +1,4 @@
 use spceval::*;
-use atty;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 use std::io::{self, Write};
 use std::collections::VecDeque;
@@ -7,7 +6,7 @@ use std::collections::VecDeque;
 #[cfg(debug_assertions)]
 mod logger;
 
-const BSTR_PROMPT: &[u8; 2] = b"> ";
+const STR_PROMPT: &str = "> ";
 
 fn write_color(stream: &mut StandardStream, s: &str, col: Color, is_intense: bool) -> std::io::Result<()> {
     stream.set_color(ColorSpec::new()
@@ -18,7 +17,7 @@ fn write_color(stream: &mut StandardStream, s: &str, col: Color, is_intense: boo
     Ok(())
 }
 
-fn print_number_result(stream: &mut StandardStream, number: &spceval::Number) {
+fn print_number_result(stream: &mut StandardStream, number: &spceval::Number) -> std::io::Result<()> {
     // Format as hex
     let str_hex_zfill = format!("{:#016x}", number.integer);
     let str_hex = format!("{:#x}", number.integer);
@@ -41,19 +40,19 @@ fn print_number_result(stream: &mut StandardStream, number: &spceval::Number) {
     let str_bin_sfill = queue_bin.iter().collect::<String>();
 
     // Display the formatted strings
-    write_color(stream, "Dec:", Color::Cyan, true);
-    write!(stream, " {:>24} (u64)  {:>26} (f)\n", number.integer, number.float);
+    write_color(stream, "Dec:", Color::Cyan, true)?;
+    writeln!(stream, " {:>24} (u64)  {:>26} (f)", number.integer, number.float)?;
 
-    write_color(stream, "Hex:", Color::Cyan, true);
-    write!(stream, " {:>24} (u64)  {:>26} (n)\n", str_hex_zfill, str_hex);
+    write_color(stream, "Hex:", Color::Cyan, true)?;
+    writeln!(stream, " {:>24} (u64)  {:>26} (n)", str_hex_zfill, str_hex)?;
 
-    write_color(stream, "Oct:", Color::Cyan, true);
-    write!(stream, " {:>24} (u64)  {:>26} (n)\n", str_oct_zfill, str_oct);
+    write_color(stream, "Oct:", Color::Cyan, true)?;
+    writeln!(stream, " {:>24} (u64)  {:>26} (n)", str_oct_zfill, str_oct)?;
 
-    write_color(stream, "Bin:", Color::Cyan, true);
-    write!(stream, " {} ({} bits)\n", str_bin_sfill, len_str_bin);
+    write_color(stream, "Bin:", Color::Cyan, true)?;
+    writeln!(stream, " {} ({} bits)", str_bin_sfill, len_str_bin)?;
 
-    // We want a binary ruler (for every 8 bits) to ease visual counting of bits.
+    // Construct a binary ruler (for every 8 bits) to ease visual counting of bits.
     // There might be a more efficient way to do this with Rust's string/vector
     // manipulation. But I can't be bothered now, just get something working.
     if len_str_bin >= 8 {
@@ -72,7 +71,6 @@ fn print_number_result(stream: &mut StandardStream, number: &spceval::Number) {
         // Ensure if we ever add 128-bit support this code will at least assert.
         debug_assert!(len_str_bin <= 64);
 
-        // Construct the binary ruler
         // First we need to pad binary digits (with space) at the start when the
         // binary digit does not fall within a full chunk of 8-bits (in arr_ruler).
         // For e.g. "11 1111 1111", we need to pad the first 2 digits (plus 1 space)
@@ -91,37 +89,40 @@ fn print_number_result(stream: &mut StandardStream, number: &spceval::Number) {
             }
         }
 
-        // Next iterate over chunks of 8-bits and construct the ruler string.
+        // Iterate over chunks of 8-bits and construct the ruler string.
         for idx in (pad_chars..len_str_bin).rev().step_by(8) {
             str_bin_ruler.push_str(arr_ruler[((idx + 1) >> 3) - 1]);
         }
 
         // Display the binary ruler.
-        println!("     {}", str_bin_ruler);
+        writeln!(stream, "     {}", str_bin_ruler)?;
     }
+
+    Ok(())
 }
 
-fn print_error(stream: &mut StandardStream, err: ExprError) {
-    // Write caret
-    write!(stream, "{:width$}", " ", width = err.idx_expr + BSTR_PROMPT.len());
-    write_color(stream, "^", Color::Red, true);
-    write!(stream, "\n");
+fn print_error(stream: &mut StandardStream, err: ExprError) -> std::io::Result<()> {
+    write!(stream, "{:width$}", " ", width = err.idx_expr + STR_PROMPT.len())?;
+    write_color(stream, "^", Color::Red, true)?;
+    writeln!(stream)?;
 
-    // Write error
-    write!(stream, "{:width$}", " ", width = BSTR_PROMPT.len());
-    write_color(stream, "Error:", Color::Red, true);
-    write!(stream, " {}\n", err);
+    write!(stream, "{:width$}", " ", width = STR_PROMPT.len())?;
+    write_color(stream, "Error:", Color::Red, true)?;
+    writeln!(stream, " {}", err)?;
+    writeln!(stream)?;
+
+    Ok(())
 }
 
 fn main() -> std::io::Result<()> {
     // Initialize the logger only on debug builds
     #[cfg(debug_assertions)]
     if let Err(e) = logger::init() {
-        println!("error initializing logger: {:?}", e)
+        println!("error initializing logger: {:?}", e);
     }
 
     // Detect presence of a terminal to determine automatic color output.
-    // Later allow forcing color option via command-line arguments.
+    // Later allow forcing a color choice via command-line arguments.
     let color_choice = if atty::is(atty::Stream::Stdout) {
         ColorChoice::Auto
     } else {
@@ -129,16 +130,17 @@ fn main() -> std::io::Result<()> {
     };
 
     let mut stdout = StandardStream::stdout(color_choice);
+    let mut stderr = StandardStream::stderr(color_choice);
     loop {
-        // print! macro has buffered behavior. Therefore, manually write and flush stdout so we
+        // write! macro has buffered behavior. Therefore, manually write and flush stdout so we
         // have a prompt on the same line that the user can input text.
-        stdout.write_all(BSTR_PROMPT)?;
+        write_color(&mut stdout, STR_PROMPT, Color::Green, true)?;
         stdout.flush()?;
 
         let mut str_input = String::new();
         if let Err(e) = io::stdin().read_line(&mut str_input) {
-            println!("Error: {}", e);
-            return Err(e)
+            write!(stderr, "{}", e)?;
+            return Err(e);
         }
 
         // Get a slice to the input string after trimming trailing newlines.
@@ -154,30 +156,26 @@ fn main() -> std::io::Result<()> {
         // If there's no expression, don't bother trying to evaluate it.
         // Otherwise, the evaluator will return a missing expression error.
         if !str_expr.is_empty() {
-            // Parse the expression.
             let res_parse = spceval::parse(&str_expr);
             if let Err(e) = res_parse {
-                print_error(&mut stdout, e);
+                print_error(&mut stdout, e)?;
                 continue;
             }
 
-            // Evaluate the parsed expression.
             let mut expr_ctx = res_parse.unwrap();
             let res_eval = spceval::evaluate(&mut expr_ctx);
             if let Err(e) = res_eval {
-                print_error(&mut stdout, e);
+                print_error(&mut stdout, e)?;
                 continue;
             }
 
-            // Handle the result of the expression evaluation.
             let res_expr = res_eval.unwrap();
             match res_expr {
-                spceval::ExprResult::Number(n) => print_number_result(&mut stdout, &n),
+                spceval::ExprResult::Number(n) => print_number_result(&mut stdout, &n)?,
                 spceval::ExprResult::Command(c) => println!("Result: {}", c),
             }
 
-            // An empty line so the output doesn't look too cramped with the next input.
-            println!();
+            writeln!(stdout)?;
         }
     }
 }
