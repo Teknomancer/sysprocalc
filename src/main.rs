@@ -147,7 +147,6 @@ fn parse_and_eval_expr(stream: &mut StandardStream, str_expr: &str) -> std::io::
 
 fn main() -> std::io::Result<()> {
     // Create a logger but keep logging disabled to shut up rustyline's logging.
-    // We'll toggle it on demand before calling into spceval.
     // Need to find a way to disable rustyline's logger at compile time...
     #[cfg(debug_assertions)]
     if let Err(e) = logger::init(log::LevelFilter::Off) {
@@ -186,8 +185,7 @@ fn main() -> std::io::Result<()> {
                 _ => (),
             }
 
-            // Enable trace level logging only while parsing and evaluating expression
-            // calling into spceval.
+            // Enable trace level logging while parsing and evaluating using spceval.
             #[cfg(debug_assertions)]
             log::set_max_level(log::LevelFilter::Trace);
 
