@@ -1,6 +1,7 @@
 use spceval::*;
 use termcolor::*;
 use rustyline::Editor;
+use std::env;
 use std::io::Write;
 use std::collections::VecDeque;
 
@@ -121,7 +122,7 @@ fn print_error(stream: &mut StandardStream, err: ExprError) -> std::io::Result<(
     Ok(())
 }
 
-fn parse_and_eval_expr(stream: &mut StandardStream, str_expr: &str) -> std::io::Result<()> {
+fn parse_and_eval_expr_internal(stream: &mut StandardStream, str_expr: &str) -> std::io::Result<()> {
     let res_parse = spceval::parse(&str_expr);
     if let Err(e) = res_parse {
         print_error(stream, e)?;
@@ -145,6 +146,20 @@ fn parse_and_eval_expr(stream: &mut StandardStream, str_expr: &str) -> std::io::
     Ok(())
 }
 
+#[inline(always)]
+fn parse_and_eval_expr(stream: &mut StandardStream, str_expr: &str) -> std::io::Result<()> {
+    // Enable trace level logging while parsing and evaluating using spceval.
+    #[cfg(debug_assertions)]
+    log::set_max_level(log::LevelFilter::Trace);
+
+    parse_and_eval_expr_internal(stream, str_expr)?;
+
+    // Disable logging.
+    #[cfg(debug_assertions)]
+    log::set_max_level(log::LevelFilter::Off);
+    Ok(())
+}
+
 fn main() -> std::io::Result<()> {
     // Create a logger but keep logging disabled to shut up rustyline's logging.
     // Need to find a way to disable rustyline's logger at compile time...
@@ -153,7 +168,7 @@ fn main() -> std::io::Result<()> {
         println!("{} {:?}", ERR_INIT_LOGGER, e);
     }
 
-    // Detect presence of a terminal to determine automatic color output.
+    // Detect presence of a terminal to determine use of color output.
     // Later allow forcing a color choice via command-line arguments.
     let color_choice = if atty::is(atty::Stream::Stdout) {
         ColorChoice::Auto
@@ -161,39 +176,35 @@ fn main() -> std::io::Result<()> {
         ColorChoice::Never
     };
 
-    let mut rledit = Editor::<()>::new();
     let mut stdout = StandardStream::stdout(color_choice);
-    loop {
-        let readline = rledit.readline(USER_PROMPT);
-        if readline.is_err() {
-            let mut stderr = StandardStream::stderr(color_choice);
-            write_color(&mut stderr, EXITING_APP, Color::Red, true)?;
-            writeln!(&mut stderr, " {:?}", readline.err().unwrap())?;
-            return Ok(())
-        }
+    let args : Vec<String> = env::args().collect();
 
-        let str_input = readline.unwrap();
-        let str_expr = str_input.as_str();
-        rledit.add_history_entry(str_expr);
+    // Command-line mode, evaluate and quit.
+    if args.len() > 1 {
+        parse_and_eval_expr(&mut stdout, args.get(1).unwrap())?;
+        Ok(())
+    } else {
+        // Interactive mode.
+        let mut line_editor = Editor::<()>::new();
+        loop {
+            let res_readline = line_editor.readline(USER_PROMPT);
+            if let Ok(str_input) = res_readline {
+                let str_expr = str_input.as_str();
+                line_editor.add_history_entry(str_expr);
 
-        // If there's no expression, don't bother trying to evaluate it.
-        // Otherwise, the evaluator will return a missing expression error.
-        if !str_expr.is_empty() {
-            // Handle application commands.
-            match str_expr {
-                "q" | "quit" | "exit" => return Ok(()),
-                _ => (),
+                if !str_expr.is_empty() {
+                    match str_expr {
+                        "q" | "quit" | "exit" => return Ok(()),
+                        _ => (),
+                    }
+                    parse_and_eval_expr(&mut stdout, str_expr)?;
+                }
+            } else {
+                let mut stderr = StandardStream::stderr(color_choice);
+                write_color(&mut stderr, EXITING_APP, Color::Red, true)?;
+                writeln!(&mut stderr, " {:?}", res_readline.err().unwrap())?;
+                return Ok(());
             }
-
-            // Enable trace level logging while parsing and evaluating using spceval.
-            #[cfg(debug_assertions)]
-            log::set_max_level(log::LevelFilter::Trace);
-
-            parse_and_eval_expr(&mut stdout, str_expr)?;
-
-            // Disable logging.
-            #[cfg(debug_assertions)]
-            log::set_max_level(log::LevelFilter::Off);
         }
     }
 }
