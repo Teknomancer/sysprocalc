@@ -1,6 +1,7 @@
 use spceval::*;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
-use std::io::{self, Write};
+use rustyline::Editor;
+use std::io::Write;
 use std::collections::VecDeque;
 
 #[cfg(debug_assertions)]
@@ -114,10 +115,36 @@ fn print_error(stream: &mut StandardStream, err: ExprError) -> std::io::Result<(
     Ok(())
 }
 
+fn parse_and_eval_expr(stream: &mut StandardStream, str_expr: &str) -> std::io::Result<()> {
+    let res_parse = spceval::parse(&str_expr);
+    if let Err(e) = res_parse {
+        print_error(stream, e)?;
+        return Ok(());
+    }
+
+    let mut expr_ctx = res_parse.unwrap();
+    let res_eval = spceval::evaluate(&mut expr_ctx);
+    if let Err(e) = res_eval {
+        print_error(stream, e)?;
+        return Ok(());
+    }
+
+    let res_expr = res_eval.unwrap();
+    match res_expr {
+        spceval::ExprResult::Number(n) => print_number_result(stream, &n)?,
+        spceval::ExprResult::Command(c) => println!("Result: {}", c),
+    }
+
+    writeln!(stream)?;
+    Ok(())
+}
+
 fn main() -> std::io::Result<()> {
-    // Initialize the logger only on debug builds
+    // Create a logger but keep logging disabled to shut up rustyline's logging.
+    // We'll toggle it on demand before calling into spceval.
+    // Need to find a way to disable rustyline's logger at compile time...
     #[cfg(debug_assertions)]
-    if let Err(e) = logger::init() {
+    if let Err(e) = logger::init(log::LevelFilter::Off) {
         println!("error initializing logger: {:?}", e);
     }
 
@@ -129,53 +156,40 @@ fn main() -> std::io::Result<()> {
         ColorChoice::Never
     };
 
+    let mut rledit = Editor::<()>::new();
     let mut stdout = StandardStream::stdout(color_choice);
-    let mut stderr = StandardStream::stderr(color_choice);
     loop {
-        // write! macro has buffered behavior. Therefore, manually write and flush stdout so we
-        // have a prompt on the same line that the user can input text.
-        write_color(&mut stdout, STR_PROMPT, Color::Green, true)?;
-        stdout.flush()?;
-
-        let mut str_input = String::new();
-        if let Err(e) = io::stdin().read_line(&mut str_input) {
-            write!(stderr, "{}", e)?;
-            return Err(e);
+        let readline = rledit.readline(STR_PROMPT);
+        if readline.is_err() {
+            let mut stderr = StandardStream::stderr(color_choice);
+            write_color(&mut stderr, "Exiting:", Color::Red, true)?;
+            writeln!(&mut stderr, " {:?}", readline.err().unwrap())?;
+            return Ok(())
         }
 
-        // Get a slice to the input string after trimming trailing newlines.
-        // Needs to work on Windows (CR/LF), Linux (LF) and macOS (CR).
-        let str_expr = str_input.trim_end_matches(&['\r', '\n'][..]);
-
-        // Handle application commands.
-        match str_expr {
-            "q" | "quit" | "exit" => return Ok(()),
-            _ => (),
-        }
+        let str_input = readline.unwrap();
+        let str_expr = str_input.as_str();
+        rledit.add_history_entry(str_expr);
 
         // If there's no expression, don't bother trying to evaluate it.
         // Otherwise, the evaluator will return a missing expression error.
         if !str_expr.is_empty() {
-            let res_parse = spceval::parse(&str_expr);
-            if let Err(e) = res_parse {
-                print_error(&mut stdout, e)?;
-                continue;
+            // Handle application commands.
+            match str_expr {
+                "q" | "quit" | "exit" => return Ok(()),
+                _ => (),
             }
 
-            let mut expr_ctx = res_parse.unwrap();
-            let res_eval = spceval::evaluate(&mut expr_ctx);
-            if let Err(e) = res_eval {
-                print_error(&mut stdout, e)?;
-                continue;
-            }
+            // Enable trace level logging only while parsing and evaluating expression
+            // calling into spceval.
+            #[cfg(debug_assertions)]
+            log::set_max_level(log::LevelFilter::Trace);
 
-            let res_expr = res_eval.unwrap();
-            match res_expr {
-                spceval::ExprResult::Number(n) => print_number_result(&mut stdout, &n)?,
-                spceval::ExprResult::Command(c) => println!("Result: {}", c),
-            }
+            parse_and_eval_expr(&mut stdout, str_expr)?;
 
-            writeln!(stdout)?;
+            // Disable logging.
+            #[cfg(debug_assertions)]
+            log::set_max_level(log::LevelFilter::Off);
         }
     }
 }

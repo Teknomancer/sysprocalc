@@ -13,6 +13,7 @@ fn valid_expressions() {
         ("0n100 + 4", Number{ integer: 8, float: 8.0 }),
         ("0o11 + 1", Number{ integer: 10, float: 10.0 }),
         ("0xf << 1", Number{ integer: 0x1e, float: 30.0 }),
+        ("((0x128)) + 0n111", Number{ integer: 303, float: 303.0 }),
     ];
 
     for expr_res in expr_results {
