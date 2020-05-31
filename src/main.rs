@@ -1,5 +1,5 @@
 use spceval::*;
-use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
+use termcolor::*;
 use rustyline::Editor;
 use std::io::Write;
 use std::collections::VecDeque;
@@ -7,7 +7,15 @@ use std::collections::VecDeque;
 #[cfg(debug_assertions)]
 mod logger;
 
-const STR_PROMPT: &str = "> ";
+const USER_PROMPT: &str = "> ";
+const DEC_RADIX: &str = "Dec:";
+const HEX_RADIX: &str = "Hex:";
+const OCT_RADIX: &str = "Oct:";
+const BIN_RADIX: &str = "Bin:";
+const ERR_INIT_LOGGER: &str = "Error initializing logger:";
+const EXITING_APP: &str = "Exiting:";
+const BITS_PLURAL: &str = "bits";
+const BIT_SINGULAR: &str = "bit";
 
 fn write_color(stream: &mut StandardStream, s: &str, col: Color, is_intense: bool) -> std::io::Result<()> {
     stream.set_color(ColorSpec::new()
@@ -41,17 +49,15 @@ fn print_number_result(stream: &mut StandardStream, number: &spceval::Number) ->
     let str_bin_sfill = queue_bin.iter().collect::<String>();
 
     // Display the formatted strings
-    write_color(stream, "Dec:", Color::Cyan, true)?;
+    write_color(stream, DEC_RADIX, Color::Cyan, true)?;
     writeln!(stream, " {:>24} (u64)  {:>26} (f)", number.integer, number.float)?;
-
-    write_color(stream, "Hex:", Color::Cyan, true)?;
+    write_color(stream, HEX_RADIX, Color::Cyan, true)?;
     writeln!(stream, " {:>24} (u64)  {:>26} (n)", str_hex_zfill, str_hex)?;
-
-    write_color(stream, "Oct:", Color::Cyan, true)?;
+    write_color(stream, OCT_RADIX, Color::Cyan, true)?;
     writeln!(stream, " {:>24} (u64)  {:>26} (n)", str_oct_zfill, str_oct)?;
-
-    write_color(stream, "Bin:", Color::Cyan, true)?;
-    writeln!(stream, " {} ({} bits)", str_bin_sfill, len_str_bin)?;
+    write_color(stream, BIN_RADIX, Color::Cyan, true)?;
+    let str_bits = if len_str_bin > 1 { BITS_PLURAL } else { BIT_SINGULAR };
+    writeln!(stream, " {} ({} {})", str_bin_sfill, len_str_bin, str_bits)?;
 
     // Construct a binary ruler (for every 8 bits) to ease visual counting of bits.
     // There might be a more efficient way to do this with Rust's string/vector
@@ -103,11 +109,11 @@ fn print_number_result(stream: &mut StandardStream, number: &spceval::Number) ->
 }
 
 fn print_error(stream: &mut StandardStream, err: ExprError) -> std::io::Result<()> {
-    write!(stream, "{:width$}", " ", width = err.idx_expr + STR_PROMPT.len())?;
+    write!(stream, "{:width$}", " ", width = err.idx_expr + USER_PROMPT.len())?;
     write_color(stream, "^", Color::Red, true)?;
     writeln!(stream)?;
 
-    write!(stream, "{:width$}", " ", width = STR_PROMPT.len())?;
+    write!(stream, "{:width$}", " ", width = USER_PROMPT.len())?;
     write_color(stream, "Error:", Color::Red, true)?;
     writeln!(stream, " {}", err)?;
     writeln!(stream)?;
@@ -145,7 +151,7 @@ fn main() -> std::io::Result<()> {
     // Need to find a way to disable rustyline's logger at compile time...
     #[cfg(debug_assertions)]
     if let Err(e) = logger::init(log::LevelFilter::Off) {
-        println!("error initializing logger: {:?}", e);
+        println!("{} {:?}", ERR_INIT_LOGGER, e);
     }
 
     // Detect presence of a terminal to determine automatic color output.
@@ -159,10 +165,10 @@ fn main() -> std::io::Result<()> {
     let mut rledit = Editor::<()>::new();
     let mut stdout = StandardStream::stdout(color_choice);
     loop {
-        let readline = rledit.readline(STR_PROMPT);
+        let readline = rledit.readline(USER_PROMPT);
         if readline.is_err() {
             let mut stderr = StandardStream::stderr(color_choice);
-            write_color(&mut stderr, "Exiting:", Color::Red, true)?;
+            write_color(&mut stderr, EXITING_APP, Color::Red, true)?;
             writeln!(&mut stderr, " {:?}", readline.err().unwrap())?;
             return Ok(())
         }
