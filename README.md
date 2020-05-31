@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/licenses/MIT)
   
 # sysprocalc
-System Programmer's Calculator Expression Evaluator - is an interactive, command-line expression evaluator.
+sysprocalc (system programmer's calculator) is an interactive, command-line expression evaluator.
 
 This is a my old C project [nopf](https://github.com/Teknomancer/nopf) re-written using Rust. This is my first Rust project, so I'm still learning to implement idiomatic Rust concepts. This was started mainly to learn Rust but I'm hoping to turn into a more full-fledged application in the near future. Basic expression parsing and evaluation is already working and has a decent test coverage with continuous integration.
 
