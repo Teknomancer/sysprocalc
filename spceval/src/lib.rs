@@ -886,7 +886,7 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
             len_token -= 1;
             continue;
         }
-        let str_subexpr = str_expr.get(idx..).unwrap();
+        let str_subexpr = &str_expr[idx..];
         if let (Some(number), len_str) = parse_number(str_subexpr) {
             // If the previous token was a function, we have an invalid expression.
             // E.g "avg 32.5"; functions must be followed by open paranthesis only.
@@ -1253,7 +1253,7 @@ mod tests {
                     "Function '{}' at {} exceeds maximum parameters of {}. Use/alter the maximum.",
                     func.name, idx, MAX_FN_PARAMS);
 
-            // Ensure function names cannot begin a '0' or '_' to avoid parsing conflicts
+            // Ensure function names cannot begin a digit or '_' to avoid parsing conflicts
             // with a number prefix or a variable name.
             assert!(!func.name.chars().count() > 0);
             assert!(!func.name.chars().next().unwrap().is_digit(10));
