@@ -3,11 +3,9 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/licenses/MIT)
   
 # sysprocalc
-System Programmer's Calculator Expression Evaluator
+System Programmer's Calculator Expression Evaluator - is an interactive, command-line expression evaluator.
 
-My old C project [nopf](https://github.com/Teknomancer/nopf) re-written using Rust.
-
-**This is my first time using Rust, don't expect 100% idiomatic Rust. This is mainly to learn Rust while hopefully getting something useful out of it. Work-in-progress. Not fit for general use.**
+This is a my old C project [nopf](https://github.com/Teknomancer/nopf) re-written using Rust. This is my first time using Rust, don't expect 100% idiomatic Rust. This is mainly to learn Rust while hopefully getting something useful out of it.
 
 Build and run using:
 ```
@@ -32,4 +30,3 @@ at your option.
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
 dual licensed as above, without any additional terms or conditions.
-
