@@ -5,14 +5,16 @@
 # sysprocalc
 System Programmer's Calculator Expression Evaluator - is an interactive, command-line expression evaluator.
 
-This is a my old C project [nopf](https://github.com/Teknomancer/nopf) re-written using Rust. This is my first time using Rust, don't expect 100% idiomatic Rust. This is mainly to learn Rust while hopefully getting something useful out of it.
+This is a my old C project [nopf](https://github.com/Teknomancer/nopf) re-written using Rust. This is my first Rust project, so I'm still learning to implement idiomatic Rust concepts. This was started mainly to learn Rust but I'm hoping to turn into a more full-fledged application in the near future. Basic expression parsing and evaluation is already working and has a decent test coverage with continuous integration.
 
-Build and run using:
+The project is split into a main executable `sysprocalc` and the core parser/evaluator library (`spceval`).
+
+Build, test and run using:
 ```
 cargo build && cargo clippy && cargo test --all && cargo run
 ```
 
-The `--all` is required, otherwise only the main executable's tests will run and not the tests for the `spceval` library.
+The `--all` is required to make sure tests in the library are also run and not just the executable's tests.
 
 ## License
 
