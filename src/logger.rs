@@ -20,11 +20,10 @@ impl log::Log for Logger {
 
 static LOGGER: Logger = Logger;
 
-pub fn init() -> Result<(), SetLoggerError> {
+pub fn init(level: LevelFilter) -> Result<(), SetLoggerError> {
     // Levels are in the following order: Off, Error, Warn, Info, Debug, Trace.
     // Enabling a level enables levels prior to it.
-    // We set the maximum level to Trace below
     log::set_logger(&LOGGER)
-        .map(|()| log::set_max_level(LevelFilter::Trace))
+        .map(|()| log::set_max_level(level))
 }
 
