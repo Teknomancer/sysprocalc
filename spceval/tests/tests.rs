@@ -69,22 +69,26 @@ fn invalid_exprs() {
         ("--", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
         (",5,", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
         ("0,", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
-        ("(),", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
+        ("(),", ExprError { idx_expr: 0, kind: MissingParenthesis, message: "".to_string() }),
         ("(0),", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
         ("5+()", ExprError { idx_expr: 0, kind: InvalidParamCount, message: "".to_string() }),
         ("-()", ExprError { idx_expr: 0, kind: InvalidParamCount, message: "".to_string() }),
         ("+()", ExprError { idx_expr: 0, kind: InvalidParamCount, message: "".to_string() }),
         (",(),", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
-        ("(),()", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
+        ("(),()", ExprError { idx_expr: 0, kind: MissingParenthesis, message: "".to_string() }),
         ("(1),()", ExprError { idx_expr: 0, kind: MissingParenthesis, message: "".to_string() }),
         ("(1),(2)", ExprError { idx_expr: 0, kind: MissingParenthesis, message: "".to_string() }),
         ("(1),(2),", ExprError { idx_expr: 0, kind: MissingParenthesis, message: "".to_string() }),
         ("(1)(2),", ExprError { idx_expr: 0, kind: MissingOperatorOrFunction, message: "".to_string() }),
         ("5(2),", ExprError { idx_expr: 0, kind: MissingOperatorOrFunction, message: "".to_string() }),
         ("5,(2),", ExprError { idx_expr: 0, kind: MissingParenthesis, message: "".to_string() }),
-        // The below expressions need fixing in the parser/evaluation phase in the library!
-        // They are parsing/evaluation bugs!
-        //("(1).5", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
+        ("(<<2", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
+        ("(1)2", ExprError { idx_expr: 0, kind: MissingOperatorOrFunction, message: "".to_string() }),
+        ("(1).5", ExprError { idx_expr: 0, kind: MissingOperatorOrFunction, message: "".to_string() }),
+        ("2 << << 4", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
+        ("2<<<<4", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
+        ("2+ + +4", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
+        ("2+++4", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
     ];
     for expr_res in expr_results {
         let res_parse = spceval::parse(&expr_res.0);

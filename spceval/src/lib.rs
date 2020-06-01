@@ -407,7 +407,7 @@ struct FunctionToken {
 impl fmt::Debug for FunctionToken {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if self.idx_func < FUNCTIONS.len() {
-            write!(f, "'{}'", FUNCTIONS[self.idx_func].name)
+            write!(f, "'{}'", &FUNCTIONS[self.idx_func].name)
         } else {
             write!(f, "Invalid Index {}", self.idx_func)
         }
@@ -587,8 +587,6 @@ impl ExprCtx {
                                                         idx_oper })
                                 if OPERATORS[*idx_oper].kind == OperatorKind::OpenParen => {
                             found_open_paren = true;
-                            // Discard open parenthesis from the stack.
-                            self.stack_op.pop().unwrap();
                             break;
                         }
                         // Pop any other tokens to the output queue.
@@ -597,6 +595,12 @@ impl ExprCtx {
                 }
 
                 if found_open_paren {
+                    // Discard open parenthesis from the stack.
+                    self.stack_op.pop().unwrap();
+
+                    // Ensure close parenthesis is recorded as the previous token.
+                    *opt_prev_token = Some(Token::Operator(oper_token));
+
                     // If a function preceeds the open parenthesis, increment its parameter count by 1.
                     // E.g "avg(5,6,7)". We've already incremented parameter count when there are more
                     // than one parameter when we handle the parameter separator operator. This is for
@@ -645,7 +649,7 @@ impl ExprCtx {
                         self.stack_op.push(paren_token);
                     } else {
                         // No function preceeding open parenthesis for a parameter separator. E.g "(32,5)"
-                        let message = format!("for parameter separator '{}' at {}", operator.name, oper_token.idx_oper);
+                        let message = format!("for parameter separator '{}' at {}", operator.name, oper_token.idx_expr);
                         trace!("{:?} {}", ExprErrorKind::MissingFunction, message);
                         return Err(ExprError { idx_expr: 0,
                                                kind: ExprErrorKind::MissingFunction,
@@ -653,7 +657,7 @@ impl ExprCtx {
                     }
                 } else {
                     // No matching open parenthesis for the parameter separator. E.g "32,4".
-                    let message = format!("for parameter separator '{}' at {}", operator.name, oper_token.idx_oper);
+                    let message = format!("for parameter separator '{}' at {}", operator.name, oper_token.idx_expr);
                     trace!("{:?} {}", ExprErrorKind::MissingParenthesis, message);
                     return Err(ExprError { idx_expr: 0,
                                            kind: ExprErrorKind::MissingParenthesis,
@@ -708,7 +712,7 @@ fn parse_function(str_expr: &str, functions: &[Function]) -> Option<usize> {
     }
 
     if is_found {
-        trace!("found {}", functions[idx_found].help);
+        trace!("found {}", &functions[idx_found].help);
         Some(idx_found)
     } else {
         None
@@ -817,19 +821,19 @@ fn parse_operator(str_expr: &str, operators: &[Operator], opt_prev_token: &mut O
            && (!is_found
                 || op.name.len() > operators[idx_found].name.len()) {
             // Is this a left associative operator, ensure a previous token exists and that
-            // it's not an operator (other than close parenthesis). Since the close parenthesis
-            // is never added to the op stack, it's excluded here but asserted for paranoia.
+            // it's not an operator (other than close parenthesis), otherwise skip finding
+            // it as a valid operator.
             if op.assoc == OperatorAssoc::Left {
                 match opt_prev_token {
-                    // E.g. "-4", this also handles ",5" by not finding it as a valid operator.
+                    // E.g. "-4" or ",5".
                     None => continue,
-                    // E.g. "(-4", "=-4" or ",-4)" when previous token was an operator.
                     Some(Token::Operator(OperatorToken { idx_expr: _, idx_oper })) => {
                         debug_assert!(*idx_oper < operators.len());
-                        debug_assert!(operators[*idx_oper].kind != OperatorKind::CloseParen);
-                        // E.g: "5++ * 4", we should parse "*" rather than skip it.
-                        // If previous operator is left associative unary, don't skip.
-                        if operators[*idx_oper].assoc != OperatorAssoc::Left || operators[*idx_oper].params != 1 {
+                        // E.g. ")-5" when parsing "-" can be valid. So don't skip finding "-".
+                        // E.g. "(<<7" when parsing "<<" is invalid, so skip finding it.
+                        if operators[*idx_oper].kind != OperatorKind::CloseParen
+                            && (operators[*idx_oper].assoc != OperatorAssoc::Left
+                                 || operators[*idx_oper].params != 1) {
                             continue;
                         }
                     }
@@ -866,7 +870,7 @@ fn parse_operator(str_expr: &str, operators: &[Operator], opt_prev_token: &mut O
     }
 }
 
-fn verify_prev_token_not_a_function(opt_prev_token: &Option<Token>) -> Result<(), ExprError> {
+fn verify_prev_token_not_function(opt_prev_token: &Option<Token>) -> Result<(), ExprError> {
     match opt_prev_token {
         Some(Token::Function(FunctionToken { idx_expr, idx_func, params: _ })) => {
             let idx_open_paren = idx_expr + FUNCTIONS[*idx_func].name.len();
@@ -879,6 +883,22 @@ fn verify_prev_token_not_a_function(opt_prev_token: &Option<Token>) -> Result<()
         _ => Ok(())
     }
 }
+
+fn verify_prev_token_not_close_paren(opt_prev_token: &Option<Token>) -> Result<(), ExprError> {
+    match opt_prev_token {
+        Some(Token::Operator(
+            OperatorToken { idx_expr, idx_oper })) if OPERATORS[*idx_oper].kind == OperatorKind::CloseParen => {
+            let idx_oper_or_func = idx_expr + OPERATORS[*idx_oper].name.len();
+            let message = format!("at {}", idx_oper_or_func);
+            trace!("{:?} {}", ExprErrorKind::MissingOperatorOrFunction, message);
+            Err(ExprError { idx_expr: idx_oper_or_func,
+                            kind: ExprErrorKind::MissingOperatorOrFunction,
+                            message })
+        }
+        _ => Ok(())
+    }
+}
+
 
 pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
     // We iterate by characters here because we want to know the index of every token.
@@ -901,9 +921,10 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
         }
         let str_subexpr = &str_expr[idx..];
         if let (Some(number), len_str) = parse_number(str_subexpr) {
-            // If the previous token was a function, we have an invalid expression.
-            // E.g "avg 32.5"; functions must be followed by open parenthesis only.
-            verify_prev_token_not_a_function(&opt_prev_token)?;
+            // If the previous token was a function or a close parenthesis, it's invalid.
+            // E.g "avg 32.5" or "(2)3" or "(1).5".
+            verify_prev_token_not_function(&opt_prev_token)?;
+            verify_prev_token_not_close_paren(&opt_prev_token)?;
             trace!("number  : {} (0x{:x})", number.integer, number.integer);
             len_token = len_str;
             let num_token = NumberToken { idx_expr: idx, number };
@@ -934,7 +955,7 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
             debug_assert!(idx_func < FUNCTIONS.len());
             // If the previous token was a function, we have an invalid expression.
             // E.g "avg avg"; functions must be followed by open parenthesis only.
-            verify_prev_token_not_a_function(&opt_prev_token)?;
+            verify_prev_token_not_function(&opt_prev_token)?;
             trace!("function: {}", &FUNCTIONS[idx_func].name);
             len_token = FUNCTIONS[idx_func].name.len();
             let func_token = FunctionToken { idx_expr: idx, idx_func, params: 0 };
@@ -950,7 +971,7 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
 
     // If the last parsed token was a function, that's an invalid expression.
     // E.g "23 + avg".
-    verify_prev_token_not_a_function(&opt_prev_token)?;
+    verify_prev_token_not_function(&opt_prev_token)?;
 
     if expr_ctx.stack_op.is_empty() && expr_ctx.queue_output.is_empty() {
         trace!("'{:?}", ExprErrorKind::EmptyExpr);
@@ -1058,11 +1079,11 @@ mod tests {
         ];
         // Make sure we never parse operators as valid numbers.
         for i in 0..OPERATORS.len() {
-            vec_nums.push(OPERATORS[i].name);
+            vec_nums.push(&OPERATORS[i].name);
         }
         // Make sure we never parse functions as valid numbers.
         for i in 0..FUNCTIONS.len() {
-            vec_nums.push(FUNCTIONS[i].name);
+            vec_nums.push(&FUNCTIONS[i].name);
         }
         for num_res in vec_nums {
             let (number, len_str) = parse_number(num_res);
