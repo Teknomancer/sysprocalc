@@ -30,11 +30,11 @@ fn valid_exprs() {
 
     for expr_res in expr_results {
         let res_parse = spceval::parse(&expr_res.0);
-        assert!(res_parse.is_ok());
+        assert!(res_parse.is_ok(), "{}", expr_res.0);
 
         let mut expr_ctx = res_parse.unwrap();
         let res_eval = spceval::evaluate(&mut expr_ctx);
-        assert!(res_eval.is_ok());
+        assert!(res_eval.is_ok(), "{}", expr_res.0);
 
         let res_expr = res_eval.unwrap();
         match res_expr {
@@ -88,10 +88,10 @@ fn invalid_exprs() {
     ];
     for expr_res in expr_results {
         let res_parse = spceval::parse(&expr_res.0);
-        if (res_parse.is_ok()) {
+        if res_parse.is_ok() {
             let mut expr_ctx = res_parse.unwrap();
             let res_eval = spceval::evaluate(&mut expr_ctx);
-            assert!(res_eval.is_err());
+            assert!(res_eval.is_err(), "{}", expr_res.0);
             assert_eq!(expr_res.1.kind, res_eval.err().unwrap().kind, "{}", expr_res.0);
         } else {
             assert_eq!(expr_res.1.kind, res_parse.err().unwrap().kind, "{}", expr_res.0);
