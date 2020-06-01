@@ -85,7 +85,7 @@ pub enum ExprErrorKind {
     InvalidParamType,
     MismatchParenthesis,
     MissingFunction,
-    MissingParanthesis,
+    MissingParenthesis,
     FatalInternal,
 }
 
@@ -109,9 +109,9 @@ impl fmt::Display for ExprError {
             ExprErrorKind::InvalidExpr => "invalid character",
             ExprErrorKind::InvalidParamCount => "incorrect number of parameters",
             ExprErrorKind::InvalidParamType => "invalid parameter type",
-            ExprErrorKind::MismatchParenthesis => "paranthesis mismatch",
+            ExprErrorKind::MismatchParenthesis => "parenthesis mismatch",
             ExprErrorKind::MissingFunction => "function missing",
-            ExprErrorKind::MissingParanthesis => "paranthesis missing",
+            ExprErrorKind::MissingParenthesis => "parenthesis missing",
             ExprErrorKind::FatalInternal => "fatal internal error",
         };
         write!(f, "{} {}", str_errkind, self.message)
@@ -500,14 +500,14 @@ impl ExprCtx {
 
     fn pop_move_all_to_output_queue(&mut self) -> Result<(), ExprError> {
         while let Some(ref_token) = self.stack_op.last() {
-            // If the stack has an open paranthesis, we have a paranthesis mismatch.
+            // If the stack has an open parenthesis, we have a parenthesis mismatch.
             match ref_token {
                 Token::Operator(OperatorToken { idx_expr, idx_oper }) => {
                     debug_assert!(*idx_oper < OPERATORS.len());
                     let operator = &OPERATORS[*idx_oper];
                     if operator.kind == OperatorKind::OpenParen {
-                        let message = format!("for opening paranthesis at {}", *idx_expr);
-                        trace!("Paranthesis mismatch {}", message);
+                        let message = format!("for opening parenthesis at {}", *idx_expr);
+                        trace!("Parenthesis mismatch {}", message);
                         return Err(ExprError { idx_expr: *idx_expr,
                                                kind: ExprErrorKind::MismatchParenthesis,
                                                message });
@@ -522,7 +522,7 @@ impl ExprCtx {
     }
 
     fn pop_func_from_stack(&mut self) -> Option<FunctionToken> {
-        // If a function preceeds the open paranthesis, pop it to the output queue.
+        // If a function preceeds the open parenthesis, pop it to the output queue.
         if let Some(Token::Function(
                     FunctionToken { idx_expr: _,
                                     idx_func: _,
@@ -565,15 +565,15 @@ impl ExprCtx {
                 let mut found_open_paren = false;
                 while let Some(ref_token) = self.stack_op.last() {
                     match ref_token {
-                        // Operator token, figure out if it's an  open paranthesis or not
+                        // Operator token, figure out if it's an  open parenthesis or not
                         Token::Operator(OperatorToken { idx_expr: _, idx_oper }) => {
                             if OPERATORS[*idx_oper].kind == OperatorKind::OpenParen {
-                                // This is the matching open paranthesis, discard it.
+                                // This is the matching open parenthesis, discard it.
                                 found_open_paren = true;
                                 self.stack_op.pop().unwrap();
                                 break;
                             } else {
-                                // This operator token isn't an open paranthesis, pop it to the output queue.
+                                // This operator token isn't an open parenthesis, pop it to the output queue.
                                 self.pop_move_to_output_queue();
                             }
                         }
@@ -583,7 +583,7 @@ impl ExprCtx {
                 }
 
                 if found_open_paren {
-                    // If a function preceeds the open paranthesis, increment its parameter count by 1.
+                    // If a function preceeds the open parenthesis, increment its parameter count by 1.
                     // E.g "avg(5,6,7)". We've already incremented parameter count when there are more
                     // than one parameter when we handle the parameter separator operator. This is for
                     // the function's first parameter (left to right).
@@ -592,9 +592,9 @@ impl ExprCtx {
                         self.verify_and_push_func_to_op_stack(func_token)?;
                     }
                 } else {
-                    // If we didn't find a matching opening paranthesis, bail.
-                    let message = format!("for closing paranthesis at {}", oper_token.idx_expr);
-                    trace!("Paranthesis mismatch {}", message);
+                    // If we didn't find a matching opening parenthesis, bail.
+                    let message = format!("for closing parenthesis at {}", oper_token.idx_expr);
+                    trace!("Parenthesis mismatch {}", message);
                     return Err(ExprError { idx_expr: oper_token.idx_expr,
                                            kind: ExprErrorKind::MismatchParenthesis,
                                            message });
@@ -602,7 +602,7 @@ impl ExprCtx {
             }
 
             OperatorKind::ParamSep => {
-                // Find the previous open paranthesis.
+                // Find the previous open parenthesis.
                 while let Some(ref_token) = self.stack_op.last() {
                     match ref_token {
                         Token::Operator(
@@ -612,7 +612,7 @@ impl ExprCtx {
                     }
                 }
 
-                // If a token exists at the top of the op stack, it's an open paranthesis (due to the loop above).
+                // If a token exists at the top of the op stack, it's an open parenthesis (due to the loop above).
                 // This is debug asserted below for paranoia.
                 if self.stack_op.last().is_some() {
                     let paren_token = self.stack_op.pop().unwrap();
@@ -622,8 +622,8 @@ impl ExprCtx {
                         debug_assert!(OPERATORS[oper_paren.idx_oper].kind == OperatorKind::OpenParen);
                     }
 
-                    // If a function preceeds the open paranthesis, increment its parameter count by 1
-                    // and re-push the function and the previously popped open paranthesis back to the
+                    // If a function preceeds the open parenthesis, increment its parameter count by 1
+                    // and re-push the function and the previously popped open parenthesis back to the
                     // op stack. It is important we do -NOT- update "opt_prev_token" while doing this
                     // temporary modification of a token's data in stack.
                     if let Some(mut func_token) = self.pop_func_from_stack() {
@@ -631,7 +631,7 @@ impl ExprCtx {
                         self.stack_op.push(Token::Function(func_token));
                         self.stack_op.push(paren_token);
                     } else {
-                        // No function preceeding open paranthesis for a parameter separator. E.g "(32,5)"
+                        // No function preceeding open parenthesis for a parameter separator. E.g "(32,5)"
                         let message = format!("for parameter separator '{}' at {}", operator.name, oper_token.idx_oper);
                         trace!("{:?} {}", ExprErrorKind::MissingFunction, message);
                         return Err(ExprError { idx_expr: 0,
@@ -639,11 +639,11 @@ impl ExprCtx {
                                                message });
                     }
                 } else {
-                    // No matching open paranthesis for the parameter separator. E.g "32,4".
+                    // No matching open parenthesis for the parameter separator. E.g "32,4".
                     let message = format!("for parameter separator '{}' at {}", operator.name, oper_token.idx_oper);
-                    trace!("{:?} {}", ExprErrorKind::MissingParanthesis, message);
+                    trace!("{:?} {}", ExprErrorKind::MissingParenthesis, message);
                     return Err(ExprError { idx_expr: 0,
-                                           kind: ExprErrorKind::MissingParanthesis,
+                                           kind: ExprErrorKind::MissingParenthesis,
                                            message });
                 }
             }
@@ -681,8 +681,8 @@ impl ExprCtx {
 fn parse_function(str_expr: &str, functions: &[Function]) -> Option<usize> {
     debug_assert_eq!(str_expr.trim_start_matches(char::is_whitespace), str_expr);
 
-    // All functions must be succeeded by an open paranthesis.
-    // Collect function name till we find an open paranthesis and then check if that function
+    // All functions must be succeeded by an open parenthesis.
+    // Collect function name till we find an open parenthesis and then check if that function
     // exists in the function table.
     let mut is_found = false;
     let mut idx_found = 0;
@@ -804,7 +804,7 @@ fn parse_operator(str_expr: &str, operators: &[Operator], opt_prev_token: &mut O
            && (!is_found
                 || op.name.len() > operators[idx_found].name.len()) {
             // Is this a left associative operator, ensure a previous token exists and that
-            // it's not an operator (other than close paranthesis). Since the close paranthesis
+            // it's not an operator (other than close parenthesis). Since the close parenthesis
             // is never added to the op stack, it's excluded here but asserted for paranoia.
             if op.assoc == OperatorAssoc::Left {
                 match opt_prev_token {
@@ -858,9 +858,9 @@ fn verify_prev_token_not_a_function(opt_prev_token: &Option<Token>) -> Result<()
         Some(Token::Function(FunctionToken { idx_expr, idx_func, params: _ })) => {
             let idx_open_paren = idx_expr + FUNCTIONS[*idx_func].name.len();
             let message = format!("at {} for function '{}'", idx_open_paren, &FUNCTIONS[*idx_func].name);
-            trace!("{:?} {}", ExprErrorKind::MissingParanthesis, message);
+            trace!("{:?} {}", ExprErrorKind::MissingParenthesis, message);
             Err(ExprError { idx_expr: idx_open_paren,
-                            kind: ExprErrorKind::MissingParanthesis,
+                            kind: ExprErrorKind::MissingParenthesis,
                             message })
         }
         _ => Ok(())
@@ -889,7 +889,7 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
         let str_subexpr = &str_expr[idx..];
         if let (Some(number), len_str) = parse_number(str_subexpr) {
             // If the previous token was a function, we have an invalid expression.
-            // E.g "avg 32.5"; functions must be followed by open paranthesis only.
+            // E.g "avg 32.5"; functions must be followed by open parenthesis only.
             verify_prev_token_not_a_function(&opt_prev_token)?;
             trace!("number  : {} (0x{:x})", number.integer, number.integer);
             len_token = len_str;
@@ -897,19 +897,19 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
             expr_ctx.push_to_output_queue(Token::Number(num_token), &mut opt_prev_token);
         } else if let Some(idx_oper) = parse_operator(str_subexpr, &OPERATORS, &mut opt_prev_token) {
             debug_assert!(idx_oper < OPERATORS.len());
-            // If the previous token was a function, this must be an open paranthesis.
+            // If the previous token was a function, this must be an open parenthesis.
             // E.g "avg +"; otherwise this is an invalid expression.
             if let Some(Token::Function(FunctionToken { idx_expr: idx_expr_func, idx_func, params: _ })) = opt_prev_token {
-                // Calculate where the open paranthesis must appear, we don't use "idx" because
+                // Calculate where the open parenthesis must appear, we don't use "idx" because
                 // it includes all the whitespace after the function name. We want to report the
                 // character immediately after the name of the function.
                 // E.g we want position X in "avgX Y+" rather than position Y.
                 let idx_open_paren = idx_expr_func + FUNCTIONS[idx_func].name.len();
                 if OPERATORS[idx_oper].kind != OperatorKind::OpenParen {
                     let message = format!("at {} for function '{}'", idx_open_paren, &FUNCTIONS[idx_func].name);
-                    trace!("{:?} {}", ExprErrorKind::MissingParanthesis, message);
+                    trace!("{:?} {}", ExprErrorKind::MissingParenthesis, message);
                     return Err(ExprError { idx_expr: idx_open_paren,
-                                           kind: ExprErrorKind::MissingParanthesis,
+                                           kind: ExprErrorKind::MissingParenthesis,
                                            message });
                 }
             }
@@ -920,7 +920,7 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
         } else if let Some(idx_func) = parse_function(str_subexpr, &FUNCTIONS) {
             debug_assert!(idx_func < FUNCTIONS.len());
             // If the previous token was a function, we have an invalid expression.
-            // E.g "avg avg"; functions must be followed by open paranthesis only.
+            // E.g "avg avg"; functions must be followed by open parenthesis only.
             verify_prev_token_not_a_function(&opt_prev_token)?;
             trace!("function: {}", &FUNCTIONS[idx_func].name);
             len_token = FUNCTIONS[idx_func].name.len();
@@ -1192,16 +1192,16 @@ mod tests {
             assert!(oper.kind != OperatorKind::Regular || oper.params > 0,
                     "Regular operator '{}' at {} cannot have 0 parameters.", oper.name, idx);
 
-            // Ensure open and close paranthesis operators do not have left or right associativity.
+            // Ensure open and close parenthesis operators do not have left or right associativity.
             match oper.kind {
                 OperatorKind::OpenParen => {
                     assert!(oper.assoc == OperatorAssoc::Nil,
-                            "Open paranthesis operator '{}' at {} must have no associativity.", oper.name, idx);
+                            "Open parenthesis operator '{}' at {} must have no associativity.", oper.name, idx);
                     open_paren_count += 1;
                 }
                 OperatorKind::CloseParen => {
                     assert!(oper.assoc == OperatorAssoc::Nil,
-                            "Close paranthesis operator '{}' at {} must have no associativity.", oper.name, idx);
+                            "Close parenthesis operator '{}' at {} must have no associativity.", oper.name, idx);
                     close_paren_count += 1;
                 }
                 OperatorKind::VarAssign => var_assign_count += 1,
