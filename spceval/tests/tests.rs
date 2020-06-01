@@ -30,6 +30,8 @@ fn valid_exprs() {
         ("((0x128)) + 0n111", Number { integer: 303, float: 303.0 }),
         ("1*4+(0n1+0xf)", Number { integer: 20, float: 20.0 }),
         (".5*0", Number { integer: 0, float: 0.0 }),
+        ("5/(5/(5/(5)))", Number { integer: 1, float: 1.0 }),
+        ("212 + (1 * (3 - (4 * 5)))", Number { integer: 195, float: 195.0 }),
     ];
 
     for expr_res in expr_results {
