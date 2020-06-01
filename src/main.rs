@@ -8,12 +8,14 @@ use std::collections::VecDeque;
 #[cfg(debug_assertions)]
 mod logger;
 
+#[cfg(debug_assertions)]
+const ERR_INIT_LOGGER: &str = "Error initializing logger:";
+
 const USER_PROMPT: &str = "> ";
 const DEC_RADIX: &str = "Dec:";
 const HEX_RADIX: &str = "Hex:";
 const OCT_RADIX: &str = "Oct:";
 const BIN_RADIX: &str = "Bin:";
-const ERR_INIT_LOGGER: &str = "Error initializing logger:";
 const EXITING_APP: &str = "Exiting:";
 const BITS_PLURAL: &str = "bits";
 const BIT_SINGULAR: &str = "bit";
