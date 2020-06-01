@@ -704,8 +704,8 @@ impl ExprCtx {
                             }
 
                             // Pop operator with higher priority (depending on associativity) to the output queue.
-                            if    token_stack_oper.prec < oper.prec
-                               || oper.assoc == OperAssoc::Left && oper.prec == token_stack_oper.prec {
+                            if token_stack_oper.prec < oper.prec
+                                || (oper.assoc == OperAssoc::Left && oper.prec == token_stack_oper.prec) {
                                 self.pop_move_to_output_queue();
                             } else {
                                 break;
