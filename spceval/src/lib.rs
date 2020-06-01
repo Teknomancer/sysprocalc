@@ -85,6 +85,7 @@ pub enum ExprErrorKind {
     InvalidParamType,
     MismatchParenthesis,
     MissingFunction,
+    MissingOperand,
     MissingOperatorOrFunction,
     MissingParenthesis,
     FatalInternal,
@@ -112,6 +113,7 @@ impl fmt::Display for ExprError {
             ExprErrorKind::InvalidParamType => "invalid parameter type",
             ExprErrorKind::MismatchParenthesis => "parenthesis mismatch",
             ExprErrorKind::MissingFunction => "function missing",
+            ExprErrorKind::MissingOperand => "operand missing",
             ExprErrorKind::MissingOperatorOrFunction => "operator or function missing",
             ExprErrorKind::MissingParenthesis => "parenthesis missing",
             ExprErrorKind::FatalInternal => "fatal internal error",
@@ -666,6 +668,32 @@ impl ExprCtx {
             }
 
             _ => {
+                // Validate left associative operator.
+                // NOTE: We could squeeze this into parse_operator() but this gives us better error messages
+                // in some cases (see integration test).
+                if operator.assoc == OperatorAssoc::Left {
+                    // Assume we've parsed left-associative operator "<<".
+                    // Rules for previous token are:
+                    //   - Must exist. E.g. "<< 2" is invalid but we've already handled this in parse_oeprator.
+                    //     We simply debug asserted it below for parnoia.
+                    //   - Must not be an operator (but close parenthesis is allowed)
+                    //     E.g. "/ << 2" and "( << 2" are invalid but ") << 2" can be valid.
+                    //   - Must not be a right associative operator.
+                    debug_assert!(opt_prev_token.is_some());
+                    match opt_prev_token {
+                        Some(Token::Operator(
+                            OperatorToken { idx_expr: _,
+                                            idx_oper })) if OPERATORS[*idx_oper].kind != OperatorKind::CloseParen => {
+                            let message = format!("for operator '{}' at {}", operator.name, oper_token.idx_expr);
+                            trace!("{:?} {}", ExprErrorKind::MissingOperand, message);
+                            return Err(ExprError { idx_expr: oper_token.idx_expr,
+                                                   kind: ExprErrorKind::MissingOperand,
+                                                   message });
+                        }
+                        _ => (),
+                    }
+                }
+
                 while let Some(ref_token) = self.stack_op.last() {
                     match ref_token {
                         Token::Operator(OperatorToken { idx_expr: _, idx_oper }) => {
@@ -825,15 +853,14 @@ fn parse_operator(str_expr: &str, operators: &[Operator], opt_prev_token: &mut O
             // it as a valid operator.
             if op.assoc == OperatorAssoc::Left {
                 match opt_prev_token {
-                    // E.g. "-4" or ",5".
+                    // E.g. "<<4" or ",5".
                     None => continue,
                     Some(Token::Operator(OperatorToken { idx_expr: _, idx_oper })) => {
                         debug_assert!(*idx_oper < operators.len());
                         // E.g. ")-5" when parsing "-" can be valid. So don't skip finding "-".
                         // E.g. "(<<7" when parsing "<<" is invalid, so skip finding it.
-                        if operators[*idx_oper].kind != OperatorKind::CloseParen
-                            && (operators[*idx_oper].assoc != OperatorAssoc::Left
-                                 || operators[*idx_oper].params != 1) {
+                        if operators[*idx_oper].assoc == OperatorAssoc::Left
+                            || operators[*idx_oper].kind == OperatorKind::OpenParen {
                             continue;
                         }
                     }
@@ -843,15 +870,15 @@ fn parse_operator(str_expr: &str, operators: &[Operator], opt_prev_token: &mut O
             // If this is a right associative operator, ensure if a previous token exists
             // that it's not a right associative unary operator. If it is, it's a malformed
             // expression like "2+++4". Note: "2++4" is 2+(+4), i.e. 2 plus unary plus 4 which is valid.
-            // NOTE: I've got rid of post/pre inc/dec. but this does handle the case if I add it back.
+            //
+            // NOTE: I've got rid of post/pre inc/dec. operators but this does handle the case
+            // if I add it back.  Maybe error messages might not be great.
             else if op.assoc == OperatorAssoc::Right {
                 match opt_prev_token {
                     None => (),
-                    // E.g. "++4" when previous token was a unary "+" operator.
                     Some(Token::Operator(OperatorToken { idx_expr: _, idx_oper })) => {
-                        if operators[*idx_oper].assoc == OperatorAssoc::Right && operators[*idx_oper].params == 1 {
-                            is_found = false;
-                            break;
+                        if operators[*idx_oper].assoc == OperatorAssoc::Right {
+                            continue;
                         }
                     }
                     _ => (),
@@ -1075,7 +1102,8 @@ mod tests {
                             "2.5ee4",
                             "2.5e++4",
                             "2.5ee++4",
-                            "2.5e--5"
+                            "2.5e--5",
+                            "2..5",
         ];
         // Make sure we never parse operators as valid numbers.
         for i in 0..OPERATORS.len() {
@@ -1222,6 +1250,8 @@ mod tests {
                     Operators can have at most 2 parameters.", oper.name, idx, oper.params);
             assert!(oper.kind != OperatorKind::Regular || oper.params > 0,
                     "Regular operator '{}' at {} cannot have 0 parameters.", oper.name, idx);
+            assert!(oper.assoc != OperatorAssoc::Right || oper.params == 1,
+                    "operator '{}' at {} must have only 1 parameter.", oper.name, idx);
 
             assert_eq!(oper.name.chars().all(|x| x.is_digit(10)), false,
                        "Operator '{}' invalid. Name cannot contain digits.", oper.name);

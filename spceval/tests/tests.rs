@@ -18,6 +18,9 @@ fn valid_exprs() {
         ("+8 +8", Number{ integer: 16, float: 16.0 }),
         ("+8 + -2", Number{ integer: 6, float: 6.0 }),
         ("-8 - -2", Number{ integer: 0xfffffffffffffffa, float: -6.0 }),
+        ("(-5)", Number{ integer: 0xfffffffffffffffb, float: -5.0 }),
+        ("(((1220)))", Number{ integer: 1220, float: 1220.0 }),
+        ("(-.5)", Number{ integer: 0, float: -0.5 }),
         ("(1234)", Number{ integer: 1234, float: 1234.0 }),
         ("(2+2)", Number{ integer: 4, float: 4.0 }),
         ("1+2*3", Number{ integer: 7, float: 7.0 }),
@@ -26,6 +29,7 @@ fn valid_exprs() {
         ("0xf << 1", Number{ integer: 0x1e, float: 30.0 }),
         ("((0x128)) + 0n111", Number{ integer: 303, float: 303.0 }),
         ("1*4+(0n1+0xf)", Number{ integer: 20, float: 20.0 }),
+        (".5*0", Number{ integer: 0, float: 0.0 }),
     ];
 
     for expr_res in expr_results {
@@ -54,8 +58,8 @@ fn invalid_exprs() {
         ("", ExprError { idx_expr: 0, kind: EmptyExpr, message: "".to_string() }),
         ("()", ExprError { idx_expr: 0, kind: EmptyExpr, message: "".to_string() }),
         ("2 +", ExprError { idx_expr: 0, kind: InvalidParamCount, message: "".to_string() }),
-        ("- -2", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
-        ("+ +2", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
+        ("- -2", ExprError { idx_expr: 0, kind: MissingOperand, message: "".to_string() }),
+        ("+ +2", ExprError { idx_expr: 0, kind: MissingOperand, message: "".to_string() }),
         (",2", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
         ("(", ExprError { idx_expr: 0, kind: MismatchParenthesis, message: "".to_string() }),
         (")", ExprError { idx_expr: 0, kind: MismatchParenthesis, message: "".to_string() }),
@@ -65,9 +69,8 @@ fn invalid_exprs() {
         ("(5,", ExprError { idx_expr: 0, kind: MissingFunction, message: "".to_string() }),
         ("(2 +", ExprError { idx_expr: 0, kind: MismatchParenthesis, message: "".to_string() }),
         ("2 + 5)", ExprError { idx_expr: 0, kind: MismatchParenthesis, message: "".to_string() }),
-        ("++", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
-        ("--", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
-        (",5,", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
+        ("++", ExprError { idx_expr: 0, kind: MissingOperand, message: "".to_string() }),
+        ("--", ExprError { idx_expr: 0, kind: MissingOperand, message: "".to_string() }),
         ("0,", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
         ("(),", ExprError { idx_expr: 0, kind: MissingParenthesis, message: "".to_string() }),
         ("(0),", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
@@ -87,8 +90,13 @@ fn invalid_exprs() {
         ("(1).5", ExprError { idx_expr: 0, kind: MissingOperatorOrFunction, message: "".to_string() }),
         ("2 << << 4", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
         ("2<<<<4", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
-        ("2+ + +4", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
-        ("2+++4", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
+        ("2+ + +4", ExprError { idx_expr: 0, kind: MissingOperand, message: "".to_string() }),
+        ("2+++4", ExprError { idx_expr: 0, kind: MissingOperand, message: "".to_string() }),
+        (".+2", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
+        (".-2", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
+        ("(.5", ExprError { idx_expr: 0, kind: MismatchParenthesis, message: "".to_string() }),
+        (").f", ExprError { idx_expr: 0, kind: MismatchParenthesis, message: "".to_string() }),
+        ("(-1).5", ExprError { idx_expr: 0, kind: MissingOperatorOrFunction, message: "".to_string() }),
     ];
     for expr_res in expr_results {
         let res_parse = spceval::parse(&expr_res.0);
