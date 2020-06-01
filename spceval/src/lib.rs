@@ -525,10 +525,9 @@ impl ExprCtx {
 
     fn pop_func_from_stack(&mut self) -> Option<FunctionToken> {
         // If a function preceeds the open parenthesis, pop it to the output queue.
-        if let Some(Token::Function(
-                    FunctionToken { idx_expr: _,
-                                    idx_func: _,
-                                    params: _ })) = self.stack_op.last() {
+        if let Some(Token::Function(FunctionToken { idx_expr: _,
+                                                    idx_func: _,
+                                                    params: _ })) = self.stack_op.last() {
             // We safely unwrap both the token from the stack as well as the result from
             // the try_from() because we've already checked that the token on the top of
             // the stack is a function token.
@@ -563,10 +562,10 @@ impl ExprCtx {
                 // Previous token if any cannot be a close parenthesis or a number.
                 // E.g "(5)(2)" or "5(2)".
                 let missing_oper_or_func = match opt_prev_token {
-                    Some(Token::Operator(OperatorToken { idx_expr: _, idx_oper })) => {
-                        (OPERATORS[*idx_oper].kind == OperatorKind::CloseParen)
-                    }
                     Some(Token::Number(_)) => true,
+                    Some(Token::Operator(
+                        OperatorToken { idx_expr: _,
+                                        idx_oper })) => OPERATORS[*idx_oper].kind == OperatorKind::CloseParen,
                     _ => false,
                 };
                 if missing_oper_or_func {
@@ -580,22 +579,19 @@ impl ExprCtx {
             }
 
             OperatorKind::CloseParen => {
+                // Find matching open parenthesis.
                 let mut found_open_paren = false;
                 while let Some(ref_token) = self.stack_op.last() {
                     match ref_token {
-                        // Operator token, figure out if it's an  open parenthesis or not
-                        Token::Operator(OperatorToken { idx_expr: _, idx_oper }) => {
-                            if OPERATORS[*idx_oper].kind == OperatorKind::OpenParen {
-                                // This is the matching open parenthesis, discard it.
-                                found_open_paren = true;
-                                self.stack_op.pop().unwrap();
-                                break;
-                            } else {
-                                // This operator token isn't an open parenthesis, pop it to the output queue.
-                                self.pop_move_to_output_queue();
-                            }
+                        Token::Operator(OperatorToken { idx_expr: _,
+                                                        idx_oper })
+                                if OPERATORS[*idx_oper].kind == OperatorKind::OpenParen => {
+                            found_open_paren = true;
+                            // Discard open parenthesis from the stack.
+                            self.stack_op.pop().unwrap();
+                            break;
                         }
-                        // Pop all other tokens to the output queue.
+                        // Pop any other tokens to the output queue.
                         _ => self.pop_move_to_output_queue(),
                     }
                 }
@@ -623,9 +619,8 @@ impl ExprCtx {
                 // Find the previous open parenthesis.
                 while let Some(ref_token) = self.stack_op.last() {
                     match ref_token {
-                        Token::Operator(
-                            OperatorToken { idx_expr: _,
-                                            idx_oper }) if OPERATORS[*idx_oper].kind == OperatorKind::OpenParen => break,
+                        Token::Operator(OperatorToken { idx_expr: _, idx_oper })
+                            if OPERATORS[*idx_oper].kind == OperatorKind::OpenParen => break,
                         _ => self.pop_move_to_output_queue(),
                     }
                 }
