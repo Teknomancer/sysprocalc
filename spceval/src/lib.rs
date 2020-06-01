@@ -8,71 +8,71 @@ use log::{trace, debug};   // others: {warn,info}
 // Number of tokens to pre-allocate per ExprCtx.
 const PRE_ALLOC_TOKENS: usize = 16;
 
-static OPERATORS: [Operator<'static>; 26] = [
+static OPERS: [Oper<'static>; 26] = [
     // Precedence 1 (highest priority)
-    Operator { kind: OperatorKind::OpenParen,  prec: 1,  params: 0, assoc: OperatorAssoc::Nil,   name: "(",  syntax: "(<expr>)",           help: "Begin expression."             , func: oper_nop },
-    Operator { kind: OperatorKind::CloseParen, prec: 1,  params: 0, assoc: OperatorAssoc::Nil,   name: ")",  syntax: "(<expr>)",           help: "End expression."               , func: oper_nop },
+    Oper { kind: OperKind::OpenParen,  prec: 1,  params: 0, assoc: OperAssoc::Nil,   name: "(",  syntax: "(<expr>",            help: "Begin expression."             , evalfn: oper_nop },
+    Oper { kind: OperKind::CloseParen, prec: 1,  params: 0, assoc: OperAssoc::Nil,   name: ")",  syntax: "<expr>)",            help: "End expression."               , evalfn: oper_nop },
     // Precendence 4 (appears in array before 2 because of parsing logic with unary operators)
-    Operator { kind: OperatorKind::Regular,    prec: 4,  params: 2, assoc: OperatorAssoc::Left,  name: "+",  syntax: "<expr> + <expr>",    help: "Addition."                     , func: oper_add },
-    Operator { kind: OperatorKind::Regular,    prec: 4,  params: 2, assoc: OperatorAssoc::Left,  name: "-",  syntax: "<expr> - <expr>",    help: "Subtraction."                  , func: oper_sub },
+    Oper { kind: OperKind::Regular,    prec: 4,  params: 2, assoc: OperAssoc::Left,  name: "+",  syntax: "<expr> + <expr>",    help: "Addition."                     , evalfn: oper_add },
+    Oper { kind: OperKind::Regular,    prec: 4,  params: 2, assoc: OperAssoc::Left,  name: "-",  syntax: "<expr> - <expr>",    help: "Subtraction."                  , evalfn: oper_sub },
     // Precedence 2
-    Operator { kind: OperatorKind::Regular,    prec: 2,  params: 1, assoc: OperatorAssoc::Right, name: "+",  syntax: "+<expr>",            help: "Unary plus."                   , func: oper_nop },
-    Operator { kind: OperatorKind::Regular,    prec: 2,  params: 1, assoc: OperatorAssoc::Right, name: "-",  syntax: "-<expr>",            help: "Unary minus."                  , func: oper_unary_minus },
-    Operator { kind: OperatorKind::Regular,    prec: 2,  params: 1, assoc: OperatorAssoc::Right, name: "!",  syntax: "!<expr>",            help: "Logical NOT."                  , func: oper_logical_not },
-    Operator { kind: OperatorKind::Regular,    prec: 2,  params: 1, assoc: OperatorAssoc::Right, name: "~",  syntax: "~<expr>",            help: "Bitwise NOT."                  , func: oper_bit_not },
+    Oper { kind: OperKind::Regular,    prec: 2,  params: 1, assoc: OperAssoc::Right, name: "+",  syntax: "+<expr>",            help: "Unary plus."                   , evalfn: oper_nop },
+    Oper { kind: OperKind::Regular,    prec: 2,  params: 1, assoc: OperAssoc::Right, name: "-",  syntax: "-<expr>",            help: "Unary minus."                  , evalfn: oper_unary_minus },
+    Oper { kind: OperKind::Regular,    prec: 2,  params: 1, assoc: OperAssoc::Right, name: "!",  syntax: "!<expr>",            help: "Logical NOT."                  , evalfn: oper_logical_not },
+    Oper { kind: OperKind::Regular,    prec: 2,  params: 1, assoc: OperAssoc::Right, name: "~",  syntax: "~<expr>",            help: "Bitwise NOT."                  , evalfn: oper_bit_not },
     // Precedence 3
-    Operator { kind: OperatorKind::Regular,    prec: 3,  params: 2, assoc: OperatorAssoc::Left,  name: "*",  syntax: "<expr> * <expr>",    help: "Multiplication."               , func: oper_mul },
-    Operator { kind: OperatorKind::Regular,    prec: 3,  params: 2, assoc: OperatorAssoc::Left,  name: "/",  syntax: "<expr> / <expr>",    help: "Division."                     , func: oper_div },
-    Operator { kind: OperatorKind::Regular,    prec: 3,  params: 2, assoc: OperatorAssoc::Left,  name: "%",  syntax: "<expr> % <expr>",    help: "Remainder."                    , func: oper_rem },
+    Oper { kind: OperKind::Regular,    prec: 3,  params: 2, assoc: OperAssoc::Left,  name: "*",  syntax: "<expr> * <expr>",    help: "Multiplication."               , evalfn: oper_mul },
+    Oper { kind: OperKind::Regular,    prec: 3,  params: 2, assoc: OperAssoc::Left,  name: "/",  syntax: "<expr> / <expr>",    help: "Division."                     , evalfn: oper_div },
+    Oper { kind: OperKind::Regular,    prec: 3,  params: 2, assoc: OperAssoc::Left,  name: "%",  syntax: "<expr> % <expr>",    help: "Remainder."                    , evalfn: oper_rem },
     // Precedence 5
-    Operator { kind: OperatorKind::Regular,    prec: 5,  params: 2, assoc: OperatorAssoc::Left,  name: "<<", syntax: "<expr> << <expr>",   help: "Bitwise left-shift."           , func: oper_bit_lshift },
-    Operator { kind: OperatorKind::Regular,    prec: 5,  params: 2, assoc: OperatorAssoc::Left,  name: ">>", syntax: "<expr> >> <expr>",   help: "Bitwise right-shift."          , func: oper_bit_rshift },
+    Oper { kind: OperKind::Regular,    prec: 5,  params: 2, assoc: OperAssoc::Left,  name: "<<", syntax: "<expr> << <expr>",   help: "Bitwise left-shift."           , evalfn: oper_bit_lshift },
+    Oper { kind: OperKind::Regular,    prec: 5,  params: 2, assoc: OperAssoc::Left,  name: ">>", syntax: "<expr> >> <expr>",   help: "Bitwise right-shift."          , evalfn: oper_bit_rshift },
     // Precedence 6
-    Operator { kind: OperatorKind::Regular,    prec: 6,  params: 2, assoc: OperatorAssoc::Left,  name: "<",  syntax: "<expr> < <expr>",    help: "Less-than."                    , func: oper_lt },
-    Operator { kind: OperatorKind::Regular,    prec: 6,  params: 2, assoc: OperatorAssoc::Left,  name: "<=", syntax: "<expr> <= <expr>",   help: "Less-than-or-equals."          , func: oper_lte },
-    Operator { kind: OperatorKind::Regular,    prec: 6,  params: 2, assoc: OperatorAssoc::Left,  name: ">",  syntax: "<expr> > <expr>",    help: "Greater-than."                 , func: oper_gt },
-    Operator { kind: OperatorKind::Regular,    prec: 6,  params: 2, assoc: OperatorAssoc::Left,  name: ">=", syntax: "<expr> >= <expr>",   help: "Greater-than-or-equals."       , func: oper_gte },
+    Oper { kind: OperKind::Regular,    prec: 6,  params: 2, assoc: OperAssoc::Left,  name: "<",  syntax: "<expr> < <expr>",    help: "Less-than."                    , evalfn: oper_lt },
+    Oper { kind: OperKind::Regular,    prec: 6,  params: 2, assoc: OperAssoc::Left,  name: "<=", syntax: "<expr> <= <expr>",   help: "Less-than-or-equals."          , evalfn: oper_lte },
+    Oper { kind: OperKind::Regular,    prec: 6,  params: 2, assoc: OperAssoc::Left,  name: ">",  syntax: "<expr> > <expr>",    help: "Greater-than."                 , evalfn: oper_gt },
+    Oper { kind: OperKind::Regular,    prec: 6,  params: 2, assoc: OperAssoc::Left,  name: ">=", syntax: "<expr> >= <expr>",   help: "Greater-than-or-equals."       , evalfn: oper_gte },
     // Precedence 7
-    Operator { kind: OperatorKind::Regular,    prec: 7,  params: 2, assoc: OperatorAssoc::Left,  name: "==", syntax: "<expr> == <expr>",   help: "Equals."                       , func: oper_eq },
-    Operator { kind: OperatorKind::Regular,    prec: 7,  params: 2, assoc: OperatorAssoc::Left,  name: "!=", syntax: "<expr> != <expr>",   help: "Not-equals."                   , func: oper_ne },
+    Oper { kind: OperKind::Regular,    prec: 7,  params: 2, assoc: OperAssoc::Left,  name: "==", syntax: "<expr> == <expr>",   help: "Equals."                       , evalfn: oper_eq },
+    Oper { kind: OperKind::Regular,    prec: 7,  params: 2, assoc: OperAssoc::Left,  name: "!=", syntax: "<expr> != <expr>",   help: "Not-equals."                   , evalfn: oper_ne },
     // Precedence 8
-    Operator { kind: OperatorKind::Regular,    prec: 8,  params: 2, assoc: OperatorAssoc::Left,  name: "&",  syntax: "<expr> & <expr>",    help: "Bitwise AND."                  , func: oper_bit_and },
+    Oper { kind: OperKind::Regular,    prec: 8,  params: 2, assoc: OperAssoc::Left,  name: "&",  syntax: "<expr> & <expr>",    help: "Bitwise AND."                  , evalfn: oper_bit_and },
     // Precedence 9
-    Operator { kind: OperatorKind::Regular,    prec: 9,  params: 2, assoc: OperatorAssoc::Left,  name: "^",  syntax: "<expr> ^ <expr>",    help: "Bitwise XOR."                  , func: oper_bit_xor },
+    Oper { kind: OperKind::Regular,    prec: 9,  params: 2, assoc: OperAssoc::Left,  name: "^",  syntax: "<expr> ^ <expr>",    help: "Bitwise XOR."                  , evalfn: oper_bit_xor },
     // Precedence 10
-    Operator { kind: OperatorKind::Regular,    prec: 10, params: 2, assoc: OperatorAssoc::Left,  name: "|",  syntax: "<expr> | <expr>",    help: "Bitwise OR."                   , func: oper_bit_or },
+    Oper { kind: OperKind::Regular,    prec: 10, params: 2, assoc: OperAssoc::Left,  name: "|",  syntax: "<expr> | <expr>",    help: "Bitwise OR."                   , evalfn: oper_bit_or },
     // Precedence 11
-    Operator { kind: OperatorKind::Regular,    prec: 11, params: 2, assoc: OperatorAssoc::Left,  name: "&&", syntax: "<expr> && <expr>",   help: "Logical AND."                  , func: oper_nop },
+    Oper { kind: OperKind::Regular,    prec: 11, params: 2, assoc: OperAssoc::Left,  name: "&&", syntax: "<expr> && <expr>",   help: "Logical AND."                  , evalfn: oper_nop },
     // Precedence 12
-    Operator { kind: OperatorKind::Regular,    prec: 12, params: 2, assoc: OperatorAssoc::Left,  name: "||", syntax: "<expr> || <expr>",   help: "Logical OR."                   , func: oper_nop },
+    Oper { kind: OperKind::Regular,    prec: 12, params: 2, assoc: OperAssoc::Left,  name: "||", syntax: "<expr> || <expr>",   help: "Logical OR."                   , evalfn: oper_nop },
     // Precedence 13
-    Operator { kind: OperatorKind::VarAssign,  prec: 13, params: 2, assoc: OperatorAssoc::Left,  name: "=",  syntax: "<var> = <expr>",     help: "Variable assignment."          , func: oper_nop },
+    Oper { kind: OperKind::VarAssign,  prec: 13, params: 2, assoc: OperAssoc::Left,  name: "=",  syntax: "<var> = <expr>",     help: "Variable assignment."          , evalfn: oper_nop },
     // Precedence 14
-    Operator { kind: OperatorKind::ParamSep,   prec: 14, params: 2, assoc: OperatorAssoc::Left,  name: ",",  syntax: "<param1>, <param2>", help: "Function parameter separator." , func: oper_nop },
+    Oper { kind: OperKind::ParamSep,   prec: 14, params: 2, assoc: OperAssoc::Left,  name: ",",  syntax: "<param1>, <param2>", help: "Function parameter separator." , evalfn: oper_nop },
 ];
 
 const MAX_FN_PARAMS: u8 = u8::max_value();
-static FUNCTIONS: [Function<'static>; 3] = [
-    Function {
+static FUNCS: [Func<'static>; 3] = [
+    Func {
         name: "sum",
         params: Range { start: 2, end: MAX_FN_PARAMS },
         syntax: "<n1>,<n2>[,<n3>...<nX>]",
         help: "Sum",
-        func: func_sum,
+        evalfn: func_sum,
     },
-    Function {
+    Func {
         name: "avg",
         params: Range { start: 2, end: MAX_FN_PARAMS },
         syntax: "<n1>,<n2>[,<n3>...<nX>]",
         help: "Average",
-        func: func_avg,
+        evalfn: func_avg,
     },
-    Function {
+    Func {
         name: "if",
         params: Range { start: 3, end: 4 },
         syntax: "<cond>,<n1>,<n2>",
         help: "If <cond> is true, returns <n1> else <n2>",
-        func: func_dummy,
+        evalfn: func_dummy,
     },
 ];
 
@@ -132,14 +132,14 @@ type PfnOper = fn(&[Number]) -> Result<Number, ExprError>;
 type PfnFunc = fn(&[Number]) -> Result<Number, ExprError>;
 
 #[derive(Eq, PartialEq, Ord, PartialOrd, Debug)]
-enum OperatorAssoc {
+enum OperAssoc {
     Nil,
     Left,
     Right,
 }
 
 #[derive(Eq, PartialEq, Ord, PartialOrd, Debug)]
-enum OperatorKind {
+enum OperKind {
     Regular,
     OpenParen,
     CloseParen,
@@ -147,31 +147,31 @@ enum OperatorKind {
     VarAssign,
 }
 
-struct Operator<'a> {
-    kind: OperatorKind,
+struct Oper<'a> {
+    kind: OperKind,
     prec: u8,
     params: u8,
-    assoc: OperatorAssoc,
+    assoc: OperAssoc,
     name: &'a str,
     syntax: &'a str,
     help: &'a str,
-    func: PfnOper,
+    evalfn: PfnOper,
 }
 
-struct Function<'a> {
+struct Func<'a> {
     name: &'a str,
     params: Range<u8>,
     syntax: &'a str,
     help: &'a str,
-    func: PfnFunc,
+    evalfn: PfnFunc,
 }
 
 // Eq specifies that the equality relationship defined by PartialEq is a total equality.
-impl<'a> Eq for Operator<'a> {}
+impl<'a> Eq for Oper<'a> {}
 
 // PartialEq is required by PartialOrd which is required for sorting.
-impl<'a> PartialEq for Operator<'a> {
-    fn eq(&self, other: &Operator) -> bool {
+impl<'a> PartialEq for Oper<'a> {
+    fn eq(&self, other: &Oper) -> bool {
            self.kind == other.kind
         && self.prec == other.prec
         && self.params == other.params
@@ -184,15 +184,15 @@ impl<'a> PartialEq for Operator<'a> {
 // shorter ones. This is so that while iterating operators, we might want to encounter longer
 // operator names before shorter ones (e.g., "<=" before "<" and "<<" before "<") regardless of
 // their precedence. This is so if we use 'starts_with' and find a match we can stop searching.
-impl<'a> Ord for Operator<'a> {
+impl<'a> Ord for Oper<'a> {
     fn cmp(&self, other: &Self) -> Ordering {
         other.name.cmp(&self.name)
     }
 }
 
 // Ord specifies that the ordering relationship defined by PartialOrd is total ordering.
-impl<'a> PartialOrd for Operator<'a> {
-    fn partial_cmp(&self, other: &Operator) -> Option<Ordering> {
+impl<'a> PartialOrd for Oper<'a> {
+    fn partial_cmp(&self, other: &Oper) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
@@ -378,21 +378,21 @@ fn func_avg(nums: &[Number]) -> Result<Number, ExprError> {
 }
 
 #[derive(Debug, Copy, Clone)]
-struct NumberToken {
+struct NumToken {
     idx_expr: usize,
     number: Number,
 }
 
 #[derive(Copy, Clone)]
-struct OperatorToken {
+struct OperToken {
     idx_expr: usize,
     idx_oper: usize,
 }
 
-impl fmt::Debug for OperatorToken {
+impl fmt::Debug for OperToken {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.idx_oper < OPERATORS.len() {
-            write!(f, "'{}'", OPERATORS[self.idx_oper].name)
+        if self.idx_oper < OPERS.len() {
+            write!(f, "'{}'", OPERS[self.idx_oper].name)
         } else {
             write!(f, "Invalid Index {}", self.idx_oper)
         }
@@ -400,16 +400,16 @@ impl fmt::Debug for OperatorToken {
 }
 
 #[derive(Copy, Clone)]
-struct FunctionToken {
+struct FuncToken {
     idx_expr: usize,
     idx_func: usize,
     params: u8,
 }
 
-impl fmt::Debug for FunctionToken {
+impl fmt::Debug for FuncToken {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.idx_func < FUNCTIONS.len() {
-            write!(f, "'{}'", &FUNCTIONS[self.idx_func].name)
+        if self.idx_func < FUNCS.len() {
+            write!(f, "'{}'", &FUNCS[self.idx_func].name)
         } else {
             write!(f, "Invalid Index {}", self.idx_func)
         }
@@ -418,9 +418,9 @@ impl fmt::Debug for FunctionToken {
 
 #[derive(Debug, Copy, Clone)]
 enum Token {
-    Number(NumberToken),
-    Operator(OperatorToken),
-    Function(FunctionToken),
+    Num(NumToken),
+    Oper(OperToken),
+    Func(FuncToken),
 }
 
 pub enum ExprResult {
@@ -433,31 +433,31 @@ pub struct ExprCtx {
     stack_op: Vec<Token>,
 }
 
-impl TryFrom<Token> for NumberToken {
+impl TryFrom<Token> for NumToken {
     type Error = &'static str;
     fn try_from(value: Token) -> Result<Self, Self::Error> {
         match value {
-            Token::Number(num_token) => Ok(num_token),
+            Token::Num(num_token) => Ok(num_token),
             _ => Err("not a number token"),
         }
     }
 }
 
-impl TryFrom<Token> for OperatorToken {
+impl TryFrom<Token> for OperToken {
     type Error = &'static str;
     fn try_from(value: Token) -> Result<Self, Self::Error> {
         match value {
-            Token::Operator(oper_token) => Ok(oper_token),
+            Token::Oper(oper_token) => Ok(oper_token),
             _ => Err("not an operator token"),
         }
     }
 }
 
-impl TryFrom<Token> for FunctionToken {
+impl TryFrom<Token> for FuncToken {
     type Error = &'static str;
     fn try_from(value: Token) -> Result<Self, Self::Error> {
         match value {
-            Token::Function(func_token) => Ok(func_token),
+            Token::Func(func_token) => Ok(func_token),
             _ => Err("not a function token"),
         }
     }
@@ -487,10 +487,10 @@ impl ExprCtx {
         *opt_prev_token = Some(token);
     }
 
-    fn verify_and_push_func_to_op_stack(&mut self, func_token: FunctionToken) -> Result<(), ExprError> {
-        let func = &FUNCTIONS[func_token.idx_func];
+    fn verify_and_push_func_to_op_stack(&mut self, func_token: FuncToken) -> Result<(), ExprError> {
+        let func = &FUNCS[func_token.idx_func];
         if func.params.contains(&func_token.params) {
-            self.stack_op.push(Token::Function(func_token));
+            self.stack_op.push(Token::Func(func_token));
             Ok(())
         } else {
             // Too many or too few parameters passed to the function, bail.
@@ -506,10 +506,10 @@ impl ExprCtx {
         while let Some(ref_token) = self.stack_op.last() {
             // If the stack has an open parenthesis, we have a parenthesis mismatch.
             match ref_token {
-                Token::Operator(OperatorToken { idx_expr, idx_oper }) => {
-                    debug_assert!(*idx_oper < OPERATORS.len());
-                    let operator = &OPERATORS[*idx_oper];
-                    if operator.kind == OperatorKind::OpenParen {
+                Token::Oper(OperToken { idx_expr, idx_oper }) => {
+                    debug_assert!(*idx_oper < OPERS.len());
+                    let oper = &OPERS[*idx_oper];
+                    if oper.kind == OperKind::OpenParen {
                         let message = format!("for opening parenthesis at {}", *idx_expr);
                         trace!("Parenthesis mismatch {}", message);
                         return Err(ExprError { idx_expr: *idx_expr,
@@ -525,15 +525,15 @@ impl ExprCtx {
         Ok(())
     }
 
-    fn pop_func_from_stack(&mut self) -> Option<FunctionToken> {
+    fn pop_func_from_stack(&mut self) -> Option<FuncToken> {
         // If a function preceeds the open parenthesis, pop it to the output queue.
-        if let Some(Token::Function(FunctionToken { idx_expr: _,
-                                                    idx_func: _,
-                                                    params: _ })) = self.stack_op.last() {
+        if let Some(Token::Func(FuncToken { idx_expr: _,
+                                            idx_func: _,
+                                            params: _ })) = self.stack_op.last() {
             // We safely unwrap both the token from the stack as well as the result from
             // the try_from() because we've already checked that the token on the top of
             // the stack is a function token.
-            Some(FunctionToken::try_from(self.stack_op.pop().unwrap()).unwrap())
+            Some(FuncToken::try_from(self.stack_op.pop().unwrap()).unwrap())
         } else {
             None
         }
@@ -554,20 +554,20 @@ impl ExprCtx {
         Some(parameters)
     }
 
-    fn process_parsed_operator(&mut self,
-                               oper_token: OperatorToken,
-                               opt_prev_token: &mut Option<Token>) -> Result<(), ExprError> {
-        debug_assert!(oper_token.idx_oper < OPERATORS.len());
-        let operator = &OPERATORS[oper_token.idx_oper];
-        match operator.kind {
-            OperatorKind::OpenParen => {
+    fn process_parsed_oper(&mut self,
+                           oper_token: OperToken,
+                           opt_prev_token: &mut Option<Token>) -> Result<(), ExprError> {
+        debug_assert!(oper_token.idx_oper < OPERS.len());
+        let oper = &OPERS[oper_token.idx_oper];
+        match oper.kind {
+            OperKind::OpenParen => {
                 // Previous token if any cannot be a close parenthesis or a number.
                 // E.g "(5)(2)" or "5(2)".
                 let missing_oper_or_func = match opt_prev_token {
-                    Some(Token::Number(_)) => true,
-                    Some(Token::Operator(
-                        OperatorToken { idx_expr: _,
-                                        idx_oper })) => OPERATORS[*idx_oper].kind == OperatorKind::CloseParen,
+                    Some(Token::Num(_)) => true,
+                    Some(Token::Oper(
+                        OperToken { idx_expr: _,
+                                        idx_oper })) => OPERS[*idx_oper].kind == OperKind::CloseParen,
                     _ => false,
                 };
                 if missing_oper_or_func {
@@ -577,17 +577,17 @@ impl ExprCtx {
                                            kind: ExprErrorKind::MissingOperatorOrFunction,
                                            message });
                 }
-                self.push_to_op_stack(Token::Operator(oper_token), opt_prev_token);
+                self.push_to_op_stack(Token::Oper(oper_token), opt_prev_token);
             }
 
-            OperatorKind::CloseParen => {
+            OperKind::CloseParen => {
                 // Find matching open parenthesis.
                 let mut found_open_paren = false;
                 while let Some(ref_token) = self.stack_op.last() {
                     match ref_token {
-                        Token::Operator(OperatorToken { idx_expr: _,
+                        Token::Oper(OperToken { idx_expr: _,
                                                         idx_oper })
-                                if OPERATORS[*idx_oper].kind == OperatorKind::OpenParen => {
+                                if OPERS[*idx_oper].kind == OperKind::OpenParen => {
                             found_open_paren = true;
                             break;
                         }
@@ -601,7 +601,7 @@ impl ExprCtx {
                     self.stack_op.pop().unwrap();
 
                     // Ensure close parenthesis is recorded as the previous token.
-                    *opt_prev_token = Some(Token::Operator(oper_token));
+                    *opt_prev_token = Some(Token::Oper(oper_token));
 
                     // If a function preceeds the open parenthesis, increment its parameter count by 1.
                     // E.g "avg(5,6,7)". We've already incremented parameter count when there are more
@@ -621,12 +621,12 @@ impl ExprCtx {
                 }
             }
 
-            OperatorKind::ParamSep => {
+            OperKind::ParamSep => {
                 // Find the previous open parenthesis.
                 while let Some(ref_token) = self.stack_op.last() {
                     match ref_token {
-                        Token::Operator(OperatorToken { idx_expr: _, idx_oper })
-                            if OPERATORS[*idx_oper].kind == OperatorKind::OpenParen => break,
+                        Token::Oper(OperToken { idx_expr: _, idx_oper })
+                            if OPERS[*idx_oper].kind == OperKind::OpenParen => break,
                         _ => self.pop_move_to_output_queue(),
                     }
                 }
@@ -637,8 +637,8 @@ impl ExprCtx {
                     let paren_token = self.stack_op.pop().unwrap();
                     #[cfg(debug_assertions)]
                     {
-                        let oper_paren = OperatorToken::try_from(paren_token).unwrap();
-                        debug_assert!(OPERATORS[oper_paren.idx_oper].kind == OperatorKind::OpenParen);
+                        let oper_paren = OperToken::try_from(paren_token).unwrap();
+                        debug_assert!(OPERS[oper_paren.idx_oper].kind == OperKind::OpenParen);
                     }
 
                     // If a function preceeds the open parenthesis, increment its parameter count by 1
@@ -647,11 +647,11 @@ impl ExprCtx {
                     // temporary modification of a token's data in stack.
                     if let Some(mut func_token) = self.pop_func_from_stack() {
                         func_token.params += 1;
-                        self.stack_op.push(Token::Function(func_token));
+                        self.stack_op.push(Token::Func(func_token));
                         self.stack_op.push(paren_token);
                     } else {
                         // No function preceeding open parenthesis for a parameter separator. E.g "(32,5)"
-                        let message = format!("for parameter separator '{}' at {}", operator.name, oper_token.idx_expr);
+                        let message = format!("for parameter separator '{}' at {}", oper.name, oper_token.idx_expr);
                         trace!("{:?} {}", ExprErrorKind::MissingFunction, message);
                         return Err(ExprError { idx_expr: 0,
                                                kind: ExprErrorKind::MissingFunction,
@@ -659,7 +659,7 @@ impl ExprCtx {
                     }
                 } else {
                     // No matching open parenthesis for the parameter separator. E.g "32,4".
-                    let message = format!("for parameter separator '{}' at {}", operator.name, oper_token.idx_expr);
+                    let message = format!("for parameter separator '{}' at {}", oper.name, oper_token.idx_expr);
                     trace!("{:?} {}", ExprErrorKind::MissingParenthesis, message);
                     return Err(ExprError { idx_expr: 0,
                                            kind: ExprErrorKind::MissingParenthesis,
@@ -671,7 +671,7 @@ impl ExprCtx {
                 // Validate left associative operator.
                 // NOTE: We could squeeze this into parse_operator() but this gives us better error messages
                 // in some cases (see integration test).
-                if operator.assoc == OperatorAssoc::Left {
+                if oper.assoc == OperAssoc::Left {
                     // Assume we've parsed left-associative operator "<<".
                     // Rules for previous token are:
                     //   - Must exist. E.g. "<< 2" is invalid but we've already handled this in parse_oeprator.
@@ -681,10 +681,10 @@ impl ExprCtx {
                     //   - Must not be a right associative operator.
                     debug_assert!(opt_prev_token.is_some());
                     match opt_prev_token {
-                        Some(Token::Operator(
-                            OperatorToken { idx_expr: _,
-                                            idx_oper })) if OPERATORS[*idx_oper].kind != OperatorKind::CloseParen => {
-                            let message = format!("for operator '{}' at {}", operator.name, oper_token.idx_expr);
+                        Some(Token::Oper(
+                            OperToken { idx_expr: _,
+                                            idx_oper })) if OPERS[*idx_oper].kind != OperKind::CloseParen => {
+                            let message = format!("for operator '{}' at {}", oper.name, oper_token.idx_expr);
                             trace!("{:?} {}", ExprErrorKind::MissingOperand, message);
                             return Err(ExprError { idx_expr: oper_token.idx_expr,
                                                    kind: ExprErrorKind::MissingOperand,
@@ -696,16 +696,16 @@ impl ExprCtx {
 
                 while let Some(ref_token) = self.stack_op.last() {
                     match ref_token {
-                        Token::Operator(OperatorToken { idx_expr: _, idx_oper }) => {
-                            let token_stack_oper = &OPERATORS[*idx_oper];
-                            debug_assert!(token_stack_oper.kind != OperatorKind::CloseParen);
-                            if token_stack_oper.kind == OperatorKind::OpenParen {
+                        Token::Oper(OperToken { idx_expr: _, idx_oper }) => {
+                            let token_stack_oper = &OPERS[*idx_oper];
+                            debug_assert!(token_stack_oper.kind != OperKind::CloseParen);
+                            if token_stack_oper.kind == OperKind::OpenParen {
                                 break;
                             }
 
                             // Pop operator with higher priority (depending on associativity) to the output queue.
-                            if    token_stack_oper.prec < operator.prec
-                               || operator.assoc == OperatorAssoc::Left && operator.prec == token_stack_oper.prec {
+                            if    token_stack_oper.prec < oper.prec
+                               || oper.assoc == OperAssoc::Left && oper.prec == token_stack_oper.prec {
                                 self.pop_move_to_output_queue();
                             } else {
                                 break;
@@ -715,7 +715,7 @@ impl ExprCtx {
                     }
                 }
 
-                self.push_to_op_stack(Token::Operator(oper_token), opt_prev_token);
+                self.push_to_op_stack(Token::Oper(oper_token), opt_prev_token);
             }
         }
 
@@ -723,15 +723,15 @@ impl ExprCtx {
     }
 }
 
-fn parse_function(str_expr: &str, functions: &[Function]) -> Option<usize> {
+fn parse_function(str_expr: &str, funcs: &[Func]) -> Option<usize> {
     debug_assert_eq!(str_expr.trim_start_matches(char::is_whitespace), str_expr);
 
-    // All functions must be succeeded by an open parenthesis.
+    // All FUNCS must be succeeded by an open parenthesis.
     // Collect function name till we find an open parenthesis and then check if that function
     // exists in the function table.
     let mut is_found = false;
     let mut idx_found = 0;
-    for (idx, func) in functions.iter().enumerate() {
+    for (idx, func) in funcs.iter().enumerate() {
         if str_expr.starts_with(func.name) {
             idx_found = idx;
             is_found = true;
@@ -740,14 +740,14 @@ fn parse_function(str_expr: &str, functions: &[Function]) -> Option<usize> {
     }
 
     if is_found {
-        trace!("found {}", &functions[idx_found].help);
+        trace!("found {}", &funcs[idx_found].help);
         Some(idx_found)
     } else {
         None
     }
 }
 
-fn parse_number(str_expr: &str) -> (Option<Number>, usize) {
+fn parse_num(str_expr: &str) -> (Option<Number>, usize) {
     debug_assert_eq!(str_expr.trim_start_matches(char::is_whitespace), str_expr);
 
     let mut radix: u32 = 10;
@@ -770,7 +770,7 @@ fn parse_number(str_expr: &str) -> (Option<Number>, usize) {
         }
     }
 
-    // Rust string to number conversion functions do not grok prefixes (e.g., "0xf" will have
+    // Rust string to number conversion FUNCS do not grok prefixes (e.g., "0xf" will have
     // to be fed to it as just "f"). So we aggregate the number into 'str_num' and keep track
     // of the length of any prefix that's already part of the expression in 'len_prefix' (as
     // done above). This also has a side effect in making the loop below faster as we eliminate
@@ -835,32 +835,32 @@ fn parse_number(str_expr: &str) -> (Option<Number>, usize) {
     }
 }
 
-fn parse_operator(str_expr: &str, operators: &[Operator], opt_prev_token: &mut Option<Token>) -> Option<usize> {
+fn parse_oper(str_expr: &str, opers: &[Oper], opt_prev_token: &mut Option<Token>) -> Option<usize> {
     debug_assert_eq!(str_expr.trim_start_matches(char::is_whitespace), str_expr);
 
     let mut is_found = false;
     let mut idx_found = 0;
 
-    for (idx, op) in operators.iter().enumerate() {
+    for (idx, op) in opers.iter().enumerate() {
         // If this is the first occurrence of this operator, record where we found it.
         // Otherwise, record the currently found operator only if its length exceeds that
         // of a previously found (i.e., we should be able to find "<<" and not stop at "<"),
         if str_expr.starts_with(op.name)
            && (!is_found
-                || op.name.len() > operators[idx_found].name.len()) {
+                || op.name.len() > opers[idx_found].name.len()) {
             // Is this a left associative operator, ensure a previous token exists and that
             // it's not an operator (other than close parenthesis), otherwise skip finding
             // it as a valid operator.
-            if op.assoc == OperatorAssoc::Left {
+            if op.assoc == OperAssoc::Left {
                 match opt_prev_token {
                     // E.g. "<<4" or ",5".
                     None => continue,
-                    Some(Token::Operator(OperatorToken { idx_expr: _, idx_oper })) => {
-                        debug_assert!(*idx_oper < operators.len());
+                    Some(Token::Oper(OperToken { idx_expr: _, idx_oper })) => {
+                        debug_assert!(*idx_oper < opers.len());
                         // E.g. ")-5" when parsing "-" can be valid. So don't skip finding "-".
                         // E.g. "(<<7" when parsing "<<" is invalid, so skip finding it.
-                        if operators[*idx_oper].assoc == OperatorAssoc::Left
-                            || operators[*idx_oper].kind == OperatorKind::OpenParen {
+                        if opers[*idx_oper].assoc == OperAssoc::Left
+                            || opers[*idx_oper].kind == OperKind::OpenParen {
                             continue;
                         }
                     }
@@ -873,11 +873,11 @@ fn parse_operator(str_expr: &str, operators: &[Operator], opt_prev_token: &mut O
             //
             // NOTE: I've got rid of post/pre inc/dec. operators but this does handle the case
             // if I add it back.  Maybe error messages might not be great.
-            else if op.assoc == OperatorAssoc::Right {
+            else if op.assoc == OperAssoc::Right {
                 match opt_prev_token {
                     None => (),
-                    Some(Token::Operator(OperatorToken { idx_expr: _, idx_oper })) => {
-                        if operators[*idx_oper].assoc == OperatorAssoc::Right {
+                    Some(Token::Oper(OperToken { idx_expr: _, idx_oper })) => {
+                        if opers[*idx_oper].assoc == OperAssoc::Right {
                             continue;
                         }
                     }
@@ -890,7 +890,7 @@ fn parse_operator(str_expr: &str, operators: &[Operator], opt_prev_token: &mut O
     }
 
     if is_found {
-        trace!("found '{}' - {}", operators[idx_found].name, operators[idx_found].help);
+        trace!("found '{}' - {}", opers[idx_found].name, opers[idx_found].help);
         Some(idx_found)
     } else {
         None
@@ -899,9 +899,9 @@ fn parse_operator(str_expr: &str, operators: &[Operator], opt_prev_token: &mut O
 
 fn verify_prev_token_not_function(opt_prev_token: &Option<Token>) -> Result<(), ExprError> {
     match opt_prev_token {
-        Some(Token::Function(FunctionToken { idx_expr, idx_func, params: _ })) => {
-            let idx_open_paren = idx_expr + FUNCTIONS[*idx_func].name.len();
-            let message = format!("at {} for function '{}'", idx_open_paren, &FUNCTIONS[*idx_func].name);
+        Some(Token::Func(FuncToken { idx_expr, idx_func, params: _ })) => {
+            let idx_open_paren = idx_expr + FUNCS[*idx_func].name.len();
+            let message = format!("at {} for function '{}'", idx_open_paren, &FUNCS[*idx_func].name);
             trace!("{:?} {}", ExprErrorKind::MissingParenthesis, message);
             Err(ExprError { idx_expr: idx_open_paren,
                             kind: ExprErrorKind::MissingParenthesis,
@@ -913,9 +913,9 @@ fn verify_prev_token_not_function(opt_prev_token: &Option<Token>) -> Result<(), 
 
 fn verify_prev_token_not_close_paren(opt_prev_token: &Option<Token>) -> Result<(), ExprError> {
     match opt_prev_token {
-        Some(Token::Operator(
-            OperatorToken { idx_expr, idx_oper })) if OPERATORS[*idx_oper].kind == OperatorKind::CloseParen => {
-            let idx_oper_or_func = idx_expr + OPERATORS[*idx_oper].name.len();
+        Some(Token::Oper(
+            OperToken { idx_expr, idx_oper })) if OPERS[*idx_oper].kind == OperKind::CloseParen => {
+            let idx_oper_or_func = idx_expr + OPERS[*idx_oper].name.len();
             let message = format!("at {}", idx_oper_or_func);
             trace!("{:?} {}", ExprErrorKind::MissingOperatorOrFunction, message);
             Err(ExprError { idx_expr: idx_oper_or_func,
@@ -931,7 +931,7 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
     // We iterate by characters here because we want to know the index of every token.
     // The index is primarily for reporting parsing and evaluation errors.
     // If we didn't need to store the index, we can easily loop, trim_start whitespaces,
-    // and just re-assign 'str_subexpr' to the string slice given by parse_number().
+    // and just re-assign 'str_subexpr' to the string slice given by parse_num().
     let mut len_token = 0;
     let mut expr_ctx = ExprCtx::new();
     let mut opt_prev_token: Option<Token> = None;
@@ -947,46 +947,47 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
             continue;
         }
         let str_subexpr = &str_expr[idx..];
-        if let (Some(number), len_str) = parse_number(str_subexpr) {
+        if let (Some(number), len_str) = parse_num(str_subexpr) {
             // If the previous token was a function or a close parenthesis, it's invalid.
             // E.g "avg 32.5" or "(2)3" or "(1).5".
             verify_prev_token_not_function(&opt_prev_token)?;
             verify_prev_token_not_close_paren(&opt_prev_token)?;
             trace!("number  : {} (0x{:x})", number.integer, number.integer);
             len_token = len_str;
-            let num_token = NumberToken { idx_expr: idx, number };
-            expr_ctx.push_to_output_queue(Token::Number(num_token), &mut opt_prev_token);
-        } else if let Some(idx_oper) = parse_operator(str_subexpr, &OPERATORS, &mut opt_prev_token) {
-            debug_assert!(idx_oper < OPERATORS.len());
+            let num_token = NumToken { idx_expr: idx, number };
+            expr_ctx.push_to_output_queue(Token::Num(num_token), &mut opt_prev_token);
+        } else if let Some(idx_oper) = parse_oper(str_subexpr, &OPERS, &mut opt_prev_token) {
+            debug_assert!(idx_oper < OPERS.len());
             // If the previous token was a function, this must be an open parenthesis.
             // E.g "avg +"; otherwise this is an invalid expression.
-            if let Some(Token::Function(FunctionToken { idx_expr: idx_expr_func, idx_func, params: _ })) = opt_prev_token {
+            if let Some(Token::Func(FuncToken { idx_expr: idx_expr_func,
+                                                idx_func, params: _ })) = opt_prev_token {
                 // Calculate where the open parenthesis must appear, we don't use "idx" because
                 // it includes all the whitespace after the function name. We want to report the
                 // character immediately after the name of the function.
                 // E.g we want position X in "avgX Y+" rather than position Y.
-                let idx_open_paren = idx_expr_func + FUNCTIONS[idx_func].name.len();
-                if OPERATORS[idx_oper].kind != OperatorKind::OpenParen {
-                    let message = format!("at {} for function '{}'", idx_open_paren, &FUNCTIONS[idx_func].name);
+                let idx_open_paren = idx_expr_func + FUNCS[idx_func].name.len();
+                if OPERS[idx_oper].kind != OperKind::OpenParen {
+                    let message = format!("at {} for function '{}'", idx_open_paren, &FUNCS[idx_func].name);
                     trace!("{:?} {}", ExprErrorKind::MissingParenthesis, message);
                     return Err(ExprError { idx_expr: idx_open_paren,
                                            kind: ExprErrorKind::MissingParenthesis,
                                            message });
                 }
             }
-            trace!("operator: {}", &OPERATORS[idx_oper].name);
-            len_token = OPERATORS[idx_oper].name.len();
-            let oper_token = OperatorToken { idx_expr: idx, idx_oper };
-            expr_ctx.process_parsed_operator(oper_token, &mut opt_prev_token)?;
-        } else if let Some(idx_func) = parse_function(str_subexpr, &FUNCTIONS) {
-            debug_assert!(idx_func < FUNCTIONS.len());
+            trace!("operator: {}", &OPERS[idx_oper].name);
+            len_token = OPERS[idx_oper].name.len();
+            let oper_token = OperToken { idx_expr: idx, idx_oper };
+            expr_ctx.process_parsed_oper(oper_token, &mut opt_prev_token)?;
+        } else if let Some(idx_func) = parse_function(str_subexpr, &FUNCS) {
+            debug_assert!(idx_func < FUNCS.len());
             // If the previous token was a function, we have an invalid expression.
-            // E.g "avg avg"; functions must be followed by open parenthesis only.
+            // E.g "avg avg"; FUNCS must be followed by open parenthesis only.
             verify_prev_token_not_function(&opt_prev_token)?;
-            trace!("function: {}", &FUNCTIONS[idx_func].name);
-            len_token = FUNCTIONS[idx_func].name.len();
-            let func_token = FunctionToken { idx_expr: idx, idx_func, params: 0 };
-            expr_ctx.push_to_op_stack(Token::Function(func_token), &mut opt_prev_token);
+            trace!("function: {}", &FUNCS[idx_func].name);
+            len_token = FUNCS[idx_func].name.len();
+            let func_token = FuncToken { idx_expr: idx, idx_func, params: 0 };
+            expr_ctx.push_to_op_stack(Token::Func(func_token), &mut opt_prev_token);
         } else {
             let message = format!("at {}", idx);
             trace!("{:?} {}", ExprErrorKind::InvalidExpr, message);
@@ -1027,19 +1028,19 @@ pub fn evaluate(expr_ctx: &mut ExprCtx) -> Result<ExprResult, ExprError> {
     let mut stack_output: Vec<Number> = Vec::with_capacity(PRE_ALLOC_TOKENS);
     while let Some(token) = expr_ctx.queue_output.pop_front() {
         match token {
-            Token::Number(NumberToken { idx_expr: _, number }) => {
+            Token::Num(NumToken { idx_expr: _, number }) => {
                 stack_output.push(number);
             }
 
-            Token::Operator(OperatorToken { idx_expr, idx_oper }) => {
-                debug_assert!(idx_oper < OPERATORS.len());
-                let operator = &OPERATORS[idx_oper];
-                if let Some(parameters) = expr_ctx.collect_params(operator.params as usize, &mut stack_output) {
-                    debug_assert!(parameters.len() == operator.params as usize);
-                    let res_expr = (operator.func)(&parameters)?;
+            Token::Oper(OperToken { idx_expr, idx_oper }) => {
+                debug_assert!(idx_oper < OPERS.len());
+                let oper = &OPERS[idx_oper];
+                if let Some(parameters) = expr_ctx.collect_params(oper.params as usize, &mut stack_output) {
+                    debug_assert!(parameters.len() == oper.params as usize);
+                    let res_expr = (oper.evalfn)(&parameters)?;
                     stack_output.push(res_expr);
                 } else {
-                    let message = format!("for operator '{}' at {}", operator.name, idx_expr);
+                    let message = format!("for operator '{}' at {}", oper.name, idx_expr);
                     trace!("{:?} {}", ExprErrorKind::InvalidParamCount, message);
                     return Err(ExprError { idx_expr,
                                            kind: ExprErrorKind::InvalidParamCount,
@@ -1047,12 +1048,12 @@ pub fn evaluate(expr_ctx: &mut ExprCtx) -> Result<ExprResult, ExprError> {
                 }
             }
 
-            Token::Function(FunctionToken { idx_expr, idx_func, params }) => {
-                debug_assert!(idx_func < FUNCTIONS.len());
-                let function = &FUNCTIONS[idx_func];
+            Token::Func(FuncToken { idx_expr, idx_func, params }) => {
+                debug_assert!(idx_func < FUNCS.len());
+                let function = &FUNCS[idx_func];
                 if let Some(parameters) = expr_ctx.collect_params(params as usize, &mut stack_output) {
                     debug_assert!(parameters.len() == params as usize);
-                    let res_expr = (function.func)(&parameters)?;
+                    let res_expr = (function.evalfn)(&parameters)?;
                     stack_output.push(res_expr);
                 } else {
                     let message = format!("for function '{}' at {}", function.name, idx_expr);
@@ -1081,7 +1082,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parse_invalid_numbers() {
+    fn parse_invalid_nums() {
         // Number prefixes and improper decimals shouldn't be parsed as valid numbers.
         let mut vec_nums = vec!["",
                             "x" ,
@@ -1106,22 +1107,22 @@ mod tests {
                             "2..5",
         ];
         // Make sure we never parse operators as valid numbers.
-        for i in 0..OPERATORS.len() {
-            vec_nums.push(&OPERATORS[i].name);
+        for i in 0..OPERS.len() {
+            vec_nums.push(&OPERS[i].name);
         }
-        // Make sure we never parse functions as valid numbers.
-        for i in 0..FUNCTIONS.len() {
-            vec_nums.push(&FUNCTIONS[i].name);
+        // Make sure we never parse FUNCS as valid numbers.
+        for i in 0..FUNCS.len() {
+            vec_nums.push(&FUNCS[i].name);
         }
         for num_res in vec_nums {
-            let (number, len_str) = parse_number(num_res);
+            let (number, len_str) = parse_num(num_res);
             assert!(number.is_none());
             assert_eq!(len_str, 0);
         }
     }
 
     #[test]
-    fn parse_valid_number_u64() {
+    fn parse_valid_nums_u64() {
         let pair_int_result = vec![
             // 0-9
             ("0", 0  ), ("1", 1  ), ("2", 2  ), ("3", 3  ), ("4", 4  ), ("5", 5  ),
@@ -1193,7 +1194,7 @@ mod tests {
             ("0o77", 63 ), ("0o100", 64),
         ];
         for int_res in pair_int_result {
-            let (number, len_str) = parse_number(int_res.0);
+            let (number, len_str) = parse_num(int_res.0);
             assert!(number.is_some(), "failed for ('{}', {})", int_res.0, int_res.1);
             assert_eq!(number.unwrap().integer, int_res.1);
             assert_eq!(len_str, int_res.0.len());
@@ -1201,7 +1202,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_valid_number_f64() {
+    fn parse_valid_nums_f64() {
         let pair_float_result = vec![
             ("0.0"      , 0.0f64   ),
             ("0.1"      , 0.1f64   ),
@@ -1232,7 +1233,7 @@ mod tests {
             ("1234.5e-2", 12.345f64),
         ];
         for float_res in pair_float_result {
-            let (number, len_str) = parse_number(float_res.0);
+            let (number, len_str) = parse_num(float_res.0);
             assert!(number.is_some(), "failed for ('{}', {})", float_res.0, float_res.1);
             assert_eq!(number.unwrap().float, float_res.1);
             assert_eq!(len_str, float_res.0.len());
@@ -1240,42 +1241,42 @@ mod tests {
     }
 
     #[test]
-    fn is_operator_table_valid() {
+    fn is_oper_table_valid() {
         let mut open_paren_count = 0;
         let mut close_paren_count = 0;
         let mut var_assign_count = 0;
         let mut param_sep_count = 0;
-        for (idx, oper) in OPERATORS.iter().enumerate() {
-            assert!(oper.params < 3, "Operator '{}' at {} has {} parameters. \
-                    Operators can have at most 2 parameters.", oper.name, idx, oper.params);
-            assert!(oper.kind != OperatorKind::Regular || oper.params > 0,
+        for (idx, oper) in OPERS.iter().enumerate() {
+            assert!(oper.params < 3, "Oper '{}' at {} has {} parameters. \
+                    Opers can have at most 2 parameters.", oper.name, idx, oper.params);
+            assert!(oper.kind != OperKind::Regular || oper.params > 0,
                     "Regular operator '{}' at {} cannot have 0 parameters.", oper.name, idx);
-            assert!(oper.assoc != OperatorAssoc::Right || oper.params == 1,
+            assert!(oper.assoc != OperAssoc::Right || oper.params == 1,
                     "operator '{}' at {} must have only 1 parameter.", oper.name, idx);
 
             assert_eq!(oper.name.chars().all(|x| x.is_digit(10)), false,
-                       "Operator '{}' invalid. Name cannot contain digits.", oper.name);
+                       "Oper '{}' invalid. Name cannot contain digits.", oper.name);
             assert_eq!(oper.name.chars().all(|x| x == '_'), false,
-                       "Operator '{}' invalid. Name cannot contain '_' character.", oper.name);
+                       "Oper '{}' invalid. Name cannot contain '_' character.", oper.name);
 
             // Ensure open and close parenthesis operators have Nil associativity.
             match oper.kind {
-                OperatorKind::OpenParen => {
-                    assert_eq!(oper.assoc, OperatorAssoc::Nil,
+                OperKind::OpenParen => {
+                    assert_eq!(oper.assoc, OperAssoc::Nil,
                             "Open parenthesis operator '{}' at {} must have no associativity.", oper.name, idx);
                     open_paren_count += 1;
                 }
-                OperatorKind::CloseParen => {
-                    assert_eq!(oper.assoc, OperatorAssoc::Nil,
+                OperKind::CloseParen => {
+                    assert_eq!(oper.assoc, OperAssoc::Nil,
                             "Close parenthesis operator '{}' at {} must have no associativity.", oper.name, idx);
                     close_paren_count += 1;
                 }
-                OperatorKind::VarAssign => var_assign_count += 1,
-                OperatorKind::ParamSep => param_sep_count += 1,
+                OperKind::VarAssign => var_assign_count += 1,
+                OperKind::ParamSep => param_sep_count += 1,
                 _ => (),
             }
 
-            for (idxcmp, opercmp) in OPERATORS.iter().enumerate() {
+            for (idxcmp, opercmp) in OPERS.iter().enumerate() {
                 if idxcmp != idx {
                     // Ensure no duplicate operators.
                     // They can have the same name but must differ in associativity.
@@ -1312,8 +1313,8 @@ mod tests {
     }
 
     #[test]
-    fn is_function_table_valid() {
-        for (idx, func) in FUNCTIONS.iter().enumerate() {
+    fn is_func_table_valid() {
+        for (idx, func) in FUNCS.iter().enumerate() {
             assert!(!func.params.contains(&MAX_FN_PARAMS),
                     "Function '{}' at {} exceeds maximum parameters of {}. Use/alter the maximum.",
                     func.name, idx, MAX_FN_PARAMS);
@@ -1325,8 +1326,8 @@ mod tests {
             assert_ne!(func.name.chars().nth(0).unwrap(), '_',
                        "Function '{}' invalid. Name cannot start with an '_' character.", func.name);
 
-            // Ensure no duplicate functions names.
-            for (idxcmp, funccmp) in FUNCTIONS.iter().enumerate() {
+            // Ensure no duplicate FUNCS names.
+            for (idxcmp, funccmp) in FUNCS.iter().enumerate() {
                 if idxcmp != idx {
                     assert!(func.name != funccmp.name,
                             "Duplicate function '{}' at {} and {}", func.name, idx, idxcmp);
