@@ -85,6 +85,7 @@ pub enum ExprErrorKind {
     InvalidParamType,
     MismatchParenthesis,
     MissingFunction,
+    MissingOperatorOrFunction,
     MissingParenthesis,
     FatalInternal,
 }
@@ -111,6 +112,7 @@ impl fmt::Display for ExprError {
             ExprErrorKind::InvalidParamType => "invalid parameter type",
             ExprErrorKind::MismatchParenthesis => "parenthesis mismatch",
             ExprErrorKind::MissingFunction => "function missing",
+            ExprErrorKind::MissingOperatorOrFunction => "operator or function missing",
             ExprErrorKind::MissingParenthesis => "parenthesis missing",
             ExprErrorKind::FatalInternal => "fatal internal error",
         };
@@ -558,6 +560,22 @@ impl ExprCtx {
         let operator = &OPERATORS[oper_token.idx_oper];
         match operator.kind {
             OperatorKind::OpenParen => {
+                // Previous token if any cannot be a close parenthesis or a number.
+                // E.g "(5)(2)" or "5(2)".
+                let missing_oper_or_func = match opt_prev_token {
+                    Some(Token::Operator(OperatorToken { idx_expr: _, idx_oper })) => {
+                        (OPERATORS[*idx_oper].kind == OperatorKind::CloseParen)
+                    }
+                    Some(Token::Number(_)) => true,
+                    _ => false,
+                };
+                if missing_oper_or_func {
+                    let message = format!("for open parenthesis at '{}'", oper_token.idx_expr);
+                    trace!("{:?} {}", ExprErrorKind::MissingOperatorOrFunction, message);
+                    return Err(ExprError { idx_expr: oper_token.idx_expr,
+                                           kind: ExprErrorKind::MissingOperatorOrFunction,
+                                           message });
+                }
                 self.push_to_op_stack(Token::Operator(oper_token), opt_prev_token);
             }
 

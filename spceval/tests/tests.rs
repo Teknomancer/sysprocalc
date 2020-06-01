@@ -1,7 +1,7 @@
 use spceval::{self, Number, ExprError, ExprErrorKind};
 
 #[test]
-fn valid_expressions() {
+fn valid_exprs() {
     // Don't bother testing different radices here. Those are already covered by unit tests.
     // Here we should focus on expression constructs rather than validating parsing of numbers.
     // Focus on testing:
@@ -18,6 +18,7 @@ fn valid_expressions() {
         ("+8 +8", Number{ integer: 16, float: 16.0 }),
         ("+8 + -2", Number{ integer: 6, float: 6.0 }),
         ("-8 - -2", Number{ integer: 0xfffffffffffffffa, float: -6.0 }),
+        ("(1234)", Number{ integer: 1234, float: 1234.0 }),
         ("(2+2)", Number{ integer: 4, float: 4.0 }),
         ("1+2*3", Number{ integer: 7, float: 7.0 }),
         ("(1+2)*3", Number{ integer: 9, float: 9.0 }),
@@ -47,9 +48,11 @@ fn valid_expressions() {
 }
 
 #[test]
-fn invalid_expressions() {
+fn invalid_exprs() {
     use ExprErrorKind::*;
     let expr_results = vec![
+        ("", ExprError { idx_expr: 0, kind: EmptyExpr, message: "".to_string() }),
+        ("()", ExprError { idx_expr: 0, kind: EmptyExpr, message: "".to_string() }),
         ("2 +", ExprError { idx_expr: 0, kind: InvalidParamCount, message: "".to_string() }),
         ("- -2", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
         ("+ +2", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
@@ -62,6 +65,26 @@ fn invalid_expressions() {
         ("(5,", ExprError { idx_expr: 0, kind: MissingFunction, message: "".to_string() }),
         ("(2 +", ExprError { idx_expr: 0, kind: MismatchParenthesis, message: "".to_string() }),
         ("2 + 5)", ExprError { idx_expr: 0, kind: MismatchParenthesis, message: "".to_string() }),
+        ("++", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
+        ("--", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
+        (",5,", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
+        ("0,", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
+        ("(),", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
+        ("(0),", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
+        ("5+()", ExprError { idx_expr: 0, kind: InvalidParamCount, message: "".to_string() }),
+        ("-()", ExprError { idx_expr: 0, kind: InvalidParamCount, message: "".to_string() }),
+        ("+()", ExprError { idx_expr: 0, kind: InvalidParamCount, message: "".to_string() }),
+        (",(),", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
+        ("(),()", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
+        ("(1),()", ExprError { idx_expr: 0, kind: MissingParenthesis, message: "".to_string() }),
+        ("(1),(2)", ExprError { idx_expr: 0, kind: MissingParenthesis, message: "".to_string() }),
+        ("(1),(2),", ExprError { idx_expr: 0, kind: MissingParenthesis, message: "".to_string() }),
+        ("(1)(2),", ExprError { idx_expr: 0, kind: MissingOperatorOrFunction, message: "".to_string() }),
+        ("5(2),", ExprError { idx_expr: 0, kind: MissingOperatorOrFunction, message: "".to_string() }),
+        ("5,(2),", ExprError { idx_expr: 0, kind: MissingParenthesis, message: "".to_string() }),
+        // The below expressions need fixing in the parser/evaluation phase in the library!
+        // They are parsing/evaluation bugs!
+        //("(1).5", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
     ];
     for expr_res in expr_results {
         let res_parse = spceval::parse(&expr_res.0);
@@ -69,9 +92,9 @@ fn invalid_expressions() {
             let mut expr_ctx = res_parse.unwrap();
             let res_eval = spceval::evaluate(&mut expr_ctx);
             assert!(res_eval.is_err());
-            assert_eq!(expr_res.1.kind, res_eval.err().unwrap().kind);
+            assert_eq!(expr_res.1.kind, res_eval.err().unwrap().kind, "{}", expr_res.0);
         } else {
-            assert_eq!(expr_res.1.kind, res_parse.err().unwrap().kind);
+            assert_eq!(expr_res.1.kind, res_parse.err().unwrap().kind, "{}", expr_res.0);
         }
     }
 }
