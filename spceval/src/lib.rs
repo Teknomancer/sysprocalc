@@ -725,10 +725,7 @@ impl ExprCtx {
 
 fn parse_function(str_expr: &str, funcs: &[Func]) -> Option<usize> {
     debug_assert_eq!(str_expr.trim_start_matches(char::is_whitespace), str_expr);
-
-    // All FUNCS must be succeeded by an open parenthesis.
-    // Collect function name till we find an open parenthesis and then check if that function
-    // exists in the function table.
+    // Todo: Sort and use binary search if function table grows.
     let mut is_found = false;
     let mut idx_found = 0;
     for (idx, func) in funcs.iter().enumerate() {
