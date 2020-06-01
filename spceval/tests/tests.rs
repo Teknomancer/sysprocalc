@@ -55,6 +55,13 @@ fn invalid_expressions() {
         ("+ +2", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
         (",2", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
         ("(", ExprError { idx_expr: 0, kind: MismatchParenthesis, message: "".to_string() }),
+        (")", ExprError { idx_expr: 0, kind: MismatchParenthesis, message: "".to_string() }),
+        (",", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
+        ("(,", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
+        (",)", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
+        ("(5,", ExprError { idx_expr: 0, kind: MissingFunction, message: "".to_string() }),
+        ("(2 +", ExprError { idx_expr: 0, kind: MismatchParenthesis, message: "".to_string() }),
+        ("2 + 5)", ExprError { idx_expr: 0, kind: MismatchParenthesis, message: "".to_string() }),
     ];
     for expr_res in expr_results {
         let res_parse = spceval::parse(&expr_res.0);
