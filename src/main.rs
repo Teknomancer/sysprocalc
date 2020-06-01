@@ -29,7 +29,7 @@ fn write_color(stream: &mut StandardStream, s: &str, col: Color, is_intense: boo
     Ok(())
 }
 
-fn print_number_result(stream: &mut StandardStream, number: &spceval::Number) -> std::io::Result<()> {
+fn print_result_num(stream: &mut StandardStream, number: &spceval::Number) -> std::io::Result<()> {
     // Format as hex
     let str_hex_zfill = format!("{:#016x}", number.integer);
     let str_hex = format!("{:#x}", number.integer);
@@ -124,31 +124,25 @@ fn print_error(stream: &mut StandardStream, err: ExprError) -> std::io::Result<(
     Ok(())
 }
 
+#[inline(always)]
 fn parse_and_eval_expr_internal(stream: &mut StandardStream, str_expr: &str) -> std::io::Result<()> {
-    let res_parse = spceval::parse(&str_expr);
-    if let Err(e) = res_parse {
-        print_error(stream, e)?;
-        return Ok(());
+    match spceval::parse(&str_expr) {
+        Ok(mut expr_ctx) => {
+            match spceval::evaluate(&mut expr_ctx) {
+                Ok(expr_result) => {
+                    match expr_result {
+                        spceval::ExprResult::Number(n) => print_result_num(stream, &n)?,
+                        spceval::ExprResult::Command(c) => println!("Result: {}", c),
+                    }
+                }
+                Err(e) => print_error(stream, e)?,
+            }
+        }
+        Err(e) => print_error(stream, e)?,
     }
-
-    let mut expr_ctx = res_parse.unwrap();
-    let res_eval = spceval::evaluate(&mut expr_ctx);
-    if let Err(e) = res_eval {
-        print_error(stream, e)?;
-        return Ok(());
-    }
-
-    let res_expr = res_eval.unwrap();
-    match res_expr {
-        spceval::ExprResult::Number(n) => print_number_result(stream, &n)?,
-        spceval::ExprResult::Command(c) => println!("Result: {}", c),
-    }
-
-    writeln!(stream)?;
     Ok(())
 }
 
-#[inline(always)]
 fn parse_and_eval_expr(stream: &mut StandardStream, str_expr: &str) -> std::io::Result<()> {
     // Enable trace level logging while parsing and evaluating using spceval.
     #[cfg(debug_assertions)]
