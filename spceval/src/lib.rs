@@ -1184,23 +1184,25 @@ mod tests {
         let mut var_assign_count = 0;
         let mut param_sep_count = 0;
         for (idx, oper) in OPERATORS.iter().enumerate() {
-            // Ensure parameters can at most be 2 for operators.
             assert!(oper.params < 3, "Operator '{}' at {} has {} parameters. \
                     Operators can have at most 2 parameters.", oper.name, idx, oper.params);
-
-            // Ensure regular operators cannot have 0 parameters.
             assert!(oper.kind != OperatorKind::Regular || oper.params > 0,
                     "Regular operator '{}' at {} cannot have 0 parameters.", oper.name, idx);
 
-            // Ensure open and close parenthesis operators do not have left or right associativity.
+            assert_eq!(oper.name.chars().all(|x| x.is_digit(10)), false,
+                       "Operator '{}' invalid. Name cannot contain digits.", oper.name);
+            assert_eq!(oper.name.chars().all(|x| x == '_'), false,
+                       "Operator '{}' invalid. Name cannot contain '_' character.", oper.name);
+
+            // Ensure open and close parenthesis operators have Nil associativity.
             match oper.kind {
                 OperatorKind::OpenParen => {
-                    assert!(oper.assoc == OperatorAssoc::Nil,
+                    assert_eq!(oper.assoc, OperatorAssoc::Nil,
                             "Open parenthesis operator '{}' at {} must have no associativity.", oper.name, idx);
                     open_paren_count += 1;
                 }
                 OperatorKind::CloseParen => {
-                    assert!(oper.assoc == OperatorAssoc::Nil,
+                    assert_eq!(oper.assoc, OperatorAssoc::Nil,
                             "Close parenthesis operator '{}' at {} must have no associativity.", oper.name, idx);
                     close_paren_count += 1;
                 }
@@ -1248,18 +1250,18 @@ mod tests {
     #[test]
     fn is_function_table_valid() {
         for (idx, func) in FUNCTIONS.iter().enumerate() {
-            // Ensure parameter is within maximum range.
             assert!(!func.params.contains(&MAX_FN_PARAMS),
                     "Function '{}' at {} exceeds maximum parameters of {}. Use/alter the maximum.",
                     func.name, idx, MAX_FN_PARAMS);
 
-            // Ensure function names cannot begin a digit or '_' to avoid parsing conflicts
-            // with a number prefix or a variable name.
-            assert!(!func.name.chars().count() > 0);
-            assert!(!func.name.chars().next().unwrap().is_digit(10));
-            assert!(func.name.chars().next().unwrap() != '_');
+            assert_eq!(func.name.is_empty(), false,
+                    "Function at {} invalid. Name cannot be 0 length.", idx);
+            assert_eq!(func.name.chars().nth(0).unwrap().is_digit(10), false,
+                       "Function '{}' invalid. Name cannot start with digits.", func.name);
+            assert_ne!(func.name.chars().nth(0).unwrap(), '_',
+                       "Function '{}' invalid. Name cannot start with an '_' character.", func.name);
 
-            // Ensure no duplicate functions.
+            // Ensure no duplicate functions names.
             for (idxcmp, funccmp) in FUNCTIONS.iter().enumerate() {
                 if idxcmp != idx {
                     assert!(func.name != funccmp.name,
