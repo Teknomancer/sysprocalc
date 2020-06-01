@@ -1,18 +1,23 @@
-use spceval::{self, Number};
+use spceval::{self, Number, ExprError, ExprErrorKind};
 
 #[test]
 fn valid_expressions() {
+    // Don't bother testing different radices here. Those are already covered by unit tests.
+    // Here we should focus on expression constructs rather than validating parsing of numbers.
+    // Focus on testing:
+    //   - Operator preceedence.
+    //   - Parenthesis and related priority.
+    //   - Functions.
+    //   - Maybe whitespace in odd places.
+    // Make each expression test meaningful and try not to have redundant tests.
     let expr_results = vec![
-        // Todo: Don't bother testing different radices here.
-        // Those are already covered by unit tests.
-        // Here we should focus on expression constructs rather than validating numbers.
-        // Focus on testing:
-        //    - Operator preceedence.
-        //    - Paranthesis, sub-paranthesis and priority.
-        //    - Functions.
-        //    - Maybe whitespace in odd places.
-        // Make each expression test meaningful and try not to have redundant expressions.
         ("2+2", Number{ integer: 4, float: 4.0 }),
+        ("+55.5", Number{ integer: 55, float: 55.5 }),
+        ("-4", Number{ integer: 0xfffffffffffffffc, float: -4.0 }),
+        ("-4 -4", Number{ integer: 0xfffffffffffffff8, float: -8.0 }),
+        ("+8 +8", Number{ integer: 16, float: 16.0 }),
+        ("+8 + -2", Number{ integer: 6, float: 6.0 }),
+        ("-8 - -2", Number{ integer: 0xfffffffffffffffa, float: -6.0 }),
         ("(2+2)", Number{ integer: 4, float: 4.0 }),
         ("1+2*3", Number{ integer: 7, float: 7.0 }),
         ("(1+2)*3", Number{ integer: 9, float: 9.0 }),
@@ -37,6 +42,29 @@ fn valid_expressions() {
                 assert_eq!(expr_res.1.float, n.float);
             }
             _ => (),
+        }
+    }
+}
+
+#[test]
+fn invalid_expressions() {
+    use ExprErrorKind::*;
+    let expr_results = vec![
+        ("2 +", ExprError { idx_expr: 0, kind: InvalidParamCount, message: "".to_string() }),
+        ("- -2", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
+        ("+ +2", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
+        (",2", ExprError { idx_expr: 0, kind: InvalidExpr, message: "".to_string() }),
+        ("(", ExprError { idx_expr: 0, kind: MismatchParenthesis, message: "".to_string() }),
+    ];
+    for expr_res in expr_results {
+        let res_parse = spceval::parse(&expr_res.0);
+        if (res_parse.is_ok()) {
+            let mut expr_ctx = res_parse.unwrap();
+            let res_eval = spceval::evaluate(&mut expr_ctx);
+            assert!(res_eval.is_err());
+            assert_eq!(expr_res.1.kind, res_eval.err().unwrap().kind);
+        } else {
+            assert_eq!(expr_res.1.kind, res_parse.err().unwrap().kind);
         }
     }
 }
