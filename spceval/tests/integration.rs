@@ -34,6 +34,8 @@ fn valid_exprs() {
         ("212 + (1 * (3 - (4 * 5)))", Number { integer: 195, float: 195.0 }),
     ];
 
+    // Fix the following: 1/0, 0/0, 0/1. All three are broken and some even panics!
+
     for expr_res in expr_results {
         let res_parse = spceval::parse(&expr_res.0);
         assert!(res_parse.is_ok(), "{}", expr_res.0);

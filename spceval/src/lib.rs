@@ -759,7 +759,7 @@ fn parse_num(str_expr: &str) -> (Option<Number>, usize) {
                 _ => (),
             }
         } else {
-            return (Some(Number { integer: 0u64, float: 0f64 }), 1)
+            return (Some(Number { integer: 0u64, float: 0f64 }), 1);
         }
     }
 
