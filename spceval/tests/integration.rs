@@ -2,14 +2,18 @@ use spceval::{self, Number, ExprError, ExprErrorKind};
 
 #[test]
 fn valid_exprs() {
-    // Don't bother testing different radices here. Those are already covered by unit tests.
-    // Here we should focus on expression constructs rather than validating parsing of numbers.
+    // These are valid expressions and must produce the right results.
+    // Don't bother testing different numeric radices here, those are already covered
+    // by unit tests. Here we should focus on expression constructs rather than
+    // validating parsing of numbers.
     // Focus on testing:
     //   - Operator preceedence.
     //   - Parenthesis and related priority.
     //   - Functions.
     //   - Maybe whitespace in odd places.
     // Make each expression test meaningful and try not to have redundant tests.
+    // TODO: Try to split this into logical categories like unary, binary,
+    // paranthesis, operator priority etc.
     let expr_results = vec![
         ("2+2", Number { integer: 4, float: 4.0 }),
         ("+55.5", Number { integer: 55, float: 55.5 }),
@@ -36,8 +40,6 @@ fn valid_exprs() {
         ("0/5", Number { integer: 0, float: 0.0 }),
     ];
 
-    // Fix the following: 1/0, 0/0 are broken and even panics!
-
     for expr_res in expr_results {
         let res_parse = spceval::parse(&expr_res.0);
         assert!(res_parse.is_ok(), "{}", expr_res.0);
@@ -58,7 +60,30 @@ fn valid_exprs() {
 }
 
 #[test]
+fn valid_exprs_eval_fail() {
+    // These are expressions that are syntactically valid but guaranteed to fail during
+    // evaluation. E.g "1/0" is perfectly valid syntax but fails due to division by zero.
+    // These must never produce errors during the parsing phase.
+    use ExprErrorKind::*;
+    let expr_results = vec![
+        ("1/0", ExprError { idx_expr: 0, kind: FailedEvaluation, message: String::new() }),
+    ];
+    for expr_res in expr_results {
+        let res_parse = spceval::parse(&expr_res.0);
+        assert!(res_parse.is_ok(), "{}", expr_res.0);
+        let mut expr_ctx = res_parse.unwrap();
+        let res_eval = spceval::evaluate(&mut expr_ctx);
+        assert!(res_eval.is_err(), "{}", expr_res.0);
+        assert_eq!(expr_res.1.kind, res_eval.err().unwrap().kind, "{}", expr_res.0);
+    }
+}
+
+#[test]
 fn invalid_exprs() {
+    // These are expressions that MUST produce errors in either the parse or evaluation
+    // phase. As long as they produce the required errors it's fine. Some expressions
+    // like "2 +" fail during evaluation due to the way we parse operators but others
+    // like ",5" will fail during parsing.
     use ExprErrorKind::*;
     let expr_results = vec![
         ("", ExprError { idx_expr: 0, kind: EmptyExpr, message: String::new() }),
