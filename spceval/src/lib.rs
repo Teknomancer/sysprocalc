@@ -379,14 +379,14 @@ fn func_avg(nums: &[Number]) -> Result<Number, ExprError> {
 
 #[derive(Debug, Copy, Clone)]
 struct NumToken {
-    idx_expr: usize,
     number: Number,
+    idx_expr: usize,
 }
 
 #[derive(Copy, Clone)]
 struct OperToken {
-    idx_expr: usize,
     idx_oper: usize,
+    idx_expr: usize,
 }
 
 impl fmt::Debug for OperToken {
@@ -401,8 +401,8 @@ impl fmt::Debug for OperToken {
 
 #[derive(Copy, Clone)]
 struct FuncToken {
-    idx_expr: usize,
     idx_func: usize,
+    idx_expr: usize,
     params: u8,
 }
 
@@ -506,7 +506,7 @@ impl ExprCtx {
         while let Some(ref_token) = self.stack_op.last() {
             // If the stack has an open parenthesis, we have a parenthesis mismatch.
             match ref_token {
-                Token::Oper(OperToken { idx_expr, idx_oper }) => {
+                Token::Oper(OperToken { idx_oper, idx_expr }) => {
                     debug_assert!(*idx_oper < OPERS.len());
                     let oper = &OPERS[*idx_oper];
                     if oper.kind == OperKind::OpenParen {
@@ -527,9 +527,7 @@ impl ExprCtx {
 
     fn pop_func_from_stack(&mut self) -> Option<FuncToken> {
         // If a function preceeds the open parenthesis, pop it to the output queue.
-        if let Some(Token::Func(FuncToken { idx_expr: _,
-                                            idx_func: _,
-                                            params: _ })) = self.stack_op.last() {
+        if let Some(Token::Func(_)) = self.stack_op.last() {
             // We safely unwrap both the token from the stack as well as the result from
             // the try_from() because we've already checked that the token on the top of
             // the stack is a function token.
@@ -565,9 +563,9 @@ impl ExprCtx {
                 // E.g "(5)(2)" or "5(2)".
                 let missing_oper_or_func = match opt_prev_token {
                     Some(Token::Num(_)) => true,
-                    Some(Token::Oper(
-                        OperToken { idx_expr: _,
-                                        idx_oper })) => OPERS[*idx_oper].kind == OperKind::CloseParen,
+                    Some(Token::Oper(OperToken { idx_oper, .. })) => {
+                        OPERS[*idx_oper].kind == OperKind::CloseParen
+                    }
                     _ => false,
                 };
                 if missing_oper_or_func {
@@ -585,8 +583,7 @@ impl ExprCtx {
                 let mut found_open_paren = false;
                 while let Some(ref_token) = self.stack_op.last() {
                     match ref_token {
-                        Token::Oper(OperToken { idx_expr: _,
-                                                        idx_oper })
+                        Token::Oper(OperToken { idx_oper, .. })
                                 if OPERS[*idx_oper].kind == OperKind::OpenParen => {
                             found_open_paren = true;
                             break;
@@ -625,7 +622,7 @@ impl ExprCtx {
                 // Find the previous open parenthesis.
                 while let Some(ref_token) = self.stack_op.last() {
                     match ref_token {
-                        Token::Oper(OperToken { idx_expr: _, idx_oper })
+                        Token::Oper(OperToken { idx_oper, .. })
                             if OPERS[*idx_oper].kind == OperKind::OpenParen => break,
                         _ => self.pop_move_to_output_queue(),
                     }
@@ -653,7 +650,7 @@ impl ExprCtx {
                         // No function preceeding open parenthesis for a parameter separator. E.g "(32,5)"
                         let message = format!("for parameter separator '{}' at {}", oper.name, oper_token.idx_expr);
                         trace!("{:?} {}", ExprErrorKind::MissingFunction, message);
-                        return Err(ExprError { idx_expr: 0,
+                        return Err(ExprError { idx_expr: oper_token.idx_expr,
                                                kind: ExprErrorKind::MissingFunction,
                                                message });
                     }
@@ -661,7 +658,7 @@ impl ExprCtx {
                     // No matching open parenthesis for the parameter separator. E.g "32,4".
                     let message = format!("for parameter separator '{}' at {}", oper.name, oper_token.idx_expr);
                     trace!("{:?} {}", ExprErrorKind::MissingParenthesis, message);
-                    return Err(ExprError { idx_expr: 0,
+                    return Err(ExprError { idx_expr: oper_token.idx_expr,
                                            kind: ExprErrorKind::MissingParenthesis,
                                            message });
                 }
@@ -682,8 +679,7 @@ impl ExprCtx {
                     debug_assert!(opt_prev_token.is_some());
                     match opt_prev_token {
                         Some(Token::Oper(
-                            OperToken { idx_expr: _,
-                                            idx_oper })) if OPERS[*idx_oper].kind != OperKind::CloseParen => {
+                            OperToken { idx_oper, .. })) if OPERS[*idx_oper].kind != OperKind::CloseParen => {
                             let message = format!("for operator '{}' at {}", oper.name, oper_token.idx_expr);
                             trace!("{:?} {}", ExprErrorKind::MissingOperand, message);
                             return Err(ExprError { idx_expr: oper_token.idx_expr,
@@ -696,7 +692,7 @@ impl ExprCtx {
 
                 while let Some(ref_token) = self.stack_op.last() {
                     match ref_token {
-                        Token::Oper(OperToken { idx_expr: _, idx_oper }) => {
+                        Token::Oper(OperToken { idx_oper, .. }) => {
                             let token_stack_oper = &OPERS[*idx_oper];
                             debug_assert!(token_stack_oper.kind != OperKind::CloseParen);
                             if token_stack_oper.kind == OperKind::OpenParen {
@@ -852,7 +848,7 @@ fn parse_oper(str_expr: &str, opers: &[Oper], opt_prev_token: &mut Option<Token>
                 match opt_prev_token {
                     // E.g. "<<4" or ",5".
                     None => continue,
-                    Some(Token::Oper(OperToken { idx_expr: _, idx_oper })) => {
+                    Some(Token::Oper(OperToken { idx_oper, .. })) => {
                         debug_assert!(*idx_oper < opers.len());
                         // E.g. ")-5" when parsing "-" can be valid. So don't skip finding "-".
                         // E.g. "(<<7" when parsing "<<" is invalid, so skip finding it.
@@ -873,7 +869,7 @@ fn parse_oper(str_expr: &str, opers: &[Oper], opt_prev_token: &mut Option<Token>
             else if op.assoc == OperAssoc::Right {
                 match opt_prev_token {
                     None => (),
-                    Some(Token::Oper(OperToken { idx_expr: _, idx_oper })) => {
+                    Some(Token::Oper(OperToken { idx_oper, .. })) => {
                         if opers[*idx_oper].assoc == OperAssoc::Right {
                             continue;
                         }
@@ -896,7 +892,7 @@ fn parse_oper(str_expr: &str, opers: &[Oper], opt_prev_token: &mut Option<Token>
 
 fn verify_prev_token_not_function(opt_prev_token: &Option<Token>) -> Result<(), ExprError> {
     match opt_prev_token {
-        Some(Token::Func(FuncToken { idx_expr, idx_func, params: _ })) => {
+        Some(Token::Func(FuncToken { idx_func, idx_expr, .. })) => {
             let idx_open_paren = idx_expr + FUNCS[*idx_func].name.len();
             let message = format!("at {} for function '{}'", idx_open_paren, &FUNCS[*idx_func].name);
             trace!("{:?} {}", ExprErrorKind::MissingParenthesis, message);
@@ -911,7 +907,7 @@ fn verify_prev_token_not_function(opt_prev_token: &Option<Token>) -> Result<(), 
 fn verify_prev_token_not_close_paren(opt_prev_token: &Option<Token>) -> Result<(), ExprError> {
     match opt_prev_token {
         Some(Token::Oper(
-            OperToken { idx_expr, idx_oper })) if OPERS[*idx_oper].kind == OperKind::CloseParen => {
+            OperToken { idx_oper, idx_expr })) if OPERS[*idx_oper].kind == OperKind::CloseParen => {
             let idx_oper_or_func = idx_expr + OPERS[*idx_oper].name.len();
             let message = format!("at {}", idx_oper_or_func);
             trace!("{:?} {}", ExprErrorKind::MissingOperatorOrFunction, message);
@@ -951,14 +947,14 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
             verify_prev_token_not_close_paren(&opt_prev_token)?;
             trace!("number  : {} (0x{:x})", number.integer, number.integer);
             len_token = len_str;
-            let num_token = NumToken { idx_expr: idx, number };
+            let num_token = NumToken { number, idx_expr: idx };
             expr_ctx.push_to_output_queue(Token::Num(num_token), &mut opt_prev_token);
         } else if let Some(idx_oper) = parse_oper(str_subexpr, &OPERS, &mut opt_prev_token) {
             debug_assert!(idx_oper < OPERS.len());
             // If the previous token was a function, this must be an open parenthesis.
             // E.g "avg +"; otherwise this is an invalid expression.
-            if let Some(Token::Func(FuncToken { idx_expr: idx_expr_func,
-                                                idx_func, params: _ })) = opt_prev_token {
+            if let Some(Token::Func(FuncToken { idx_func,
+                                                idx_expr: idx_expr_func, .. })) = opt_prev_token {
                 // Calculate where the open parenthesis must appear, we don't use "idx" because
                 // it includes all the whitespace after the function name. We want to report the
                 // character immediately after the name of the function.
@@ -974,7 +970,7 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
             }
             trace!("operator: {}", &OPERS[idx_oper].name);
             len_token = OPERS[idx_oper].name.len();
-            let oper_token = OperToken { idx_expr: idx, idx_oper };
+            let oper_token = OperToken { idx_oper, idx_expr: idx };
             expr_ctx.process_parsed_oper(oper_token, &mut opt_prev_token)?;
         } else if let Some(idx_func) = parse_function(str_subexpr, &FUNCS) {
             debug_assert!(idx_func < FUNCS.len());
@@ -983,7 +979,7 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
             verify_prev_token_not_function(&opt_prev_token)?;
             trace!("function: {}", &FUNCS[idx_func].name);
             len_token = FUNCS[idx_func].name.len();
-            let func_token = FuncToken { idx_expr: idx, idx_func, params: 0 };
+            let func_token = FuncToken { idx_func, idx_expr: idx, params: 0 };
             expr_ctx.push_to_op_stack(Token::Func(func_token), &mut opt_prev_token);
         } else {
             let message = format!("at {}", idx);
@@ -1025,11 +1021,9 @@ pub fn evaluate(expr_ctx: &mut ExprCtx) -> Result<ExprResult, ExprError> {
     let mut stack_output: Vec<Number> = Vec::with_capacity(PRE_ALLOC_TOKENS);
     while let Some(token) = expr_ctx.queue_output.pop_front() {
         match token {
-            Token::Num(NumToken { idx_expr: _, number }) => {
-                stack_output.push(number);
-            }
+            Token::Num(NumToken { number, .. }) => stack_output.push(number),
 
-            Token::Oper(OperToken { idx_expr, idx_oper }) => {
+            Token::Oper(OperToken { idx_oper, idx_expr }) => {
                 debug_assert!(idx_oper < OPERS.len());
                 let oper = &OPERS[idx_oper];
                 if let Some(parameters) = expr_ctx.collect_params(oper.params as usize, &mut stack_output) {
@@ -1045,7 +1039,7 @@ pub fn evaluate(expr_ctx: &mut ExprCtx) -> Result<ExprResult, ExprError> {
                 }
             }
 
-            Token::Func(FuncToken { idx_expr, idx_func, params }) => {
+            Token::Func(FuncToken { idx_func, idx_expr, params }) => {
                 debug_assert!(idx_func < FUNCS.len());
                 let function = &FUNCS[idx_func];
                 if let Some(parameters) = expr_ctx.collect_params(params as usize, &mut stack_output) {
@@ -1068,9 +1062,7 @@ pub fn evaluate(expr_ctx: &mut ExprCtx) -> Result<ExprResult, ExprError> {
     } else {
         let message = "evaluation failed".to_string();
         trace!("{}", message);
-        Err(ExprError { idx_expr: 0,
-                        kind: ExprErrorKind::InvalidExpr,
-                        message })
+        Err(ExprError { idx_expr: 0, kind: ExprErrorKind::InvalidExpr, message })
     }
 }
 
