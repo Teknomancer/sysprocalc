@@ -32,9 +32,11 @@ fn valid_exprs() {
         (".5*0", Number { integer: 0, float: 0.0 }),
         ("5/(5/(5/(5)))", Number { integer: 1, float: 1.0 }),
         ("212 + (1 * (3 - (4 * 5)))", Number { integer: 195, float: 195.0 }),
+        ("0*5", Number { integer: 0, float: 0.0 }),
+        ("0/5", Number { integer: 0, float: 0.0 }),
     ];
 
-    // Fix the following: 1/0, 0/0, 0/1. All three are broken and some even panics!
+    // Fix the following: 1/0, 0/0 are broken and even panics!
 
     for expr_res in expr_results {
         let res_parse = spceval::parse(&expr_res.0);
@@ -75,9 +77,9 @@ fn invalid_exprs() {
         ("2 + 5)", ExprError { idx_expr: 0, kind: MismatchParenthesis, message: String::new() }),
         ("++", ExprError { idx_expr: 0, kind: MissingOperand, message: String::new() }),
         ("--", ExprError { idx_expr: 0, kind: MissingOperand, message: String::new() }),
-        ("0,", ExprError { idx_expr: 0, kind: InvalidExpr, message: String::new() }),
+        ("0,", ExprError { idx_expr: 0, kind: MissingParenthesis, message: String::new() }),
         ("(),", ExprError { idx_expr: 0, kind: MissingParenthesis, message: String::new() }),
-        ("(0),", ExprError { idx_expr: 0, kind: InvalidExpr, message: String::new() }),
+        ("(0),", ExprError { idx_expr: 0, kind: MissingParenthesis, message: String::new() }),
         ("5+()", ExprError { idx_expr: 0, kind: InvalidParamCount, message: String::new() }),
         ("-()", ExprError { idx_expr: 0, kind: InvalidParamCount, message: String::new() }),
         ("+()", ExprError { idx_expr: 0, kind: InvalidParamCount, message: String::new() }),

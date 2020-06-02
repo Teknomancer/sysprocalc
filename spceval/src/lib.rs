@@ -800,9 +800,17 @@ fn parse_num(str_expr: &str) -> (Option<Number>, usize) {
         }
     }
 
-    // If we have no digits or if the number ends in a decimal point, it's not a valid.
-    if str_num.is_empty() || str_num.ends_with('.') {
-        return (None, 0)
+    if str_num.is_empty() {
+        // The number is "0" followed by some non-numeric character, return 0.
+        if len_prefix == 1 {
+            return (Some(Number { integer: 0u64, float: 0f64 }), 1);
+        }
+        // No numeric characters with or without a prefix, either way it's invalid.
+        // E.g "0x", "0n" or "/".
+        return (None, 0);
+    } else if str_num.ends_with('.') {
+        // Number ends in a decimal point, return invalid.
+        return (None, 0);
     }
 
     // 'consumed' contains the length of characters consumed by parsing this number.
