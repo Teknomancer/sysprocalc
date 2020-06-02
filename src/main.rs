@@ -9,16 +9,16 @@ use std::collections::VecDeque;
 mod logger;
 
 #[cfg(debug_assertions)]
-const ERR_INIT_LOGGER: &str = "Error initializing logger:";
+static ERR_INIT_LOGGER: &str = "Error initializing logger:";
 
-const USER_PROMPT: &str = "> ";
-const DEC_RADIX: &str = "Dec:";
-const HEX_RADIX: &str = "Hex:";
-const OCT_RADIX: &str = "Oct:";
-const BIN_RADIX: &str = "Bin:";
-const EXITING_APP: &str = "Exiting:";
-const BITS_PLURAL: &str = "bits";
-const BIT_SINGULAR: &str = "bit";
+static USER_PROMPT: &str = "> ";
+static DEC_RADIX: &str = "Dec:";
+static HEX_RADIX: &str = "Hex:";
+static OCT_RADIX: &str = "Oct:";
+static BIN_RADIX: &str = "Bin:";
+static EXITING_APP: &str = "Exiting:";
+static BITS_PLURAL: &str = "bits";
+static BIT_SINGULAR: &str = "bit";
 
 fn write_color(stream: &mut StandardStream, s: &str, col: Color, is_intense: bool) -> std::io::Result<()> {
     stream.set_color(ColorSpec::new()
