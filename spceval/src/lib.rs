@@ -80,6 +80,7 @@ static FUNCS: [Func<'static>; 3] = [
 #[non_exhaustive]
 pub enum ExprErrorKind {
     EmptyExpr,
+    FailedEvaluation,
     InvalidExpr,
     InvalidParamCount,
     InvalidParamType,
@@ -88,7 +89,6 @@ pub enum ExprErrorKind {
     MissingOperand,
     MissingOperatorOrFunction,
     MissingParenthesis,
-    FatalInternal,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -108,6 +108,7 @@ impl fmt::Display for ExprError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let str_errkind = match self.kind {
             ExprErrorKind::EmptyExpr => "expression empty",
+            ExprErrorKind::FailedEvaluation => "evaluation failed",
             ExprErrorKind::InvalidExpr => "invalid character",
             ExprErrorKind::InvalidParamCount => "incorrect number of parameters",
             ExprErrorKind::InvalidParamType => "invalid parameter type",
@@ -116,7 +117,6 @@ impl fmt::Display for ExprError {
             ExprErrorKind::MissingOperand => "operand missing",
             ExprErrorKind::MissingOperatorOrFunction => "operator or function missing",
             ExprErrorKind::MissingParenthesis => "parenthesis missing",
-            ExprErrorKind::FatalInternal => "fatal internal error",
         };
         write!(f, "{} {}", str_errkind, self.message)
     }
@@ -128,8 +128,8 @@ pub struct Number {
     pub float: f64,
 }
 
-type PfnOper = fn(&[Number]) -> Result<Number, ExprError>;
-type PfnFunc = fn(&[Number]) -> Result<Number, ExprError>;
+type PfnOper = fn(idx_expr: usize, &[Number]) -> Result<Number, ExprError>;
+type PfnFunc = fn(idx_expr: usize, &[Number]) -> Result<Number, ExprError>;
 
 #[derive(Eq, PartialEq, Ord, PartialOrd, Debug)]
 enum OperAssoc {
@@ -197,11 +197,24 @@ impl<'a> PartialOrd for Oper<'a> {
     }
 }
 
-fn oper_nop(nums: &[Number]) -> Result<Number, ExprError> {
+fn cmp_eq_f64(a: f64, b: f64) -> bool {
+    let abs_a = a.abs();
+    let abs_b = b.abs();
+    let abs_diff = (a - b).abs();
+    let abs_cmp = if abs_a > abs_b {
+        abs_b
+    } else {
+        abs_a
+    };
+
+    abs_diff <= abs_cmp * std::f64::EPSILON
+}
+
+fn oper_nop(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     Ok (nums[0])
 }
 
-fn oper_add(nums: &[Number]) -> Result<Number, ExprError> {
+fn oper_add(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let lhs = nums[0];
     let rhs = nums[1];
     let integer = lhs.integer.overflowing_add(rhs.integer).0;
@@ -209,7 +222,7 @@ fn oper_add(nums: &[Number]) -> Result<Number, ExprError> {
     Ok(Number { integer, float })
 }
 
-fn oper_sub(nums: &[Number]) -> Result<Number, ExprError> {
+fn oper_sub(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let lhs = nums[0];
     let rhs = nums[1];
     let integer = lhs.integer.overflowing_sub(rhs.integer).0;
@@ -217,28 +230,28 @@ fn oper_sub(nums: &[Number]) -> Result<Number, ExprError> {
     Ok(Number { integer, float })
 }
 
-fn oper_unary_minus(nums: &[Number]) -> Result<Number, ExprError> {
+fn oper_unary_minus(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let rhs = nums[0];
     let integer = rhs.integer.overflowing_neg().0;
     let float = -rhs.float;
     Ok(Number { integer, float })
 }
 
-fn oper_logical_not(nums: &[Number]) -> Result<Number, ExprError> {
+fn oper_logical_not(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let rhs = nums[0];
     let integer = (rhs.integer == 0) as u64;
     let float = integer as f64;
     Ok(Number { integer, float })
 }
 
-fn oper_bit_not(nums: &[Number]) -> Result<Number, ExprError> {
+fn oper_bit_not(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let rhs = nums[0];
     let integer = !rhs.integer;
     let float = integer as f64;
     Ok(Number { integer, float })
 }
 
-fn oper_mul(nums: &[Number]) -> Result<Number, ExprError> {
+fn oper_mul(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let lhs = nums[0];
     let rhs = nums[1];
     let integer = lhs.integer.overflowing_mul(rhs.integer).0;
@@ -246,15 +259,20 @@ fn oper_mul(nums: &[Number]) -> Result<Number, ExprError> {
     Ok(Number { integer, float })
 }
 
-fn oper_div(nums: &[Number]) -> Result<Number, ExprError> {
+fn oper_div(idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let lhs = nums[0];
     let rhs = nums[1];
-    let integer = lhs.integer.overflowing_div(rhs.integer).0;
-    let float = lhs.float / rhs.float;
-    Ok(Number { integer, float })
+    if  rhs.integer != 0 && !cmp_eq_f64(rhs.float, 0f64) {
+        let integer = lhs.integer.overflowing_div(rhs.integer).0;
+        let float = lhs.float / rhs.float;
+        Ok(Number { integer, float })
+    } else {
+        let message = format!("due to division by 0 for operator at {}", idx_expr);
+        Err(ExprError { idx_expr, kind: ExprErrorKind::FailedEvaluation, message })
+    }
 }
 
-fn oper_rem(nums: &[Number]) -> Result<Number, ExprError> {
+fn oper_rem(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let lhs = nums[0];
     let rhs = nums[1];
     let integer = lhs.integer.overflowing_rem(rhs.integer).0;
@@ -262,7 +280,7 @@ fn oper_rem(nums: &[Number]) -> Result<Number, ExprError> {
     Ok(Number { integer, float })
 }
 
-fn oper_bit_lshift(nums: &[Number]) -> Result<Number, ExprError> {
+fn oper_bit_lshift(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let lhs = nums[0];
     let rhs = nums[1];
     let integer = lhs.integer.overflowing_shl(rhs.integer as u32).0;
@@ -270,7 +288,7 @@ fn oper_bit_lshift(nums: &[Number]) -> Result<Number, ExprError> {
     Ok(Number { integer, float })
 }
 
-fn oper_bit_rshift(nums: &[Number]) -> Result<Number, ExprError> {
+fn oper_bit_rshift(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let lhs = nums[0];
     let rhs = nums[1];
     let integer = lhs.integer.overflowing_shr(rhs.integer as u32).0;
@@ -278,7 +296,7 @@ fn oper_bit_rshift(nums: &[Number]) -> Result<Number, ExprError> {
     Ok(Number { integer, float })
 }
 
-fn oper_lt(nums: &[Number]) -> Result<Number, ExprError> {
+fn oper_lt(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let lhs = nums[0];
     let rhs = nums[1];
     let integer = (lhs.integer < rhs.integer) as u64;
@@ -286,7 +304,7 @@ fn oper_lt(nums: &[Number]) -> Result<Number, ExprError> {
     Ok(Number { integer, float })
 }
 
-fn oper_lte(nums: &[Number]) -> Result<Number, ExprError> {
+fn oper_lte(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let lhs = nums[0];
     let rhs = nums[1];
     let integer = (lhs.integer <= rhs.integer) as u64;
@@ -294,7 +312,7 @@ fn oper_lte(nums: &[Number]) -> Result<Number, ExprError> {
     Ok(Number { integer, float })
 }
 
-fn oper_gt(nums: &[Number]) -> Result<Number, ExprError> {
+fn oper_gt(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let lhs = nums[0];
     let rhs = nums[1];
     let integer = (lhs.integer > rhs.integer) as u64;
@@ -302,7 +320,7 @@ fn oper_gt(nums: &[Number]) -> Result<Number, ExprError> {
     Ok(Number { integer, float })
 }
 
-fn oper_gte(nums: &[Number]) -> Result<Number, ExprError> {
+fn oper_gte(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let lhs = nums[0];
     let rhs = nums[1];
     let integer = (lhs.integer >= rhs.integer) as u64;
@@ -310,30 +328,23 @@ fn oper_gte(nums: &[Number]) -> Result<Number, ExprError> {
     Ok(Number { integer, float })
 }
 
-fn oper_eq(nums: &[Number]) -> Result<Number, ExprError> {
+fn oper_eq(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let lhs = nums[0];
     let rhs = nums[1];
     let integer = (lhs.integer == rhs.integer) as u64;
-    // I don't want to use a crate for this. Perhaps push this to some helper function.
-    let abs_lhs = lhs.float.abs();
-    let abs_rhs = rhs.float.abs();
-    let abs_diff = (lhs.float - rhs.float).abs();
-    let abs_cmp = if abs_lhs > abs_rhs {
-        abs_rhs
-    } else {
-        abs_lhs
-    };
-    let float = (abs_diff <= abs_cmp * std::f64::EPSILON) as u64 as f64;
+    let float = cmp_eq_f64(lhs.float, rhs.float) as u64 as f64;
     Ok(Number { integer, float })
 }
 
-fn oper_ne(nums: &[Number]) -> Result<Number, ExprError> {
-    let res = oper_eq(nums)?;
-    let integer = !res.integer;
-    Ok(Number { integer, float: integer as f64 })
+fn oper_ne(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
+    let lhs = nums[0];
+    let rhs = nums[1];
+    let integer = (lhs.integer != rhs.integer) as u64;
+    let float = !cmp_eq_f64(lhs.float, rhs.float) as u64 as f64;
+    Ok(Number { integer, float })
 }
 
-fn oper_bit_and(nums: &[Number]) -> Result<Number, ExprError> {
+fn oper_bit_and(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let lhs = nums[0];
     let rhs = nums[1];
     let integer = lhs.integer & rhs.integer;
@@ -341,7 +352,7 @@ fn oper_bit_and(nums: &[Number]) -> Result<Number, ExprError> {
     Ok(Number { integer, float })
 }
 
-fn oper_bit_xor(nums: &[Number]) -> Result<Number, ExprError> {
+fn oper_bit_xor(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let lhs = nums[0];
     let rhs = nums[1];
     let integer = lhs.integer ^ rhs.integer;
@@ -349,7 +360,7 @@ fn oper_bit_xor(nums: &[Number]) -> Result<Number, ExprError> {
     Ok(Number { integer, float })
 }
 
-fn oper_bit_or(nums: &[Number]) -> Result<Number, ExprError> {
+fn oper_bit_or(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let lhs = nums[0];
     let rhs = nums[1];
     let integer = lhs.integer | rhs.integer;
@@ -357,11 +368,11 @@ fn oper_bit_or(nums: &[Number]) -> Result<Number, ExprError> {
     Ok(Number { integer, float })
 }
 
-fn func_dummy(_nums: &[Number]) -> Result<Number, ExprError> {
+fn func_dummy(_idx_expr: usize, _nums: &[Number]) -> Result<Number, ExprError> {
     Ok (Number { integer: 0u64, float: 0f64 })
 }
 
-fn func_sum(nums: &[Number]) -> Result<Number, ExprError> {
+fn func_sum(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let mut res = Number { integer: 0u64, float: 0f64 };
     for arg in nums  {
         res.integer += arg.integer;
@@ -370,8 +381,8 @@ fn func_sum(nums: &[Number]) -> Result<Number, ExprError> {
     Ok(res)
 }
 
-fn func_avg(nums: &[Number]) -> Result<Number, ExprError> {
-    let mut res = func_sum(nums)?;
+fn func_avg(idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
+    let mut res = func_sum(idx_expr, nums)?;
     res.integer /= nums.len() as u64;
     res.float /= nums.len() as f64;
     Ok(res)
@@ -1036,7 +1047,7 @@ pub fn evaluate(expr_ctx: &mut ExprCtx) -> Result<ExprResult, ExprError> {
                 let oper = &OPERS[idx_oper];
                 if let Some(parameters) = expr_ctx.collect_params(oper.params as usize, &mut stack_output) {
                     debug_assert!(parameters.len() == oper.params as usize);
-                    let res_expr = (oper.evalfn)(&parameters)?;
+                    let res_expr = (oper.evalfn)(idx_expr, &parameters)?;
                     stack_output.push(res_expr);
                 } else {
                     let message = format!("for operator '{}' at {}", oper.name, idx_expr);
@@ -1052,7 +1063,7 @@ pub fn evaluate(expr_ctx: &mut ExprCtx) -> Result<ExprResult, ExprError> {
                 let function = &FUNCS[idx_func];
                 if let Some(parameters) = expr_ctx.collect_params(params as usize, &mut stack_output) {
                     debug_assert!(parameters.len() == params as usize);
-                    let res_expr = (function.evalfn)(&parameters)?;
+                    let res_expr = (function.evalfn)(idx_expr, &parameters)?;
                     stack_output.push(res_expr);
                 } else {
                     let message = format!("for function '{}' at {}", function.name, idx_expr);
