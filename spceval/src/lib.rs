@@ -944,20 +944,18 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
     // The index is primarily for reporting parsing and evaluation errors.
     // If we didn't need to store the index, we can easily loop, trim_start whitespaces,
     // and just re-assign 'str_subexpr' to the string slice given by parse_num().
-    let mut len_token = 0;
     let mut expr_ctx = ExprCtx::new();
     let mut opt_prev_token: Option<Token> = None;
+    let mut iter_str = str_expr.char_indices();
 
-    for (idx, chr) in str_expr.chars().enumerate() {
+    while let Some((idx, chr)) = iter_str.next() {
         // Make sure we are not in the middle of a UTF-8 sequence.
         debug_assert!(str_expr.is_char_boundary(idx));
         if chr.is_whitespace() {
             continue;
         }
-        if len_token > 1 {
-            len_token -= 1;
-            continue;
-        }
+
+        let len_token;
         let str_subexpr = &str_expr[idx..];
         if let (Some(number), len_str) = parse_num(str_subexpr) {
             // If the previous token was a function or a close parenthesis, it's invalid.
@@ -1006,6 +1004,9 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
             return Err(ExprError { idx_expr: idx,
                                     kind: ExprErrorKind::InvalidExpr,
                                     message });
+        }
+        if len_token >= 2 {
+            iter_str.nth(len_token - 2);
         }
     }
 

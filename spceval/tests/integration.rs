@@ -22,6 +22,8 @@ fn valid_exprs() {
         ("+8 +8", Number { integer: 16, float: 16.0 }),
         ("+8 + -2", Number { integer: 6, float: 6.0 }),
         ("-8 - -2", Number { integer: 0xfffffffffffffffa, float: -6.0 }),
+        ("(0)", Number { integer: 0, float: 0.0 }),
+        ("(45)", Number { integer: 45, float: 45.0 }),
         ("(-5)", Number { integer: 0xfffffffffffffffb, float: -5.0 }),
         ("(((1220)))", Number { integer: 1220, float: 1220.0 }),
         ("(-.5)", Number { integer: 0, float: -0.5 }),
