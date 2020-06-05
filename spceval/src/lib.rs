@@ -784,7 +784,7 @@ fn parse_num(str_expr: &str) -> (Option<Number>, usize) {
     let mut is_fp_exp_notation = false;
 
     debug_assert!(radix != 0);
-    while let Some(chr) = iter_expr.next() {
+    for chr in iter_expr {
         if chr.is_whitespace() {
             continue;
         }
