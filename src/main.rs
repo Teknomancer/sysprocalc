@@ -111,8 +111,22 @@ fn print_result_num(stream: &mut StandardStream, number: &spceval::Number) -> st
     Ok(())
 }
 
-fn print_error(stream: &mut StandardStream, err: ExprError) -> std::io::Result<()> {
-    write!(stream, "{:width$}", " ", width = err.idx_expr + USER_PROMPT.len())?;
+// Get a character index given a byte index in a string.
+// This ensures the character index is always at a UTF-8 boundary.
+fn byte_index_to_char_index(str_expr: &str, idx_byte: usize) -> usize {
+    debug_assert!(idx_byte < str_expr.as_bytes().len());
+    let mut idx_char = 0;
+    for i in 0..idx_byte {
+        if str_expr.is_char_boundary(i) {
+            idx_char += 1;
+        }
+    }
+    idx_char
+}
+
+fn print_error(stream: &mut StandardStream, str_expr: &str, err: ExprError) -> std::io::Result<()> {
+    let idx_char = byte_index_to_char_index(str_expr, err.idx_expr);
+    write!(stream, "{:width$}", " ", width =  idx_char + USER_PROMPT.len())?;
     write_color(stream, "^", Color::Red, true)?;
     writeln!(stream)?;
 
@@ -135,10 +149,10 @@ fn parse_and_eval_expr_internal(stream: &mut StandardStream, str_expr: &str) -> 
                         spceval::ExprResult::Command(c) => println!("Result: {}", c),
                     }
                 }
-                Err(e) => print_error(stream, e)?,
+                Err(e) => print_error(stream, str_expr, e)?,
             }
         }
-        Err(e) => print_error(stream, e)?,
+        Err(e) => print_error(stream, str_expr, e)?,
     }
     Ok(())
 }
