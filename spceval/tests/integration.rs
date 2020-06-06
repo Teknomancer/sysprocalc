@@ -1,5 +1,69 @@
 use spceval::{self, Number, ExprError, ExprErrorKind};
 
+#[inline(always)]
+fn test_valid_expr(str_expr: &str, res_num: &Number) {
+    let res_parse = spceval::parse(str_expr);
+    assert!(res_parse.is_ok(), "{}", str_expr);
+
+    let mut expr_ctx = res_parse.unwrap();
+    let res_eval = spceval::evaluate(&mut expr_ctx);
+    assert!(res_eval.is_ok(), "{}", str_expr);
+
+    let res_expr = res_eval.unwrap();
+    match res_expr {
+        spceval::ExprResult::Number(n) => {
+            assert_eq!(res_num.integer, n.integer, "{}", str_expr);
+            assert_eq!(res_num.float, n.float, "{}", str_expr);
+        }
+        _ => (),
+    }
+}
+
+#[test]
+fn valid_exprs_unary() {
+    let expr_results = vec![
+        // Unary minus
+        ("-0", Number { integer: 0, float: 0.0 }),
+        ("-1", Number { integer: -1i64 as u64, float: -1.0 }),
+        ("-120", Number { integer: -120i64 as u64, float: -120.0 }),
+        ("-(0)", Number { integer: 0, float: 0.0 }),
+        ("-(1)", Number { integer: -1i64 as u64, float: -1.0 }),
+        ("-(120)", Number { integer: -120i64 as u64, float: -120.0 }),
+        // Unary plus
+        ("+0", Number { integer: 0, float: 0.0 }),
+        ("+1", Number { integer: 1, float: 1.0 }),
+        ("+(0)", Number { integer: 0, float: 0.0 }),
+        ("+(1)", Number { integer: 1, float: 1.0 }),
+        ("+(120)", Number { integer: 120, float: 120.0 }),
+        // Logical NOT.
+        ("!0", Number { integer: 1, float: 1.0 }),
+        ("!1", Number { integer: 0, float: 0.0 }),
+        ("!2", Number { integer: 0, float: 0.0 }),
+        ("!123", Number { integer: 0, float: 0.0 }),
+        ("!(0)", Number { integer: 1, float: 1.0 }),
+        ("!(1)", Number { integer: 0, float: 0.0 }),
+        ("!(123)", Number { integer: 0, float: 0.0 }),
+        ("!(-1)", Number { integer: 0, float: 0.0 }),
+        ("!(-2)", Number { integer: 0, float: 0.0 }),
+        ("!(-123)", Number { integer: 0, float: 0.0 }),
+        // Bitwise NOT.
+        ("~0", Number { integer: !0u64, float: !0u64 as f64 }),
+        ("~1", Number { integer: !1u64, float: !1u64 as f64 }),
+        ("~2", Number { integer: !2u64, float: !2u64 as f64 }),
+        ("~145", Number { integer: !145u64, float: !145u64 as f64 }),
+        ("~(0)", Number { integer: !0u64, float: !0u64 as f64 }),
+        ("~(1)", Number { integer: !1u64, float: !1u64 as f64 }),
+        ("~(2)", Number { integer: !2u64, float: !2u64 as f64 }),
+        ("~(145)", Number { integer: !145u64, float: !145u64 as f64 }),
+        ("~(-1)", Number { integer: !-1i64 as u64, float: !-1i64 as u64 as f64 }),
+        ("~(-2)", Number { integer: !-2i64 as u64, float: !-2i64 as u64 as f64 }),
+        ("~(-145)", Number { integer: !-145i64 as u64, float: !-145i64 as u64 as f64 }),
+    ];
+    for expr_res in expr_results {
+        test_valid_expr(&expr_res.0, &expr_res.1);
+    }
+}
+
 #[test]
 fn valid_exprs() {
     // These are valid expressions and must produce the right results.
@@ -41,23 +105,8 @@ fn valid_exprs() {
         ("0*5", Number { integer: 0, float: 0.0 }),
         ("0/5", Number { integer: 0, float: 0.0 }),
     ];
-
     for expr_res in expr_results {
-        let res_parse = spceval::parse(&expr_res.0);
-        assert!(res_parse.is_ok(), "{}", expr_res.0);
-
-        let mut expr_ctx = res_parse.unwrap();
-        let res_eval = spceval::evaluate(&mut expr_ctx);
-        assert!(res_eval.is_ok(), "{}", expr_res.0);
-
-        let res_expr = res_eval.unwrap();
-        match res_expr {
-            spceval::ExprResult::Number(n) => {
-                assert_eq!(expr_res.1.integer, n.integer);
-                assert_eq!(expr_res.1.float, n.float);
-            }
-            _ => (),
-        }
+        test_valid_expr(&expr_res.0, &expr_res.1);
     }
 }
 
@@ -86,6 +135,7 @@ fn invalid_exprs() {
     // phase. As long as they produce the required errors it's fine. Some expressions
     // like "2 +" fail during evaluation due to the way we parse operators but others
     // like ",5" will fail during parsing.
+    // TODO: Try split this into logical categories.
     use ExprErrorKind::*;
     let expr_results = vec![
         ("", ExprError { idx_expr: 0, kind: EmptyExpr, message: String::new() }),
@@ -130,6 +180,8 @@ fn invalid_exprs() {
         ("(.5", ExprError { idx_expr: 0, kind: MismatchParenthesis, message: String::new() }),
         (").f", ExprError { idx_expr: 0, kind: MismatchParenthesis, message: String::new() }),
         ("(-1).5", ExprError { idx_expr: 0, kind: MissingOperatorOrFunction, message: String::new() }),
+        ("!-0", ExprError { idx_expr: 0, kind: MissingOperand, message: String::new() }),
+        ("~-0", ExprError { idx_expr: 0, kind: MissingOperand, message: String::new() }),
     ];
     for expr_res in expr_results {
         let res_parse = spceval::parse(&expr_res.0);
