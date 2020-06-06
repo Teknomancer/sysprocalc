@@ -217,7 +217,7 @@ fn oper_nop(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
 fn oper_add(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let lhs = nums[0];
     let rhs = nums[1];
-    let integer = lhs.integer.overflowing_add(rhs.integer).0;
+    let integer = lhs.integer.wrapping_add(rhs.integer);
     let float = lhs.float + rhs.float;
     Ok(Number { integer, float })
 }
@@ -225,14 +225,14 @@ fn oper_add(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
 fn oper_sub(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let lhs = nums[0];
     let rhs = nums[1];
-    let integer = lhs.integer.overflowing_sub(rhs.integer).0;
+    let integer = lhs.integer.wrapping_sub(rhs.integer);
     let float = lhs.float - rhs.float;
     Ok(Number { integer, float })
 }
 
 fn oper_unary_minus(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let rhs = nums[0];
-    let integer = rhs.integer.overflowing_neg().0;
+    let integer = rhs.integer.wrapping_neg();
     let float = -rhs.float;
     Ok(Number { integer, float })
 }
@@ -254,7 +254,7 @@ fn oper_bit_not(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> 
 fn oper_mul(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let lhs = nums[0];
     let rhs = nums[1];
-    let integer = lhs.integer.overflowing_mul(rhs.integer).0;
+    let integer = lhs.integer.wrapping_mul(rhs.integer);
     let float = lhs.float * rhs.float;
     Ok(Number { integer, float })
 }
@@ -263,7 +263,7 @@ fn oper_div(idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let lhs = nums[0];
     let rhs = nums[1];
     if  rhs.integer != 0 && !cmp_eq_f64(rhs.float, 0f64) {
-        let integer = lhs.integer.overflowing_div(rhs.integer).0;
+        let integer = lhs.integer.wrapping_div(rhs.integer);
         let float = lhs.float / rhs.float;
         Ok(Number { integer, float })
     } else {
@@ -275,7 +275,7 @@ fn oper_div(idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
 fn oper_rem(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let lhs = nums[0];
     let rhs = nums[1];
-    let integer = lhs.integer.overflowing_rem(rhs.integer).0;
+    let integer = lhs.integer.wrapping_rem(rhs.integer);
     let float = lhs.float % rhs.float;
     Ok(Number { integer, float })
 }
@@ -283,7 +283,7 @@ fn oper_rem(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
 fn oper_bit_lshift(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let lhs = nums[0];
     let rhs = nums[1];
-    let integer = lhs.integer.overflowing_shl(rhs.integer as u32).0;
+    let integer = lhs.integer.wrapping_shl(rhs.integer as u32);
     let float = integer as f64;
     Ok(Number { integer, float })
 }
@@ -291,7 +291,7 @@ fn oper_bit_lshift(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprErro
 fn oper_bit_rshift(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let lhs = nums[0];
     let rhs = nums[1];
-    let integer = lhs.integer.overflowing_shr(rhs.integer as u32).0;
+    let integer = lhs.integer.wrapping_shr(rhs.integer as u32);
     let float = integer as f64;
     Ok(Number { integer, float })
 }

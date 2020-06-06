@@ -20,7 +20,7 @@ fn test_valid_expr(str_expr: &str, res_num: &Number) {
 }
 
 #[test]
-fn valid_exprs_unary() {
+fn valid_exprs_unary_opers() {
     let expr_results = vec![
         // Unary minus
         ("-0", Number { integer: 0, float: 0.0 }),
@@ -58,6 +58,48 @@ fn valid_exprs_unary() {
         ("~(-1)", Number { integer: !-1i64 as u64, float: !-1i64 as u64 as f64 }),
         ("~(-2)", Number { integer: !-2i64 as u64, float: !-2i64 as u64 as f64 }),
         ("~(-145)", Number { integer: !-145i64 as u64, float: !-145i64 as u64 as f64 }),
+    ];
+    for expr_res in expr_results {
+        test_valid_expr(&expr_res.0, &expr_res.1);
+    }
+}
+
+#[test]
+fn valid_exprs_binary_opers() {
+    let expr_results = vec![
+        // Add
+        ("0+0", Number { integer: 0, float: 0.0 }),
+        ("0+1", Number { integer: 1, float: 1.0 }),
+        ("1+1", Number { integer: 2, float: 2.0 }),
+        ("2+2", Number { integer: 4, float: 4.0 }),
+        ("132+132", Number { integer: 132+132, float: (132+132) as f64 }),
+        ("0xffffffff+0", Number { integer: 0xffffffff, float: 0xffffffffu64 as f64 }),
+        ("0xffffffff+1", Number { integer: 0xffffffff+1, float: (0xffffffffu64+1u64) as f64 }),
+        ("0xffffffff+0xffffffff",
+            Number { integer: 0xffffffff+0xffffffff,
+                     float: (0xffffffffu64+0xffffffffu64) as f64 }),
+        ("0xffffffffffffffff+0", Number { integer: 0xffffffffffffffffu64.wrapping_add(0), float: 0xffffffffffffffffu64 as f64 }),
+        ("0xffffffffffffffff+1", Number { integer: 0xffffffffffffffffu64.wrapping_add(1), float: 18446744073709552000f64+1f64 }),
+        ("0xffffffffffffffff+0xffffffffffffffff",
+            Number { integer: 0xffffffffffffffffu64.wrapping_add(0xffffffffffffffff),
+                     float: 18446744073709552000f64+18446744073709552000f64 }),
+        // Subtract
+        // Multiply
+        // Divide
+        // Remainder
+        // Left shift
+        // Right shift
+        // Less than
+        // Less than or equal
+        // Greater than
+        // Greater than or equal
+        // Equal
+        // Not equal
+        // Bitwise AND
+        // Bitwise XOR
+        // Bitwise OR
+        // Logical AND
+        // Logical OR
     ];
     for expr_res in expr_results {
         test_valid_expr(&expr_res.0, &expr_res.1);
@@ -117,7 +159,10 @@ fn valid_exprs_eval_fail() {
     // These must never produce errors during the parsing phase.
     use ExprErrorKind::*;
     let expr_results = vec![
+        ("0/0", ExprError { idx_expr: 0, kind: FailedEvaluation, message: String::new() }),
         ("1/0", ExprError { idx_expr: 0, kind: FailedEvaluation, message: String::new() }),
+        ("2/0", ExprError { idx_expr: 0, kind: FailedEvaluation, message: String::new() }),
+        ("0xffffffffffffffff/0", ExprError { idx_expr: 0, kind: FailedEvaluation, message: String::new() }),
     ];
     for expr_res in expr_results {
         let res_parse = spceval::parse(&expr_res.0);
