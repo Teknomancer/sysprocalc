@@ -193,7 +193,7 @@ fn valid_exprs_binary_opers() {
         ("0xf0f0f0f0f0f0f0f0/0xf0f0f0f0f0f0f0f0",
             Number { integer: 0xf0f0f0f0f0f0f0f0u64.wrapping_div(0xf0f0f0f0f0f0f0f0),
                      float: 0xf0f0f0f0f0f0f0f0u64 as f64 / 0xf0f0f0f0f0f0f0f0u64 as f64 }),
-        ("0xffffffff/1", Number { integer: 0xffffffff, float: 0xffffffffu64 as f64 / 1.0 }),
+        ("0xffffffff/32", Number { integer: 0xffffffffu64 / 32u64, float: 0xffffffffu64 as f64 / 32.0 }),
         ("0xffffffff/0xffffffff",
             Number { integer: 0xffffffffu64.wrapping_div(0xffffffff),
                      float: 0xffffffffu64 as f64 / 0xffffffffu64 as f64 }),
