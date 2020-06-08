@@ -67,7 +67,9 @@ fn valid_exprs_unary_opers() {
 #[test]
 fn valid_exprs_binary_opers() {
     let expr_results = vec![
+        //
         // Add
+        //
         ("0+0", Number { integer: 0, float: 0.0 }),
         ("0+1", Number { integer: 1, float: 1.0 }),
         ("1+1", Number { integer: 2, float: 2.0 }),
@@ -101,7 +103,10 @@ fn valid_exprs_binary_opers() {
         ("0xffffffffffffffff+0xffffffffffffffff",
             Number { integer: 0xffffffffffffffffu64.wrapping_add(0xffffffffffffffff),
                      float: 0xffffffffffffffffu64 as f64 + 0xffffffffffffffffu64 as f64 }),
+
+        //
         // Subtract
+        //
         ("0-0", Number { integer: 0, float: 0.0 }),
         ("0-1", Number { integer: 0u64.wrapping_sub(1), float: -1.0 }),
         ("1-1", Number { integer: 0, float: 0.0 }),
@@ -136,7 +141,10 @@ fn valid_exprs_binary_opers() {
         ("0xffffffffffffffff-0xffffffffffffffff",
             Number { integer: 0xffffffffffffffffu64.wrapping_sub(0xffffffffffffffff),
                      float: 0xffffffffffffffffu64 as f64 - 0xffffffffffffffffu64 as f64 }),
+
+        //
         // Multiply
+        //
         ("0*0", Number { integer: 0, float: 0.0 }),
         ("0*1", Number { integer: 0u64.wrapping_mul(1), float: 0.0 }),
         ("1*1", Number { integer: 1, float: 1.0 }),
@@ -168,7 +176,33 @@ fn valid_exprs_binary_opers() {
         ("0xffffffffffffffff*0xffffffffffffffff",
             Number { integer: 0xffffffffffffffffu64.wrapping_mul(0xffffffffffffffff),
                      float: 0xffffffffffffffffu64 as f64 * 0xffffffffffffffffu64 as f64 }),
+        //
         // Divide
+        //
+        ("1/1", Number { integer: 1, float: 1.0 }),
+        ("12/6", Number { integer: 12u64.wrapping_div(6), float: 2.0 }),
+        ("132/100", Number { integer: 132u64.wrapping_div(100), float: 132.0 / 100.0 }),
+
+        ("0xf0f0f0f0/1", Number { integer: 0xf0f0f0f0, float: 0xf0f0f0f0u64 as f64 / 1.0 }),
+        ("0xf0f0f0f0/0xf0f0f0f0",
+            Number { integer: 0xf0f0f0f0u64.wrapping_div(0xf0f0f0f0),
+                     float: 0xf0f0f0f0u64 as f64 / 0xf0f0f0f0u64 as f64 }),
+        ("0xf0f0f0f0f0f0f0f0/1",
+            Number { integer: 0xf0f0f0f0f0f0f0f0u64.wrapping_div(1),
+                     float: 0xf0f0f0f0f0f0f0f0u64 as f64 / 1.0 }),
+        ("0xf0f0f0f0f0f0f0f0/0xf0f0f0f0f0f0f0f0",
+            Number { integer: 0xf0f0f0f0f0f0f0f0u64.wrapping_div(0xf0f0f0f0f0f0f0f0),
+                     float: 0xf0f0f0f0f0f0f0f0u64 as f64 / 0xf0f0f0f0f0f0f0f0u64 as f64 }),
+        ("0xffffffff/1", Number { integer: 0xffffffff, float: 0xffffffffu64 as f64 / 1.0 }),
+        ("0xffffffff/0xffffffff",
+            Number { integer: 0xffffffffu64.wrapping_div(0xffffffff),
+                     float: 0xffffffffu64 as f64 / 0xffffffffu64 as f64 }),
+        ("0xffffffffffffffff/1",
+            Number { integer: 0xffffffffffffffffu64.wrapping_div(1),
+                     float: 0xffffffffffffffffu64 as f64 / 1.0 }),
+        ("0xffffffffffffffff/0xffffffffffffffff",
+            Number { integer: 0xffffffffffffffffu64.wrapping_div(0xffffffffffffffff),
+                     float: 0xffffffffffffffffu64 as f64 / 0xffffffffffffffffu64 as f64 }),
         // Remainder
         // Left shift
         // Right shift
