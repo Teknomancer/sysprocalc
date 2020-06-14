@@ -176,6 +176,7 @@ fn valid_exprs_binary_opers() {
         ("0xffffffffffffffff*0xffffffffffffffff",
             Number { integer: 0xffffffffffffffffu64.wrapping_mul(0xffffffffffffffff),
                      float: 0xffffffffffffffffu64 as f64 * 0xffffffffffffffffu64 as f64 }),
+
         //
         // Divide
         //
@@ -203,7 +204,10 @@ fn valid_exprs_binary_opers() {
         ("0xffffffffffffffff/0xffffffffffffffff",
             Number { integer: 0xffffffffffffffffu64.wrapping_div(0xffffffffffffffff),
                      float: 0xffffffffffffffffu64 as f64 / 0xffffffffffffffffu64 as f64 }),
+
+        //
         // Remainder
+        //
         ("1%1", Number { integer: 0, float: 0.0 }),
         ("12%6", Number { integer: 12u64.wrapping_rem(6), float: 12.0 % 6.0 }),
         ("132%100", Number { integer: 132u64.wrapping_rem(100), float: 132.0 % 100.0 }),
