@@ -550,17 +550,14 @@ impl ExprCtx {
 
     fn collect_params(&mut self, params: usize, stack_output: &mut Vec<Number>) -> Option<Vec<Number>> {
         debug_assert!(params > 0);
-        let mut parameters = Vec::with_capacity(params);
-        for _ in 0..params {
-            if let Some(param) = stack_output.pop() {
-                parameters.push(param);
-            } else {
-                return None;
-            }
+        let stack_len = stack_output.len();
+        if stack_len >= params {
+            let parameters = stack_output.split_off(stack_len - params);
+            Some(parameters)
+        } else {
+            stack_output.clear();
+            None
         }
-        // Reverse the parameters so left and right parameters are correct.
-        parameters.reverse();
-        Some(parameters)
     }
 
     fn process_parsed_oper(&mut self,
