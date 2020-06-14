@@ -204,6 +204,31 @@ fn valid_exprs_binary_opers() {
             Number { integer: 0xffffffffffffffffu64.wrapping_div(0xffffffffffffffff),
                      float: 0xffffffffffffffffu64 as f64 / 0xffffffffffffffffu64 as f64 }),
         // Remainder
+        ("1%1", Number { integer: 0, float: 0.0 }),
+        ("12%6", Number { integer: 12u64.wrapping_rem(6), float: 12.0 % 6.0 }),
+        ("132%100", Number { integer: 132u64.wrapping_rem(100), float: 132.0 % 100.0 }),
+
+        ("0xf0f0f0f0%1", Number { integer: 0xf0f0f0f0u64.wrapping_rem(1), float: 0xf0f0f0f0u64 as f64 % 1.0 }),
+        ("0xf0f0f0f0%0xf0f0f0f0",
+            Number { integer: 0xf0f0f0f0u64.wrapping_rem(0xf0f0f0f0),
+                     float: 0xf0f0f0f0u64 as f64 % 0xf0f0f0f0u64 as f64 }),
+        ("0xf0f0f0f0f0f0f0f0%3",
+            Number { integer: 0xf0f0f0f0f0f0f0f0u64.wrapping_rem(3),
+                     float: 0xf0f0f0f0f0f0f0f0u64 as f64 % 3.0 }),
+        ("0xf0f0f0f0f0f0f0f0%0xf0f0f0f0f0f0f0f0",
+            Number { integer: 0xf0f0f0f0f0f0f0f0u64.wrapping_rem(0xf0f0f0f0f0f0f0f0),
+                     float: 0xf0f0f0f0f0f0f0f0u64 as f64 % 0xf0f0f0f0f0f0f0f0u64 as f64 }),
+        ("0xffffffff%255", Number { integer: 0xffffffffu64.wrapping_rem(255), float: 0xffffffffu64 as f64 % 255.0 }),
+        ("0xffffffff%0xffffffff",
+            Number { integer: 0xffffffffu64.wrapping_rem(0xffffffff),
+                     float: 0xffffffffu64 as f64 % 0xffffffffu64 as f64 }),
+        ("0xffffffffffffffff%1",
+            Number { integer: 0xffffffffffffffffu64.wrapping_rem(1),
+                     float: 0xffffffffffffffffu64 as f64 % 1.0 }),
+        ("0xffffffffffffffff%0xf0f0f0f0f0f0f0f0",
+            Number { integer: 0xffffffffffffffffu64.wrapping_rem(0xf0f0f0f0f0f0f0f0),
+                     float: 0xffffffffffffffffu64 as f64 % 0xf0f0f0f0f0f0f0f0u64 as f64 }),
+
         // Left shift
         // Right shift
         // Less than
