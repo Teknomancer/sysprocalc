@@ -228,6 +228,9 @@ fn valid_exprs_binary_opers() {
         ("0xffffffffffffffff%0xf0f0f0f0f0f0f0f0",
             Number { integer: 0xffffffffffffffffu64.wrapping_rem(0xf0f0f0f0f0f0f0f0),
                      float: 0xffffffffffffffffu64 as f64 % 0xf0f0f0f0f0f0f0f0u64 as f64 }),
+        ("0xffffffffffffffff%0xffffffffffffffff",
+            Number { integer: 0xffffffffffffffffu64.wrapping_rem(0xffffffffffffffff),
+                     float: 0xffffffffffffffffu64 as f64 % 0xffffffffffffffffu64 as f64 }),
 
         // Left shift
         // Right shift
