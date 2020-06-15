@@ -376,6 +376,9 @@ fn invalid_exprs() {
         ("(-1).5", ExprError { idx_expr: 0, kind: MissingOperatorOrFunction, message: String::new() }),
         ("!-0", ExprError { idx_expr: 0, kind: MissingOperand, message: String::new() }),
         ("~-0", ExprError { idx_expr: 0, kind: MissingOperand, message: String::new() }),
+        ("0 x123", ExprError { idx_expr: 0, kind: InvalidExpr, message: String::new() }),
+        ("0 n123", ExprError { idx_expr: 0, kind: InvalidExpr, message: String::new() }),
+        ("0 o1011", ExprError { idx_expr: 0, kind: InvalidExpr, message: String::new() }),
     ];
     for expr_res in expr_results {
         let res_parse = spceval::parse(&expr_res.0);
