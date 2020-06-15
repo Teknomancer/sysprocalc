@@ -129,9 +129,7 @@ fn parse_valid_nums_u64() {
         let (number, len_str) = parse_num(int_res.0);
         assert!(number.is_some(), "failed for ('{}', {})", int_res.0, int_res.1);
         assert_eq!(number.unwrap().integer, int_res.1);
-        // Whitespace will affect parsed string length, so we'll have to strip whitespace before checking.
-        let stripped_len = int_res.0.chars().filter(|c| !c.is_whitespace()).collect::<String>().len();
-        assert_eq!(len_str, stripped_len);
+        assert_eq!(len_str, int_res.0.len());
     }
 }
 
