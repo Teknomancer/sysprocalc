@@ -117,12 +117,21 @@ fn parse_valid_nums_u64() {
         ("0o5",  5  ), ("0o6",  6  ), ("0o7",  7  ), ("0o7",  7  ),
         ("0o10", 8  ), ("0o11", 9  ),
         ("0o77", 63 ), ("0o100", 64),
+        // With whitespaces
+        ("5 4 3 2 1", 54321),
+        ("0xffff ffff ffff fff7", 0xfffffffffffffff7),
+        ("0x 123456789", 0x123456789),
+        ("0n 101 000 100", 324),
+        ("0n 1 0 0", 4),
+        ("0o 1 7 7 1", 1017),
     ];
     for int_res in pair_int_result {
         let (number, len_str) = parse_num(int_res.0);
         assert!(number.is_some(), "failed for ('{}', {})", int_res.0, int_res.1);
         assert_eq!(number.unwrap().integer, int_res.1);
-        assert_eq!(len_str, int_res.0.len());
+        // Whitespace will affect parsed string length, so we'll have to strip whitespace before checking.
+        let stripped_len = int_res.0.chars().filter(|c| !c.is_whitespace()).collect::<String>().len();
+        assert_eq!(len_str, stripped_len);
     }
 }
 
