@@ -779,10 +779,12 @@ fn parse_num(str_expr: &str) -> (Option<Number>, usize) {
     let mut str_num = String::with_capacity(64);
     let mut has_dec_pt = false;
     let mut is_fp_exp_notation = false;
+    let mut skipped_chars = 0;
 
     debug_assert!(radix != 0);
     for chr in iter_expr {
         if chr.is_whitespace() {
+            skipped_chars += 1;
             continue;
         }
 
@@ -818,8 +820,9 @@ fn parse_num(str_expr: &str) -> (Option<Number>, usize) {
         return (None, 0);
     }
 
-    // 'consumed' contains the length of characters consumed by parsing this number.
-    let consumed = len_prefix + str_num.len();
+    // 'consumed' contains the length of characters consumed by parsing
+    // this number including whitespace.
+    let consumed = len_prefix + skipped_chars + str_num.len();
 
     if !has_dec_pt {
         // Parse as integer.

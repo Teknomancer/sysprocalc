@@ -295,6 +295,8 @@ fn valid_exprs() {
         ("212 + (1 * (3 - (4 * 5)))", Number { integer: 195, float: 195.0 }),
         ("0*5", Number { integer: 0, float: 0.0 }),
         ("0/5", Number { integer: 0, float: 0.0 }),
+        ("0x 123456789", Number { integer: 0x123456789, float: 0x123456789u64 as f64 }),
+        ("0x f f f f + 0xf ff f", Number { integer: 0x1fffe, float: 0x1fffeu64 as f64 }),
     ];
     for expr_res in expr_results {
         test_valid_expr(&expr_res.0, &expr_res.1);
