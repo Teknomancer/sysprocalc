@@ -610,7 +610,7 @@ impl ExprCtx {
                 // we will fix up the overlapping parameter count here.
                 // E.g "avg(5,6,7)" -- the count will be 4 (i.e 2 for each
                 // parameter separator) but it should be 3 (N/2+1).
-                if func_token.params > 0 {
+                if func_token.params >= 2 {
                     func_token.params /= 2;
                     func_token.params += 1;
                 } else {
