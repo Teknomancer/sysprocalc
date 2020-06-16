@@ -11,7 +11,9 @@ Basic expression parsing and evaluation already works and has a decent test cove
 
 ### Executable and Library
 
-The project is split into a main executable `sysprocalc` and the core parser/evaluator library (`spceval`). Currently I have no plans of publishing the library as part of the cargo crates system. The library and executable are not tightly coupled and the library is in its own workspace making publishing as a crate easier in the future.
+The project is split into a main executable `sysprocalc` and the core parser/evaluator library (`spceval`).
+
+Though I do not have any current plans of publishing the library as a crate, the library and executable are not tightly coupled. The library exists in its own workspace, making publishing as a crate easier in the future.
 
 ### Building from source
 
