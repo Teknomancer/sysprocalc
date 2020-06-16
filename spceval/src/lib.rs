@@ -605,17 +605,31 @@ impl ExprCtx {
                     // Discard open parenthesis from the stack.
                     self.stack_op.pop().unwrap();
 
-                    // Ensure close parenthesis is recorded as the previous token.
-                    *opt_prev_token = Some(Token::Oper(oper_token));
-
-                    // If a function preceeds the open parenthesis, increment its parameter count by 1.
-                    // E.g "avg(5,6,7)". We've already incremented parameter count when there are more
-                    // than one parameter when we handle the parameter separator operator. This is for
-                    // the function's first parameter (left to right).
+                    // Check if a function preceeds the open parenthesis.
                     if let Some(mut func_token) = self.pop_func_from_op_stack() {
-                        func_token.params += 1;
+                        // If we've already counted parameters (due to parameter separators),
+                        // we will fix up the overlapping parameter count here.
+                        // E.g "avg(5,6,7)" -- the count will be 4 (i.e 2 for each
+                        // parameter separator) but it should be 3 (N/2+1).
+                        if func_token.params > 0 {
+                            func_token.params /= 2;
+                            func_token.params += 1;
+                        } else {
+                            // If the previous token is a number, the function has 1 parameter.
+                            // If the previous token is an open parenthesis, the function has 0 parameters.
+                            // Any other token implies an invalid sequence, the function has 0 parameters.
+                            func_token.params = match opt_prev_token {
+                                Some(Token::Num(_)) => 1,
+                                Some(Token::Oper(OperToken { idx_oper, .. }))
+                                    if OPERS[*idx_oper].kind == OperKind::OpenParen => 0,
+                                _ => 0,     // Todo: Perhaps just error here? e.g "avg(+)".
+                            };
+                        }
                         self.verify_and_push_func_to_op_stack(func_token)?;
                     }
+
+                    // Update close parenthesis as the previous token.
+                    *opt_prev_token = Some(Token::Oper(oper_token));
                 } else {
                     // If we didn't find a matching opening parenthesis, bail.
                     let message = format!("for closing parenthesis at {}", oper_token.idx_expr);
@@ -646,12 +660,13 @@ impl ExprCtx {
                         debug_assert!(OPERS[oper_paren.idx_oper].kind == OperKind::OpenParen);
                     }
 
-                    // If a function preceeds the open parenthesis, increment its parameter count by 1
+                    // If a function preceeds the open parenthesis, increment its parameter count by 2
                     // and re-push the function and the previously popped open parenthesis back to the
                     // op stack. It is important we do -NOT- update "opt_prev_token" while doing this
-                    // temporary modification of a token's data in stack.
+                    // temporary modification of a token's data in stack. The operator parsing code has
+                    // already ensured valid tokens exists before and after the parameter separator.
                     if let Some(mut func_token) = self.pop_func_from_op_stack() {
-                        func_token.params += 1;
+                        func_token.params += 2;
                         self.stack_op.push(Token::Func(func_token));
                         self.stack_op.push(paren_token);
                     } else {
