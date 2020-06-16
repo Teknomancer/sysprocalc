@@ -536,7 +536,7 @@ impl ExprCtx {
         Ok(())
     }
 
-    fn pop_func_from_stack(&mut self) -> Option<FuncToken> {
+    fn pop_func_from_op_stack(&mut self) -> Option<FuncToken> {
         // If a function preceeds the open parenthesis, pop it to the output queue.
         if let Some(Token::Func(_)) = self.stack_op.last() {
             // We safely unwrap both the token from the stack as well as the result from
@@ -612,7 +612,7 @@ impl ExprCtx {
                     // E.g "avg(5,6,7)". We've already incremented parameter count when there are more
                     // than one parameter when we handle the parameter separator operator. This is for
                     // the function's first parameter (left to right).
-                    if let Some(mut func_token) = self.pop_func_from_stack() {
+                    if let Some(mut func_token) = self.pop_func_from_op_stack() {
                         func_token.params += 1;
                         self.verify_and_push_func_to_op_stack(func_token)?;
                     }
@@ -650,7 +650,7 @@ impl ExprCtx {
                     // and re-push the function and the previously popped open parenthesis back to the
                     // op stack. It is important we do -NOT- update "opt_prev_token" while doing this
                     // temporary modification of a token's data in stack.
-                    if let Some(mut func_token) = self.pop_func_from_stack() {
+                    if let Some(mut func_token) = self.pop_func_from_op_stack() {
                         func_token.params += 1;
                         self.stack_op.push(Token::Func(func_token));
                         self.stack_op.push(paren_token);
