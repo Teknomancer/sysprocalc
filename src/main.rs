@@ -108,6 +108,7 @@ fn print_result_num(stream: &mut StandardStream, number: &spceval::Number) -> st
         writeln!(stream, "     {}", str_bin_ruler)?;
     }
 
+    writeln!(stream)?;
     Ok(())
 }
 
@@ -192,29 +193,29 @@ fn main() -> std::io::Result<()> {
     // Command-line mode, evaluate and quit.
     if args.len() > 1 {
         parse_and_eval_expr(&mut stdout, args.get(1).unwrap())?;
-        Ok(())
-    } else {
-        // Interactive mode.
-        let mut line_editor = Editor::<()>::new();
-        loop {
-            let res_readline = line_editor.readline(USER_PROMPT);
-            if let Ok(str_input) = res_readline {
-                let str_expr = str_input.as_str();
-                line_editor.add_history_entry(str_expr);
+        return Ok(());
+    }
 
-                if !str_expr.is_empty() {
-                    match str_expr {
-                        "q" | "quit" | "exit" => return Ok(()),
-                        _ => (),
-                    }
-                    parse_and_eval_expr(&mut stdout, str_expr)?;
+    // Interactive mode.
+    let mut line_editor = Editor::<()>::new();
+    loop {
+        let res_readline = line_editor.readline(USER_PROMPT);
+        if let Ok(str_input) = res_readline {
+            let str_expr = str_input.as_str();
+            line_editor.add_history_entry(str_expr);
+
+            if !str_expr.is_empty() {
+                match str_expr {
+                    "q" | "quit" | "exit" => return Ok(()),
+                    _ => (),
                 }
-            } else {
-                let mut stderr = StandardStream::stderr(color_choice);
-                write_color(&mut stderr, EXITING_APP, Color::Red, true)?;
-                writeln!(&mut stderr, " {:?}", res_readline.err().unwrap())?;
-                return Ok(());
+                parse_and_eval_expr(&mut stdout, str_expr)?;
             }
+        } else {
+            let mut stderr = StandardStream::stderr(color_choice);
+            write_color(&mut stderr, EXITING_APP, Color::Red, true)?;
+            writeln!(&mut stderr, " {:?}", res_readline.err().unwrap())?;
+            return Ok(());
         }
     }
 }
