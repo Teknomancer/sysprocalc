@@ -5,9 +5,15 @@
 # sysprocalc
 sysprocalc (system programmer's calculator) is an interactive, command-line expression evaluator.
 
-This is a my old C project [nopf](https://github.com/Teknomancer/nopf) re-written using Rust. This is my first Rust project, so I'm still learning to implement idiomatic Rust concepts. This was started mainly to learn Rust but I'm hoping to turn into a more full-fledged application in the near future. Basic expression parsing and evaluation is already working and has a decent test coverage with continuous integration.
+This is a my old C project [nopf](https://github.com/Teknomancer/nopf) re-written using Rust. This is also my first Rust project and I'm learning to implement idiomatic Rust concepts. This was started to learn Rust but I'm hoping to turn into a more full-fledged application in the near future.
 
-The project is split into a main executable `sysprocalc` and the core parser/evaluator library (`spceval`).
+Basic expression parsing and evaluation already works and has a decent test coverage with continuous integration on Windows and Linux hosts.
+
+### Executable and Library
+
+The project is split into a main executable `sysprocalc` and the core parser/evaluator library (`spceval`). Currently I have no plans of publishing the library as part of the cargo crates system. The library and executable are not tightly coupled and the library is in its own workspace making publishing as a crate easier in the future.
+
+### Building from source
 
 Build, test and run using:
 ```
@@ -16,7 +22,7 @@ cargo build && cargo clippy && cargo test --all && cargo run
 
 The `--all` is required to make sure tests in the library are also run and not just the executable's tests.
 
-## License
+### License
 
 Licensed under either of
 
@@ -27,7 +33,7 @@ Licensed under either of
 
 at your option.
 
-## Contribution
+### Contribution
 
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
