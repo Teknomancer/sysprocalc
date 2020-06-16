@@ -771,7 +771,7 @@ fn parse_num(str_expr: &str) -> (Option<Number>, usize) {
         }
     }
 
-    // Rust string to number conversion FUNCS do not grok prefixes (e.g., "0xf" will have
+    // Rust string to number conversion functions do not grok prefixes (e.g., "0xf" will have
     // to be fed to it as just "f"). So we aggregate the number into 'str_num' and keep track
     // of the length of any prefix that's already part of the expression in 'len_prefix' (as
     // done above). This also has a side effect in making the loop below faster as we eliminate
