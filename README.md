@@ -7,7 +7,7 @@ sysprocalc (system programmer's calculator) is an interactive, command-line expr
 
 This is a my old C project [nopf](https://github.com/Teknomancer/nopf) re-written using Rust. This is also my first Rust project and I'm learning to implement idiomatic Rust concepts. This was started to learn Rust but I'm hoping to turn into a more full-fledged application in the near future.
 
-Basic expression parsing and evaluation already works and has a decent test coverage with continuous integration on Windows and Linux hosts.
+Basic expression parsing and evaluation already works and has a decent test coverage with continuous integration (build and testing) on Windows, Linux and macOS. I've also ironed out some parsing bugs that probably still exists in nopf thanks to Rust and its eco-system. Variables/constants in expressions isn't yet supported, neither are the x86-register commands. I'll be working on getting these done.
 
 ### Executable and Library
 
