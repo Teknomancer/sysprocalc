@@ -19,12 +19,16 @@ Though I do not have any current plans of publishing the library as a crate, the
 
 ### Building from source
 
-Build, test and run using:
-```
-cargo build && cargo clippy && cargo test --all && cargo run
-```
-
-The `--all` is required to make sure tests in the library are also run and not just the executable's tests.
+1. Download and install Rust (see https://www.rust-lang.org/tools/install)
+2. Clone sysprocalc's git repository using:
+   ```
+   git clone https://github.com/Teknomancer/sysprocalc.git
+   ```
+3. Build, test and run using:
+   ```
+   cargo build && cargo clippy && cargo test --all && cargo run
+   ```
+   The `--all` is required to make sure tests in the library are also run and not just the executable's tests.
 
 ### License
 
