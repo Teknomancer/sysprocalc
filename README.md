@@ -19,16 +19,18 @@ Though I do not have any current plans of publishing the library as a crate, the
 
 ### Building from source
 
-1. Download and install Rust (see https://www.rust-lang.org/tools/install)
-2. Clone sysprocalc's git repository using:
+1. Download and [install Rust](https://www.rust-lang.org/tools/install)
+2. Clone sysprocalc's git repository to your computer using:
    ```
    git clone https://github.com/Teknomancer/sysprocalc.git
    ```
-3. Build, test and run using:
+3. Build, test and run (debug target) using:
    ```
    cargo build && cargo clippy && cargo test --all && cargo run
    ```
    The `--all` is required to make sure tests in the library are also run and not just the executable's tests.
+   
+   To build a release target, append "--release" to each of the above commands.
 
 ### License
 
