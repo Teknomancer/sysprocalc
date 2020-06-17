@@ -9,7 +9,7 @@ sysprocalc is the successor to my old C project [nopf](https://github.com/Teknom
 
 Basic expression parsing and evaluation already works. There's also decent test coverage with GitHub continuous integration (build and testing) for Windows, Linux and macOS which helps greatly while modifying core code.
 
-Variables/constants and x86-register formatting aren't supported yet. I'll be working on getting these done in the near future.
+Variables/constants and common x86-register descriptions aren't supported yet but will be implemented in the near future.
 
 ### Executable and Library
 
