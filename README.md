@@ -30,7 +30,7 @@ Though I do not have any current plans of publishing the library as a crate, the
    ```
    The `--all` is required to make sure tests in the library are also run and not just the executable's tests.
    
-   To build a release target, append "--release" to each of the above commands.
+   To build a release target, append `--release` to each of the above commands.
 
 ### License
 
