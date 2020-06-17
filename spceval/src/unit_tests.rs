@@ -193,6 +193,12 @@ fn is_oper_table_valid() {
                    "Oper '{}' invalid. Name cannot contain digits.", oper.name);
         assert_eq!(oper.name.chars().all(|x| x == '_'), false,
                    "Oper '{}' invalid. Name cannot contain '_' character.", oper.name);
+        assert_eq!(oper.name.chars().all(|x| x == 'x'), false,
+                   "Oper '{}' invalid. Name cannot contain 'x' hexadecimal prefix character.", oper.name);
+        assert_eq!(oper.name.chars().all(|x| x == 'n'), false,
+                   "Oper '{}' invalid. Name cannot contain 'n' binary prefix character.", oper.name);
+        assert_eq!(oper.name.chars().all(|x| x == 'o'), false,
+                   "Oper '{}' invalid. Name cannot contain 'o' octal prefix character.", oper.name);
 
         // Ensure open and close parenthesis operators have Nil associativity.
         match oper.kind {
