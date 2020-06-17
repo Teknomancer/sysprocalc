@@ -560,6 +560,7 @@ impl ExprCtx {
         }
     }
 
+    #[inline]
     fn process_parsed_open_paren(&mut self,
                                  oper_token: OperToken,
                                  opt_prev_token: &mut Option<Token>) -> Result<(), ExprError> {
@@ -583,6 +584,7 @@ impl ExprCtx {
         Ok(())
     }
 
+    #[inline]
     fn process_parsed_close_paren(&mut self,
                                   oper_token: OperToken,
                                   opt_prev_token: &mut Option<Token>) -> Result<(), ExprError> {
@@ -642,6 +644,7 @@ impl ExprCtx {
         }
     }
 
+    #[inline]
     fn process_parsed_param_sep(&mut self, oper_token: OperToken) -> Result<(), ExprError> {
         let oper = &OPERS[oper_token.idx_oper];
         // Find the previous open parenthesis.
