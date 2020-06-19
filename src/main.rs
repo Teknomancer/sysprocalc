@@ -20,6 +20,11 @@ static EXITING_APP: &str = "Exiting:";
 static BITS_PLURAL: &str = "bits";
 static BIT_SINGULAR: &str = "bit";
 
+enum AppMode {
+    Interactive,
+    NonInteractive,
+}
+
 fn write_color(stream: &mut StandardStream, s: &str, col: Color, is_intense: bool) -> std::io::Result<()> {
     stream.set_color(ColorSpec::new()
                      .set_fg(Some(col))
@@ -125,13 +130,18 @@ fn byte_index_to_char_index(str_expr: &str, idx_byte: usize) -> usize {
     idx_char
 }
 
-fn print_error(stream: &mut StandardStream, str_expr: &str, err: ExprError) -> std::io::Result<()> {
-    let idx_char = byte_index_to_char_index(str_expr, err.idx_expr);
-    write!(stream, "{:width$}", " ", width =  idx_char + USER_PROMPT.len())?;
-    write_color(stream, "^", Color::Red, true)?;
-    writeln!(stream)?;
+fn print_error(stream: &mut StandardStream, str_expr: &str, err: ExprError, app_mode: AppMode) -> std::io::Result<()> {
+    // Print the caret indicating where in the expression the error occurs in interactive mode.
+    if let AppMode::Interactive = app_mode {
+        let idx_char = byte_index_to_char_index(str_expr, err.idx_expr);
+        write!(stream, "{:width$}", " ", width = idx_char + USER_PROMPT.len())?;
+        write_color(stream, "^", Color::Red, true)?;
+        writeln!(stream)?;
 
-    write!(stream, "{:width$}", " ", width = USER_PROMPT.len())?;
+        // Passing width as 0 still produces 1 space, so do the padding here.
+        write!(stream, "{:width$}", " ", width = USER_PROMPT.len())?;
+    }
+    // Print the error.
     write_color(stream, "Error:", Color::Red, true)?;
     writeln!(stream, " {}", err)?;
     writeln!(stream)?;
@@ -140,7 +150,7 @@ fn print_error(stream: &mut StandardStream, str_expr: &str, err: ExprError) -> s
 }
 
 #[inline(always)]
-fn parse_and_eval_expr_internal(stream: &mut StandardStream, str_expr: &str) -> std::io::Result<()> {
+fn parse_and_eval_expr_internal(stream: &mut StandardStream, str_expr: &str, app_mode: AppMode) -> std::io::Result<()> {
     match spceval::parse(&str_expr) {
         Ok(mut expr_ctx) => {
             match spceval::evaluate(&mut expr_ctx) {
@@ -150,20 +160,20 @@ fn parse_and_eval_expr_internal(stream: &mut StandardStream, str_expr: &str) -> 
                         spceval::ExprResult::Command(c) => println!("Result: {}", c),
                     }
                 }
-                Err(e) => print_error(stream, str_expr, e)?,
+                Err(e) => print_error(stream, str_expr, e, app_mode)?,
             }
         }
-        Err(e) => print_error(stream, str_expr, e)?,
+        Err(e) => print_error(stream, str_expr, e, app_mode)?,
     }
     Ok(())
 }
 
-fn parse_and_eval_expr(stream: &mut StandardStream, str_expr: &str) -> std::io::Result<()> {
+fn parse_and_eval_expr(stream: &mut StandardStream, str_expr: &str, app_mode: AppMode) -> std::io::Result<()> {
     // Enable trace level logging while parsing and evaluating using spceval.
     #[cfg(debug_assertions)]
     log::set_max_level(log::LevelFilter::Trace);
 
-    parse_and_eval_expr_internal(stream, str_expr)?;
+    parse_and_eval_expr_internal(stream, str_expr, app_mode)?;
 
     // Disable logging.
     #[cfg(debug_assertions)]
@@ -192,7 +202,7 @@ fn main() -> std::io::Result<()> {
 
     // Command-line mode, evaluate and quit.
     if args.len() > 1 {
-        parse_and_eval_expr(&mut stdout, args.get(1).unwrap())?;
+        parse_and_eval_expr(&mut stdout, args.get(1).unwrap(), AppMode::NonInteractive)?;
         return Ok(());
     }
 
@@ -209,7 +219,7 @@ fn main() -> std::io::Result<()> {
                     "q" | "quit" | "exit" => return Ok(()),
                     _ => (),
                 }
-                parse_and_eval_expr(&mut stdout, str_expr)?;
+                parse_and_eval_expr(&mut stdout, str_expr, AppMode::Interactive)?;
             }
         } else {
             let mut stderr = StandardStream::stderr(color_choice);
