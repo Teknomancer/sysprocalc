@@ -12,23 +12,17 @@ pub enum ByteOrder {
     BigEndian,
 }
 
-pub struct SysBitSetDescription {
+pub struct SysBitSetDescription<'a> {
     spans: Range<u8>,
     kind: SysBitSetKind,
-    name: String,
-    short: String,
-    long: String,
+    name: &'a str,
+    short: &'a str,
+    long: &'a str,
 }
 
-impl SysBitSetDescription {
-    pub fn new(spans: Range<u8>, kind: SysBitSetKind, name: String, short: String, long: String) -> Self {
-        SysBitSetDescription {
-            spans,
-            kind,
-            name,
-            short,
-            long
-        }
+impl <'a>SysBitSetDescription<'a> {
+    pub fn new(spans: Range<u8>, kind: SysBitSetKind, name: &'a str, short: &'a str, long: &'a str) -> Self {
+        SysBitSetDescription { spans, kind, name, short, long }
     }
 }
 
@@ -46,19 +40,19 @@ pub enum SysBitSetKind {
 }
 
 pub struct SysBitSet<'a> {
-    name: String,
-    arch: String,
-    device: String,
+    name: &'a str,
+    arch: &'a str,
+    device: &'a str,
     byte_order: ByteOrder,
     bit_count: u8,
     chunks: &'a [u8],
     rsvd: SysBitSetReserved,
     show_rsvd: bool,
-    desc: &'a [SysBitSetDescription],
+    desc: &'a [SysBitSetDescription<'a>],
 }
 
 impl <'a>SysBitSet<'a> {
-    pub fn new(name: String, arch: String, device: String, byte_order: ByteOrder,
+    pub fn new(name: &'a str, arch: &'a str, device: &'a str, byte_order: ByteOrder,
             bit_count: u8, chunks: &'a [u8], desc: &'a [SysBitSetDescription]) -> Self {
         SysBitSet {
             name,
@@ -134,7 +128,6 @@ fn validate_sys_bit_set(bits: &SysBitSet) -> Result<(), SysBitSetError> {
 pub fn fmt_as_spaced_binary(integer: u64) -> String {
     // Formats the number as binary digits with a space (from the right) for every 4 binary digits.
     let str_bin = format!("{:b}", integer);
-    let len_str_bin = str_bin.len();
     let mut queue_bin: VecDeque<char> = VecDeque::with_capacity(128);
     for (idx, chr) in str_bin.chars().rev().enumerate() {
         if idx > 0 && idx % 4 == 0 {
@@ -197,7 +190,6 @@ pub fn fmt_binary_ruler(num_bits: u32) -> String {
 
 pub fn fmt_sys_bit_set(bits: &SysBitSet) -> Result<String, SysBitSetError> {
     validate_sys_bit_set(bits)?;
-    let str_desc = "";
     Err(SysBitSetError::MissingName)
 }
 
