@@ -12,16 +12,17 @@ pub enum ByteOrder {
     BigEndian,
 }
 
-pub struct SysBitSetDescription<'a> {
+#[derive(Debug)]
+pub struct SysBitSetDescription {
     spans: Range<u8>,
     kind: SysBitSetKind,
-    name: &'a str,
-    short: &'a str,
-    long: &'a str,
+    name: String,
+    short: String,
+    long: String,
 }
 
-impl <'a>SysBitSetDescription<'a> {
-    pub fn new(spans: Range<u8>, kind: SysBitSetKind, name: &'a str, short: &'a str, long: &'a str) -> Self {
+impl SysBitSetDescription {
+    pub fn new(spans: Range<u8>, kind: SysBitSetKind, name: String, short: String, long: String) -> Self {
         SysBitSetDescription { spans, kind, name, short, long }
     }
 }
@@ -34,26 +35,28 @@ pub enum SysBitSetReserved {
     Ignored,
 }
 
+#[derive(Debug)]
 pub enum SysBitSetKind {
     Normal,
     Rsvd(SysBitSetReserved),
 }
 
-pub struct SysBitSet<'a> {
-    name: &'a str,
-    arch: &'a str,
-    device: &'a str,
+#[derive(Debug)]
+pub struct SysBitSet {
+    name: String,
+    arch: String,
+    device: String,
     byte_order: ByteOrder,
     bit_count: u8,
-    chunks: &'a [u8],
+    chunks: Vec<u8>,
     rsvd: SysBitSetReserved,
     show_rsvd: bool,
-    desc: &'a [SysBitSetDescription<'a>],
+    desc: Vec<SysBitSetDescription>,
 }
 
-impl <'a>SysBitSet<'a> {
-    pub fn new(name: &'a str, arch: &'a str, device: &'a str, byte_order: ByteOrder,
-            bit_count: u8, chunks: &'a [u8], desc: &'a [SysBitSetDescription]) -> Self {
+impl SysBitSet {
+    pub fn new(name: String, arch: String, device: String, byte_order: ByteOrder,
+            bit_count: u8, chunks: Vec<u8>, desc: Vec<SysBitSetDescription>) -> Self {
         SysBitSet {
             name,
             arch,
@@ -114,12 +117,12 @@ fn validate_sys_bit_set(bits: &SysBitSet) -> Result<(), SysBitSetError> {
     } else if bits.chunks.len() >= MAX_BITCOUNT as usize {
         // The chunks index array size exceeds the total number of bits.
         Err(SysBitSetError::InvalidChunksLength)
-    } else if !has_unique_elements(bits.chunks) {
+    } else if !has_unique_elements(&bits.chunks) {
         // The chunks index array contains duplicate indices.
-        return Err(SysBitSetError::DuplicateChunkIndex)
+        Err(SysBitSetError::DuplicateChunkIndex)
     } else if bits.desc.is_empty() {
        // None of the bits are described.
-       return Err(SysBitSetError::MissingDescription)
+       Err(SysBitSetError::MissingDescription)
     } else {
         Ok(())
     }
@@ -135,8 +138,7 @@ pub fn fmt_as_spaced_binary(integer: u64) -> String {
         }
         queue_bin.push_front(chr);
     }
-    let str_bin_sfill = queue_bin.iter().collect::<String>();
-    str_bin_sfill
+    queue_bin.iter().collect::<String>()
 }
 
 pub fn fmt_binary_ruler(num_bits: u32) -> String {
@@ -190,6 +192,69 @@ pub fn fmt_binary_ruler(num_bits: u32) -> String {
 
 pub fn fmt_sys_bit_set(bits: &SysBitSet) -> Result<String, SysBitSetError> {
     validate_sys_bit_set(bits)?;
-    Err(SysBitSetError::MissingName)
+    Ok("Testing_Impl".to_string())
+}
+
+#[test]
+fn test_valid_sys_bit_set() {
+    let gen_bits = SysBitSet::new(
+        "generic".to_owned(),
+        "x86".to_owned(),
+        "cpu".to_owned(),
+        ByteOrder::LittleEndian,
+        64, vec![],
+        vec![
+            SysBitSetDescription::new(
+                Range { start: 0, end: 0 }, SysBitSetKind::Normal,
+                "Gen 0".to_owned(),
+                "Generic 0".to_owned(),
+                "Generic 0 bit enable".to_owned(),
+            ),
+            SysBitSetDescription::new(
+                Range { start: 8, end: 8 }, SysBitSetKind::Normal,
+                "Gen 1".to_owned(),
+                "Generic 1".to_owned(),
+                "Generic 1 bit enable".to_owned(),
+            ),
+        ]);
+    let res_fmt = validate_sys_bit_set(&gen_bits);
+    assert!(res_fmt.is_ok());
+}
+
+#[test]
+fn test_invalid_sys_bit_set() {
+    let pair_invalid_bit_sets = [
+        //
+        // Invalid bit count
+        //
+        (SysBitSet::new(
+            "generic".to_owned(),
+            "x86".to_owned(),
+            "cpu".to_owned(),
+            ByteOrder::LittleEndian,
+            128,
+            vec![],
+            vec![
+                SysBitSetDescription::new(
+                    Range { start: 0, end: 0 }, SysBitSetKind::Normal,
+                    "Gen 0".to_owned(), "Gen 0".to_owned(), "Gen 0".to_owned(),
+                ),
+                SysBitSetDescription::new(
+                    Range { start: 8, end: 8 }, SysBitSetKind::Normal,
+                    "Gen 1".to_owned(), "Gen 1".to_owned(), "Gen 1".to_owned(),
+                ),
+            ],
+        ),
+        SysBitSetError::InvalidBitCount),
+
+        //
+        // Invalid chunk index
+        //
+    ];
+
+    for bs in &pair_invalid_bit_sets {
+        let res_fmt = validate_sys_bit_set(&bs.0);
+        assert!(res_fmt.is_err(), "{:?}", bs.0);
+    }
 }
 
