@@ -4,8 +4,17 @@ use rustyline::Editor;
 use std::env;
 use std::io::Write;
 use std::collections::VecDeque;
+use std::ops::Range;
 
 mod sys_bit_set;
+use sys_bit_set::{
+    SysBitSetDescription,
+    SysBitSet,
+    SysBitSetReserved,
+    SysBitSetError,
+    SysBitSetKind,
+    ByteOrder
+};
 
 #[cfg(debug_assertions)]
 mod logger;
@@ -134,6 +143,22 @@ fn parse_and_eval_expr(stream: &mut StandardStream, str_expr: &str, app_mode: Ap
     Ok(())
 }
 
+fn test_bit_set_desc() {
+    let efer_bit_desc = [
+        SysBitSetDescription::new(
+            Range { start: 0, end: 0 },
+            SysBitSetKind::Normal,
+            "SCE".to_owned(),
+            "System call ext.".to_owned(),
+            "System call extensions".to_owned(),
+        ),
+    ];
+    let efer_bits = SysBitSet::new("EFER".to_owned(),
+                                   "x86".to_owned(), "cpu".to_owned(), ByteOrder::LittleEndian,
+                                   64, &[],
+                                   &efer_bit_desc);
+}
+
 fn main() -> std::io::Result<()> {
     // Create a logger but keep logging disabled to shut up rustyline's logging.
     // Need to find a way to disable rustyline's logger at compile time...
@@ -170,6 +195,7 @@ fn main() -> std::io::Result<()> {
             if !str_expr.is_empty() {
                 match str_expr {
                     "q" | "quit" | "exit" => return Ok(()),
+                    "efer" => test_bit_set_desc(),
                     _ => (),
                 }
                 parse_and_eval_expr(&mut stdout, str_expr, AppMode::Interactive)?;
