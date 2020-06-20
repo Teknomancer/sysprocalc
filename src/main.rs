@@ -148,13 +148,12 @@ fn test_bit_set_desc() {
         SysBitSetDescription::new(
             Range { start: 0, end: 0 },
             SysBitSetKind::Normal,
-            "SCE".to_owned(),
-            "System call ext.".to_owned(),
-            "System call extensions".to_owned(),
+            "SCE",
+            "System call ext.",
+            "System call extensions",
         ),
     ];
-    let efer_bits = SysBitSet::new("EFER".to_owned(),
-                                   "x86".to_owned(), "cpu".to_owned(), ByteOrder::LittleEndian,
+    let efer_bits = SysBitSet::new("EFER", "x86", "cpu", ByteOrder::LittleEndian,
                                    64, &[],
                                    &efer_bit_desc);
 }
