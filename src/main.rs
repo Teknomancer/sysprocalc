@@ -3,15 +3,12 @@ use termcolor::*;
 use rustyline::Editor;
 use std::env;
 use std::io::Write;
-use std::collections::VecDeque;
 use std::ops::Range;
 
 mod sys_bit_set;
 use sys_bit_set::{
     SysBitSetDescription,
     SysBitSet,
-    SysBitSetReserved,
-    SysBitSetError,
     SysBitSetKind,
     ByteOrder
 };
@@ -143,19 +140,29 @@ fn parse_and_eval_expr(stream: &mut StandardStream, str_expr: &str, app_mode: Ap
     Ok(())
 }
 
-fn test_bit_set_desc() {
-    let efer_bit_desc = [
+fn test_bit_set_desc(stream: &mut StandardStream) -> std::io::Result<()> {
+    let efer_bit_desc = vec![
         SysBitSetDescription::new(
-            Range { start: 0, end: 0 },
-            SysBitSetKind::Normal,
-            "SCE",
-            "System call ext.",
-            "System call extensions",
+            Range { start: 0, end: 0 }, SysBitSetKind::Normal,
+            "SCE".to_owned(),
+            "System call ext.".to_owned(),
+            "System call extensions".to_owned(),
         ),
     ];
-    let efer_bits = SysBitSet::new("EFER", "x86", "cpu", ByteOrder::LittleEndian,
-                                   64, &[],
-                                   &efer_bit_desc);
+    let efer_bits = SysBitSet::new("EFER".to_owned(),
+                                   "x86".to_owned(),
+                                   "cpu".to_owned(),
+                                   ByteOrder::LittleEndian,
+                                   64,
+                                   vec![],
+                                   efer_bit_desc);
+    let res_fmt = sys_bit_set::fmt_sys_bit_set(&efer_bits);
+    match res_fmt {
+        Ok(v) => writeln!(stream, "{}", v)?,
+        Err(e) => writeln!(stream, "Error: {}", e)?,
+    };
+
+    Ok(())
 }
 
 fn main() -> std::io::Result<()> {
@@ -194,7 +201,10 @@ fn main() -> std::io::Result<()> {
             if !str_expr.is_empty() {
                 match str_expr {
                     "q" | "quit" | "exit" => return Ok(()),
-                    "efer" => test_bit_set_desc(),
+                    "efer" => {
+                        test_bit_set_desc(&mut stdout)?;
+                        continue;
+                    }
                     _ => (),
                 }
                 parse_and_eval_expr(&mut stdout, str_expr, AppMode::Interactive)?;
