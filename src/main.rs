@@ -5,7 +5,7 @@ use std::env;
 use std::io::Write;
 use std::collections::VecDeque;
 
-mod bitset;
+mod sys_bit_set;
 
 #[cfg(debug_assertions)]
 mod logger;
@@ -46,17 +46,8 @@ fn print_result_num(stream: &mut StandardStream, number: &spceval::Number) -> st
     let str_oct = format!("{:#o}", number.integer);
 
     // Format as binary
-    // We want a space (from the right) for every 4 binary digits.
-    let str_bin = format!("{:b}", number.integer);
-    let len_str_bin = str_bin.len();
-    let mut queue_bin: VecDeque<char> = VecDeque::with_capacity(128);
-    for (idx, chr) in str_bin.chars().rev().enumerate() {
-        if idx > 0 && idx % 4 == 0 {
-            queue_bin.push_front(' ');
-        }
-        queue_bin.push_front(chr);
-    }
-    let str_bin_sfill = queue_bin.iter().collect::<String>();
+    let str_bin_sfill = sys_bit_set::fmt_as_spaced_binary(number.integer);
+    let bin_digits = u64::MAX.count_ones() - number.integer.leading_zeros();
 
     // Display the formatted strings
     write_color(stream, DEC_RADIX, Color::Cyan, true)?;
@@ -66,52 +57,12 @@ fn print_result_num(stream: &mut StandardStream, number: &spceval::Number) -> st
     write_color(stream, OCT_RADIX, Color::Cyan, true)?;
     writeln!(stream, " {:>24} (u64)  {:>26} (n)", str_oct_zfill, str_oct)?;
     write_color(stream, BIN_RADIX, Color::Cyan, true)?;
-    let str_bits = if len_str_bin > 1 { BITS_PLURAL } else { BIT_SINGULAR };
-    writeln!(stream, " {} ({} {})", str_bin_sfill, len_str_bin, str_bits)?;
+    let str_bin_digits = if bin_digits > 1 { BITS_PLURAL } else { BIT_SINGULAR };
+    writeln!(stream, " {} ({} {})", str_bin_sfill, bin_digits, str_bin_digits)?;
 
-    // Construct a binary ruler (for every 8 bits) to ease visual counting of bits.
-    // There might be a more efficient way to do this with Rust's string/vector
-    // manipulation. But I can't be bothered now, just get something working.
-    if len_str_bin >= 8 {
-        let mut str_bin_ruler = String::with_capacity(96);
-        let arr_ruler: [&str; 8] = [
-            "|  7:0  |",
-            "| 15:8  | ",
-            "| 23:16 | ",
-            "| 31:24 | ",
-            "| 39:32 | ",
-            "| 47:40 | ",
-            "| 55:48 | ",
-            "| 63:56 | ",
-        ];
-
-        // Ensure if we ever add 128-bit support this code will at least assert.
-        debug_assert!(len_str_bin <= 64);
-
-        // First we need to pad binary digits (with space) at the start when the
-        // binary digit does not fall within a full chunk of 8-bits (in arr_ruler).
-        // For e.g. "11 1111 1111", we need to pad the first 2 digits (plus 1 space)
-        // from the left. We iterate below until we no longer need to pad digits.
-        let mut pad_chars = 0;
-        for idx in (0..len_str_bin).rev() {
-            if (idx + 1) % 8 != 0 {
-                str_bin_ruler.push(' ');
-                pad_chars += 1;
-                if idx % 4 == 0 {
-                    str_bin_ruler.push(' ');
-                }
-            }
-            else {
-                break;
-            }
-        }
-
-        // Iterate over chunks of 8-bits and construct the ruler string.
-        for idx in (pad_chars..len_str_bin).rev().step_by(8) {
-            str_bin_ruler.push_str(arr_ruler[((idx + 1) >> 3) - 1]);
-        }
-
-        // Display the binary ruler.
+    // Display the binary ruler if we have more than 8 bits.
+    if bin_digits >= 8 {
+        let str_bin_ruler = sys_bit_set::fmt_binary_ruler(bin_digits);
         writeln!(stream, "     {}", str_bin_ruler)?;
     }
 
