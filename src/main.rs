@@ -5,6 +5,8 @@ use std::env;
 use std::io::Write;
 use std::collections::VecDeque;
 
+mod bitset;
+
 #[cfg(debug_assertions)]
 mod logger;
 
