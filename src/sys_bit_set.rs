@@ -20,6 +20,18 @@ pub struct SysBitSetDescription {
     long: String,
 }
 
+impl SysBitSetDescription {
+    pub fn new(spans: Range<u8>, kind: SysBitSetKind, name: String, short: String, long: String) -> Self {
+        SysBitSetDescription {
+            spans,
+            kind,
+            name,
+            short,
+            long
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SysBitSetReserved {
     MustBeZero,
@@ -33,16 +45,33 @@ pub enum SysBitSetKind {
     Rsvd(SysBitSetReserved),
 }
 
-pub struct SysBitSet {
+pub struct SysBitSet<'a> {
     name: String,
     arch: String,
     device: String,
     byte_order: ByteOrder,
     bit_count: u8,
-    chunks: Vec<u8>,
+    chunks: &'a [u8],
     rsvd: SysBitSetReserved,
     show_rsvd: bool,
-    desc: Vec<SysBitSetDescription>,
+    desc: &'a [SysBitSetDescription],
+}
+
+impl <'a>SysBitSet<'a> {
+    pub fn new(name: String, arch: String, device: String, byte_order: ByteOrder,
+            bit_count: u8, chunks: &'a [u8], desc: &'a [SysBitSetDescription]) -> Self {
+        SysBitSet {
+            name,
+            arch,
+            device,
+            byte_order,
+            bit_count,
+            chunks,
+            rsvd: SysBitSetReserved::MustBeZero,
+            show_rsvd: false,
+            desc,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -91,7 +120,7 @@ fn validate_sys_bit_set(bits: &SysBitSet) -> Result<(), SysBitSetError> {
     } else if bits.chunks.len() >= MAX_BITCOUNT as usize {
         // The chunks index array size exceeds the total number of bits.
         Err(SysBitSetError::InvalidChunksLength)
-    } else if !has_unique_elements(&bits.chunks) {
+    } else if !has_unique_elements(bits.chunks) {
         // The chunks index array contains duplicate indices.
         return Err(SysBitSetError::DuplicateChunkIndex)
     } else if bits.desc.is_empty() {
@@ -166,7 +195,7 @@ pub fn fmt_binary_ruler(num_bits: u32) -> String {
     }
 }
 
-pub fn format_sys_bit_set(bits: &SysBitSet) -> Result<String, SysBitSetError> {
+pub fn fmt_sys_bit_set(bits: &SysBitSet) -> Result<String, SysBitSetError> {
     validate_sys_bit_set(bits)?;
     let str_desc = "";
     Err(SysBitSetError::MissingName)
