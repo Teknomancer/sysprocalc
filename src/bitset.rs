@@ -8,10 +8,10 @@ pub enum ByteOrder {
 
 pub struct BitSetDescription {
     spans: Range<u8>,
+    kind: BitSetKind,
     name: String,
     short: String,
     long: String,
-    kind: BitSetKind,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
