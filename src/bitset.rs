@@ -1,4 +1,8 @@
 ﻿use std::ops::Range;
+use std::collections::HashSet;
+use std::hash::Hash;
+
+static MAX_BITCOUNT: u8 = 64;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ByteOrder {
@@ -47,9 +51,36 @@ pub enum BitSetError {
     UnknownArch,
     InvalidBitCount,
     InvalidChunkIndex,
+    InvalidChunksLength,
+    DuplicateChunkIndex,
+}
+
+fn has_unique_elements<T>(iter: T) -> bool
+where
+    T: IntoIterator,
+    T::Item: Eq + Hash,
+{
+    let mut uniq = HashSet::new();
+    iter.into_iter().all(move |x| uniq.insert(x))
+}
+
+fn validate_bitset(bits: &BitSet) -> Result<(), BitSetError> {
+    if bits.bit_count > MAX_BITCOUNT {
+        // The number of bits must exceeds our limit.
+        Err(BitSetError::InvalidBitCount)
+    } else if bits.chunks.len() >= MAX_BITCOUNT as usize {
+        // The chunks index array size exceeds the total number of bits.
+        Err(BitSetError::InvalidChunksLength)
+    } else if !has_unique_elements(&bits.chunks) {
+        // The chunks index array contains duplicate indices.
+        return Err(BitSetError::DuplicateChunkIndex)
+    } else {
+        Ok(())
+    }
 }
 
 pub fn format_bitset(bits: &BitSet) -> Result<String, BitSetError> {
+    validate_bitset(bits)?;
     Err(BitSetError::MissingName)
 }
 
