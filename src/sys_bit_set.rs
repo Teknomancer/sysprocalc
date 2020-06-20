@@ -71,7 +71,7 @@ impl SysBitSet {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum SysBitSetError {
     MissingName,
     MissingArch,
@@ -248,13 +248,14 @@ fn test_invalid_sys_bit_set() {
         SysBitSetError::InvalidBitCount),
 
         //
-        // Invalid chunk index
+        // TODO: Invalid chunk index
         //
     ];
 
     for bs in &pair_invalid_bit_sets {
         let res_fmt = validate_sys_bit_set(&bs.0);
         assert!(res_fmt.is_err(), "{:?}", bs.0);
+        assert_eq!(res_fmt.err().unwrap(), bs.1);
     }
 }
 
