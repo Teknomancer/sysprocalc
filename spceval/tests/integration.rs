@@ -309,10 +309,10 @@ fn valid_exprs_eval_fail() {
     // These must never produce errors during the parsing phase.
     use ExprErrorKind::*;
     let expr_results = vec![
-        ("0/0", ExprError { idx_expr: 0, kind: FailedEvaluation, message: String::new() }),
-        ("1/0", ExprError { idx_expr: 0, kind: FailedEvaluation, message: String::new() }),
-        ("2/0", ExprError { idx_expr: 0, kind: FailedEvaluation, message: String::new() }),
-        ("0xffffffffffffffff/0", ExprError { idx_expr: 0, kind: FailedEvaluation, message: String::new() }),
+        ("0/0", ExprErrorKind::FailedEvaluation),
+        ("1/0", ExprErrorKind::FailedEvaluation),
+        ("2/0", ExprErrorKind::FailedEvaluation),
+        ("0xffffffffffffffff/0", ExprErrorKind::FailedEvaluation),
     ];
     for expr_res in expr_results {
         let res_parse = spceval::parse(&expr_res.0);
@@ -320,7 +320,7 @@ fn valid_exprs_eval_fail() {
         let mut expr_ctx = res_parse.unwrap();
         let res_eval = spceval::evaluate(&mut expr_ctx);
         assert!(res_eval.is_err(), "{}", expr_res.0);
-        assert_eq!(expr_res.1.kind, res_eval.err().unwrap().kind, "{}", expr_res.0);
+        assert_eq!(expr_res.1, res_eval.err().unwrap().kind, "{}", expr_res.0);
     }
 }
 
@@ -333,53 +333,53 @@ fn invalid_exprs() {
     // TODO: Try split this into logical categories.
     use ExprErrorKind::*;
     let expr_results = vec![
-        ("", ExprError { idx_expr: 0, kind: EmptyExpr, message: String::new() }),
-        ("()", ExprError { idx_expr: 0, kind: EmptyExpr, message: String::new() }),
-        ("2 +", ExprError { idx_expr: 0, kind: InvalidParamCount, message: String::new() }),
-        ("- -2", ExprError { idx_expr: 0, kind: MissingOperand, message: String::new() }),
-        ("+ +2", ExprError { idx_expr: 0, kind: MissingOperand, message: String::new() }),
-        (",2", ExprError { idx_expr: 0, kind: InvalidExpr, message: String::new() }),
-        ("(", ExprError { idx_expr: 0, kind: MismatchParenthesis, message: String::new() }),
-        (")", ExprError { idx_expr: 0, kind: MismatchParenthesis, message: String::new() }),
-        (",", ExprError { idx_expr: 0, kind: InvalidExpr, message: String::new() }),
-        ("(,", ExprError { idx_expr: 0, kind: InvalidExpr, message: String::new() }),
-        (",)", ExprError { idx_expr: 0, kind: InvalidExpr, message: String::new() }),
-        ("(5,", ExprError { idx_expr: 0, kind: MissingFunction, message: String::new() }),
-        ("(2 +", ExprError { idx_expr: 0, kind: MismatchParenthesis, message: String::new() }),
-        ("2 + 5)", ExprError { idx_expr: 0, kind: MismatchParenthesis, message: String::new() }),
-        ("++", ExprError { idx_expr: 0, kind: MissingOperand, message: String::new() }),
-        ("--", ExprError { idx_expr: 0, kind: MissingOperand, message: String::new() }),
-        ("0,", ExprError { idx_expr: 0, kind: MissingParenthesis, message: String::new() }),
-        ("(),", ExprError { idx_expr: 0, kind: MissingParenthesis, message: String::new() }),
-        ("(0),", ExprError { idx_expr: 0, kind: MissingParenthesis, message: String::new() }),
-        ("5+()", ExprError { idx_expr: 0, kind: InvalidParamCount, message: String::new() }),
-        ("-()", ExprError { idx_expr: 0, kind: InvalidParamCount, message: String::new() }),
-        ("+()", ExprError { idx_expr: 0, kind: InvalidParamCount, message: String::new() }),
-        (",(),", ExprError { idx_expr: 0, kind: InvalidExpr, message: String::new() }),
-        ("(),()", ExprError { idx_expr: 0, kind: MissingParenthesis, message: String::new() }),
-        ("(1),()", ExprError { idx_expr: 0, kind: MissingParenthesis, message: String::new() }),
-        ("(1),(2)", ExprError { idx_expr: 0, kind: MissingParenthesis, message: String::new() }),
-        ("(1),(2),", ExprError { idx_expr: 0, kind: MissingParenthesis, message: String::new() }),
-        ("(1)(2),", ExprError { idx_expr: 0, kind: MissingOperatorOrFunction, message: String::new() }),
-        ("5(2),", ExprError { idx_expr: 0, kind: MissingOperatorOrFunction, message: String::new() }),
-        ("5,(2),", ExprError { idx_expr: 0, kind: MissingParenthesis, message: String::new() }),
-        ("(<<2", ExprError { idx_expr: 0, kind: InvalidExpr, message: String::new() }),
-        ("(1)2", ExprError { idx_expr: 0, kind: MissingOperatorOrFunction, message: String::new() }),
-        ("(1).5", ExprError { idx_expr: 0, kind: MissingOperatorOrFunction, message: String::new() }),
-        ("2 << << 4", ExprError { idx_expr: 0, kind: InvalidExpr, message: String::new() }),
-        ("2<<<<4", ExprError { idx_expr: 0, kind: InvalidExpr, message: String::new() }),
-        ("2+ + +4", ExprError { idx_expr: 0, kind: MissingOperand, message: String::new() }),
-        ("2+++4", ExprError { idx_expr: 0, kind: MissingOperand, message: String::new() }),
-        (".+2", ExprError { idx_expr: 0, kind: InvalidExpr, message: String::new() }),
-        (".-2", ExprError { idx_expr: 0, kind: InvalidExpr, message: String::new() }),
-        ("(.5", ExprError { idx_expr: 0, kind: MismatchParenthesis, message: String::new() }),
-        (").f", ExprError { idx_expr: 0, kind: MismatchParenthesis, message: String::new() }),
-        ("(-1).5", ExprError { idx_expr: 0, kind: MissingOperatorOrFunction, message: String::new() }),
-        ("!-0", ExprError { idx_expr: 0, kind: MissingOperand, message: String::new() }),
-        ("~-0", ExprError { idx_expr: 0, kind: MissingOperand, message: String::new() }),
-        ("0 x123", ExprError { idx_expr: 0, kind: InvalidExpr, message: String::new() }),
-        ("0 n123", ExprError { idx_expr: 0, kind: InvalidExpr, message: String::new() }),
-        ("0 o1011", ExprError { idx_expr: 0, kind: InvalidExpr, message: String::new() }),
+        ("", ExprErrorKind::EmptyExpr),
+        ("()", ExprErrorKind::EmptyExpr),
+        ("2 +", ExprErrorKind::InvalidParamCount),
+        ("- -2", ExprErrorKind::MissingOperand),
+        ("+ +2", ExprErrorKind::MissingOperand),
+        (",2", ExprErrorKind::InvalidExpr),
+        ("(", ExprErrorKind::MismatchParenthesis),
+        (")", ExprErrorKind::MismatchParenthesis),
+        (",", ExprErrorKind::InvalidExpr),
+        ("(,", ExprErrorKind::InvalidExpr),
+        (",)", ExprErrorKind::InvalidExpr),
+        ("(5,", ExprErrorKind::MissingFunction),
+        ("(2 +", ExprErrorKind::MismatchParenthesis),
+        ("2 + 5)", ExprErrorKind::MismatchParenthesis),
+        ("++", ExprErrorKind::MissingOperand),
+        ("--", ExprErrorKind::MissingOperand),
+        ("0,", ExprErrorKind::MissingParenthesis),
+        ("(),", ExprErrorKind::MissingParenthesis),
+        ("(0),", ExprErrorKind::MissingParenthesis),
+        ("5+()", ExprErrorKind::InvalidParamCount),
+        ("-()", ExprErrorKind::InvalidParamCount),
+        ("+()", ExprErrorKind::InvalidParamCount),
+        (",(),", ExprErrorKind::InvalidExpr),
+        ("(),()", ExprErrorKind::MissingParenthesis),
+        ("(1),()", ExprErrorKind::MissingParenthesis),
+        ("(1),(2)", ExprErrorKind::MissingParenthesis),
+        ("(1),(2),", ExprErrorKind::MissingParenthesis),
+        ("(1)(2),", ExprErrorKind::MissingOperatorOrFunction),
+        ("5(2),", ExprErrorKind::MissingOperatorOrFunction),
+        ("5,(2),", ExprErrorKind::MissingParenthesis),
+        ("(<<2", ExprErrorKind::InvalidExpr),
+        ("(1)2", ExprErrorKind::MissingOperatorOrFunction),
+        ("(1).5", ExprErrorKind::MissingOperatorOrFunction),
+        ("2 << << 4", ExprErrorKind::InvalidExpr),
+        ("2<<<<4", ExprErrorKind::InvalidExpr),
+        ("2+ + +4", ExprErrorKind::MissingOperand),
+        ("2+++4", ExprErrorKind::MissingOperand),
+        (".+2", ExprErrorKind::InvalidExpr),
+        (".-2", ExprErrorKind::InvalidExpr),
+        ("(.5", ExprErrorKind::MismatchParenthesis),
+        (").f", ExprErrorKind::MismatchParenthesis),
+        ("(-1).5", ExprErrorKind::MissingOperatorOrFunction),
+        ("!-0", ExprErrorKind::MissingOperand),
+        ("~-0", ExprErrorKind::MissingOperand),
+        ("0 x123", ExprErrorKind::InvalidExpr),
+        ("0 n123", ExprErrorKind::InvalidExpr),
+        ("0 o1011", ExprErrorKind::InvalidExpr),
     ];
     for expr_res in expr_results {
         let res_parse = spceval::parse(&expr_res.0);
@@ -387,9 +387,9 @@ fn invalid_exprs() {
             let mut expr_ctx = res_parse.unwrap();
             let res_eval = spceval::evaluate(&mut expr_ctx);
             assert!(res_eval.is_err(), "{}", expr_res.0);
-            assert_eq!(expr_res.1.kind, res_eval.err().unwrap().kind, "{}", expr_res.0);
+            assert_eq!(expr_res.1, res_eval.err().unwrap().kind, "{}", expr_res.0);
         } else {
-            assert_eq!(expr_res.1.kind, res_parse.err().unwrap().kind, "{}", expr_res.0);
+            assert_eq!(expr_res.1, res_parse.err().unwrap().kind, "{}", expr_res.0);
         }
     }
 }
