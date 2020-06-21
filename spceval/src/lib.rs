@@ -791,9 +791,9 @@ fn parse_num(str_expr: &str) -> (Option<Number>, usize) {
         iter_expr.next();
         if let Some(n) = iter_expr.peek() {
             match n {
-                'x' | 'X' => { len_prefix += 1; iter_expr.next(); radix = 16; }
-                'n' | 'N' => { len_prefix += 1; iter_expr.next(); radix = 2; }
-                'o' | 'O' => { len_prefix += 1; iter_expr.next(); radix = 8; }
+                'x' => { len_prefix += 1; iter_expr.next(); radix = 16; }
+                'b' => { len_prefix += 1; iter_expr.next(); radix = 2; }
+                'o' => { len_prefix += 1; iter_expr.next(); radix = 8; }
                 _ => (),
             }
         } else {
