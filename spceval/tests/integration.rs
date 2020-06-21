@@ -288,14 +288,13 @@ fn valid_exprs() {
         ("(1+2)*3", Number { integer: 9, float: 9.0 }),
         ("(1+2)*(5-1)", Number { integer: 12, float: 12.0 }),
         ("0xf << 1", Number { integer: 0x1e, float: 30.0 }),
-        ("((0x128)) + 0n111", Number { integer: 303, float: 303.0 }),
-        ("1*4+(0n1+0xf)", Number { integer: 20, float: 20.0 }),
+        ("((0x128)) + 0b111", Number { integer: 303, float: 303.0 }),
+        ("1*4+(0b1+0xf)", Number { integer: 20, float: 20.0 }),
         (".5*0", Number { integer: 0, float: 0.0 }),
         ("5/(5/(5/(5)))", Number { integer: 1, float: 1.0 }),
         ("212 + (1 * (3 - (4 * 5)))", Number { integer: 195, float: 195.0 }),
         ("0*5", Number { integer: 0, float: 0.0 }),
         ("0/5", Number { integer: 0, float: 0.0 }),
-        ("0x 123456789", Number { integer: 0x123456789, float: 0x123456789u64 as f64 }),
         ("0x f f f f + 0xf ff f", Number { integer: 0x1fffe, float: 0x1fffeu64 as f64 }),
     ];
     for expr_res in expr_results {
