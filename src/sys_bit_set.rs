@@ -127,17 +127,30 @@ fn validate_sys_bit_set(bits: &SysBitSet) -> Result<(), SysBitSetError> {
     }
 }
 
-pub fn fmt_as_spaced_binary(integer: u64) -> String {
+pub fn fmt_as_spaced_binary(val: u64) -> String {
     // Formats the number as binary digits with a space (from the right) for every 4 binary digits.
-    let str_bin = format!("{:b}", integer);
-    let mut vec_bin: Vec<char> = Vec::with_capacity(128);
-    for (idx, chr) in str_bin.chars().enumerate() {
-        if idx > 0 && idx % 4 == 0 {
+    let mut vec_bin: Vec<char> = Vec::with_capacity(82);
+    let mut val = val;
+    let chr_bin_digits = ['0', '1'];
+    let num_digits = u64::MAX.count_ones() - val.leading_zeros();
+
+    // Push first bit (to avoid a branch inside the loop to skip adding a space for idx 0.
+    vec_bin.push(chr_bin_digits[val.wrapping_rem(2) as usize]);
+    val >>= 1;
+    let mut idx = 1;
+
+    // Push remaining bits.
+    while idx < num_digits {
+        if idx % 4 == 0 {
             vec_bin.push(' ');
         }
-        vec_bin.push(chr);
+        vec_bin.push(chr_bin_digits[val.wrapping_rem(2) as usize]);
+        val >>= 1;
+        idx += 1;
     }
-    vec_bin.iter().collect::<String>()
+
+    // Return the vector of binary-digit characters (after reversing for reading LTR) as string.
+    vec_bin.iter().rev().collect::<String>()
 }
 
 pub fn fmt_binary_ruler(num_bits: u32) -> String {
