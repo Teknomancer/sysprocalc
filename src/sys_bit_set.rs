@@ -1,6 +1,5 @@
 ﻿use std::ops::Range;
 use std::collections::HashSet;
-use std::collections::VecDeque;
 use std::hash::Hash;
 use std::fmt;
 
@@ -131,14 +130,14 @@ fn validate_sys_bit_set(bits: &SysBitSet) -> Result<(), SysBitSetError> {
 pub fn fmt_as_spaced_binary(integer: u64) -> String {
     // Formats the number as binary digits with a space (from the right) for every 4 binary digits.
     let str_bin = format!("{:b}", integer);
-    let mut queue_bin: VecDeque<char> = VecDeque::with_capacity(128);
-    for (idx, chr) in str_bin.chars().rev().enumerate() {
+    let mut vec_bin: Vec<char> = Vec::with_capacity(128);
+    for (idx, chr) in str_bin.chars().enumerate() {
         if idx > 0 && idx % 4 == 0 {
-            queue_bin.push_front(' ');
+            vec_bin.push(' ');
         }
-        queue_bin.push_front(chr);
+        vec_bin.push(chr);
     }
-    queue_bin.iter().collect::<String>()
+    vec_bin.iter().collect::<String>()
 }
 
 pub fn fmt_binary_ruler(num_bits: u32) -> String {
