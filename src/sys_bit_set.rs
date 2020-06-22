@@ -139,20 +139,19 @@ pub fn fmt_as_spaced_binary(val: u64) -> String {
     let mut vec_bin: Vec<char> = Vec::with_capacity(82);
     let mut val = val;
     let chr_bin_digits = ['0', '1'];
-    let mut num_digits = u64::MAX.count_ones() - val.leading_zeros();
+    let num_digits = u64::MAX.count_ones() - val.leading_zeros();
 
     // Push first bit (to avoid extra branch in the loop for not pushing ' ' on 0th iteration).
     vec_bin.push(chr_bin_digits[val.wrapping_rem(2) as usize]);
     val >>= 1;
 
     // Push remaining bits.
-    while num_digits > 1 {
-        if (num_digits - 1) % 4 == 0 {
+    for idx in 1..num_digits {
+        if idx % 4 == 0 {
             vec_bin.push(' ');
         }
         vec_bin.push(chr_bin_digits[val.wrapping_rem(2) as usize]);
         val >>= 1;
-        num_digits -= 1;
     }
 
     // Return the vector of binary-digit characters (after reversing for reading LTR) as string.
