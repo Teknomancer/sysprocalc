@@ -2,6 +2,7 @@
 use std::collections::HashSet;
 use std::hash::Hash;
 use std::fmt;
+use std::convert::TryFrom;
 
 static MAX_BITCOUNT: u8 = 64;
 
@@ -54,8 +55,14 @@ pub struct SysBitSet {
 }
 
 impl SysBitSet {
-    pub fn new(name: String, arch: String, device: String, byte_order: ByteOrder,
-            bit_count: u8, chunks: Vec<u8>, desc: Vec<SysBitSetDescription>) -> Self {
+    pub fn new(
+            name: String,
+            arch: String,
+            device: String,
+            byte_order: ByteOrder,
+            bit_count: u8,
+            chunks: Vec<u8>,
+            desc: Vec<SysBitSetDescription>) -> Self {
         SysBitSet {
             name,
             arch,
@@ -153,9 +160,18 @@ pub fn fmt_as_spaced_binary(val: u64) -> String {
 }
 
 pub fn fmt_binary_ruler(num_bits: u32) -> String {
-    // Constructs a binary ruler (for every 8 bits) to ease visual counting of bits.
+    // Makes a binary ruler (for every 8 bits) to ease visual counting of bits.
     // There might be a more efficient way to do this with Rust's string/vector
     // manipulation. But I can't be bothered now, just get something working.
+
+    // First convert the u32 to usize since we need a usize to index into an array.
+    // This is will panic if the conversion fails (on architectures where usize
+    // is insufficient to hold 32 bits). Panic is better than failing in weird ways.
+    let num_bits = usize::try_from(num_bits).unwrap();
+
+    // Ensure if we ever add 128-bit support this code will at least assert.
+    debug_assert!(num_bits <= 64);
+
     if num_bits >= 8 {
         let mut str_bin_ruler = String::with_capacity(98);
         let arr_ruler: [&str; 8] = [
@@ -169,15 +185,13 @@ pub fn fmt_binary_ruler(num_bits: u32) -> String {
             "| 63:56 | ",
         ];
 
-        // Ensure if we ever add 128-bit support this code will at least assert.
-        debug_assert!(num_bits <= 64);
-
-        // First we need to pad binary digits (with space) at the start when the
-        // binary digit does not fall within a full chunk of 8-bits (in arr_ruler).
-        // For e.g. "11 1111 1111", we need to pad the first 2 digits (plus 1 space)
-        // from the left. We iterate below until we no longer need to pad digits.
+        // First we need to pad with spaces at the start for those binary digits
+        // that do not fall within a chunk of 8-bits (see arr_ruler).
+        // For e.g. "10 1111 1111", we need to pad the first 2 digits (and 1 space)
+        // from the left. We iterate below until we no longer need to pad with spaces
+        // prior to the start of the ruler.
         let mut pad_chars = 0;
-        for idx in (0..num_bits as usize).rev() {
+        for idx in (0..num_bits).rev() {
             if (idx + 1) % 8 != 0 {
                 str_bin_ruler.push(' ');
                 pad_chars += 1;
@@ -190,8 +204,8 @@ pub fn fmt_binary_ruler(num_bits: u32) -> String {
             }
         }
 
-        // Iterate over chunks of 8-bits and construct the ruler string.
-        for idx in (pad_chars..num_bits as usize).rev().step_by(8) {
+        // Iterate over chunks of 8-bits and makes the ruler string.
+        for idx in (pad_chars..num_bits).rev().step_by(8) {
             str_bin_ruler.push_str(arr_ruler[((idx + 1) >> 3) - 1]);
         }
 
