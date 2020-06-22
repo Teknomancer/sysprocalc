@@ -53,9 +53,17 @@ fn print_result_num(stream: &mut StandardStream, number: &spceval::Number) -> st
 
     // Format as binary
     let str_bin_sfill = sys_bit_set::fmt_as_spaced_binary(number.integer);
-    let bin_digits = u64::MAX.count_ones() - number.integer.leading_zeros();
+    // Compute number of bits (to make a binary ruler as well as display the number of bits).
+    let mut bin_digits = u64::MAX.count_ones() - number.integer.leading_zeros();
+    let str_bin_digits;
+    if bin_digits < 2 {
+        bin_digits = 1; // Required because bin_digits gets computed as 0 when number.integer is 0.
+        str_bin_digits = BIT_SINGULAR;
+    } else {
+        str_bin_digits = BITS_PLURAL;
+    };
 
-    // Display the formatted strings
+    // Display the formatted values
     write_color(stream, DEC_RADIX, Color::Cyan, true)?;
     writeln!(stream, " {:>24} (u64)  {:>26} (f)", number.integer, number.float)?;
     write_color(stream, HEX_RADIX, Color::Cyan, true)?;
@@ -63,7 +71,6 @@ fn print_result_num(stream: &mut StandardStream, number: &spceval::Number) -> st
     write_color(stream, OCT_RADIX, Color::Cyan, true)?;
     writeln!(stream, " {:>24} (u64)  {:>26} (n)", str_oct_zfill, str_oct)?;
     write_color(stream, BIN_RADIX, Color::Cyan, true)?;
-    let str_bin_digits = if bin_digits > 1 { BITS_PLURAL } else { BIT_SINGULAR };
     writeln!(stream, " {} ({} {})", str_bin_sfill, bin_digits, str_bin_digits)?;
 
     // Display the binary ruler if we have more than 8 bits.
@@ -149,13 +156,15 @@ fn test_bit_set_desc(stream: &mut StandardStream) -> std::io::Result<()> {
             "System call extensions".to_owned(),
         ),
     ];
-    let efer_bits = SysBitSet::new("EFER".to_owned(),
-                                   "x86".to_owned(),
-                                   "cpu".to_owned(),
-                                   ByteOrder::LittleEndian,
-                                   64,
-                                   vec![],
-                                   efer_bit_desc);
+    let efer_bits = SysBitSet::new(
+        "EFER".to_owned(),
+        "x86".to_owned(),
+        "cpu".to_owned(),
+        ByteOrder::LittleEndian,
+        64,
+        vec![],
+        efer_bit_desc
+    );
     let res_fmt = sys_bit_set::fmt_sys_bit_set(&efer_bits);
     match res_fmt {
         Ok(v) => writeln!(stream, "{}", v)?,
@@ -182,7 +191,7 @@ fn main() -> std::io::Result<()> {
     };
 
     let mut stdout = StandardStream::stdout(color_choice);
-    let args : Vec<String> = env::args().collect();
+    let args: Vec<String> = env::args().collect();
 
     // Command-line mode, evaluate and quit.
     if args.len() > 1 {
