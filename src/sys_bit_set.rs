@@ -138,11 +138,11 @@ pub fn fmt_as_spaced_binary(val: u64) -> String {
     // Formats the number as binary digits with a space (from the right) for every 4 binary digits.
     let mut vec_bin: Vec<char> = Vec::with_capacity(82);
     let mut val = val;
-    let chr_digits = ['0', '1'];
+    static CHR_DIGITS: [char; 2] = ['0', '1'];
     let num_digits = u64::MAX.count_ones() - val.leading_zeros();
 
     // Push first bit (to avoid extra branch in the loop for not pushing ' ' on 0th iteration).
-    vec_bin.push(chr_digits[val.wrapping_rem(2) as usize]);
+    vec_bin.push(CHR_DIGITS[val.wrapping_rem(2) as usize]);
     val >>= 1;
 
     // Push remaining bits.
@@ -150,7 +150,7 @@ pub fn fmt_as_spaced_binary(val: u64) -> String {
         if idx % 4 == 0 {
             vec_bin.push(' ');
         }
-        vec_bin.push(chr_digits[val.wrapping_rem(2) as usize]);
+        vec_bin.push(CHR_DIGITS[val.wrapping_rem(2) as usize]);
         val >>= 1;
     }
 
@@ -173,7 +173,23 @@ pub fn fmt_binary_ruler(num_bits: u32) -> String {
 
     if num_bits >= 8 {
         let mut str_bin_ruler = String::with_capacity(98);
-        let arr_ruler: [&str; 8] = [
+
+        // First we need to pad with spaces at the start for those binary digits
+        // that do not fall within a chunk of 8-bits (see arr_ruler).
+        // For e.g. "10 1111 1111", we need to pad the first 2 digits (and 1 space)
+        // from the left. We iterate below until we no longer need to pad with spaces
+        // prior to the start of the ruler.
+        let num_pad_bits = num_bits % 8;
+        if num_pad_bits != 0 {
+            for idx in 0..num_pad_bits {
+                str_bin_ruler.push(' ');
+                if idx % 4 == 0 {
+                    str_bin_ruler.push(' ');
+                }
+            }
+        }
+
+        static RULER_SEGS: [&str; 8] = [
             "|  7:0  |",
             "| 15:8  | ",
             "| 23:16 | ",
@@ -184,24 +200,9 @@ pub fn fmt_binary_ruler(num_bits: u32) -> String {
             "| 63:56 | ",
         ];
 
-        // First we need to pad with spaces at the start for those binary digits
-        // that do not fall within a chunk of 8-bits (see arr_ruler).
-        // For e.g. "10 1111 1111", we need to pad the first 2 digits (and 1 space)
-        // from the left. We iterate below until we no longer need to pad with spaces
-        // prior to the start of the ruler.
-        let num_pad_bits = num_bits % 8;
-        if num_pad_bits != 0 {
-            for idx in (0..num_pad_bits) {
-                str_bin_ruler.push(' ');
-                if idx % 4 == 0 {
-                    str_bin_ruler.push(' ');
-                }
-            }
-        }
-
         // Iterate over chunks of 8-bits and makes the ruler string.
         for idx in (num_pad_bits..num_bits).rev().step_by(8) {
-            str_bin_ruler.push_str(arr_ruler[((idx + 1) >> 3) - 1]);
+            str_bin_ruler.push_str(RULER_SEGS[((idx + 1) >> 3) - 1]);
         }
 
         str_bin_ruler
