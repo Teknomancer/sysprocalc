@@ -189,22 +189,18 @@ pub fn fmt_binary_ruler(num_bits: u32) -> String {
         // For e.g. "10 1111 1111", we need to pad the first 2 digits (and 1 space)
         // from the left. We iterate below until we no longer need to pad with spaces
         // prior to the start of the ruler.
-        let mut pad_chars = 0;
-        for idx in (0..num_bits).rev() {
-            if (idx + 1) % 8 != 0 {
+        let num_pad_bits = num_bits % 8;
+        if num_pad_bits != 0 {
+            for idx in (0..num_pad_bits) {
                 str_bin_ruler.push(' ');
-                pad_chars += 1;
                 if idx % 4 == 0 {
                     str_bin_ruler.push(' ');
                 }
             }
-            else {
-                break;
-            }
         }
 
         // Iterate over chunks of 8-bits and makes the ruler string.
-        for idx in (pad_chars..num_bits).rev().step_by(8) {
+        for idx in (num_pad_bits..num_bits).rev().step_by(8) {
             str_bin_ruler.push_str(arr_ruler[((idx + 1) >> 3) - 1]);
         }
 
