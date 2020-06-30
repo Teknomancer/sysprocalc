@@ -10,45 +10,45 @@ const PRE_ALLOC_TOKENS: usize = 16;
 
 static OPERS: [Oper<'static>; 26] = [
     // Precedence 1 (highest priority)
-    Oper { kind: OperKind::OpenParen,  prec: 1,  params: 0, assoc: OperAssoc::Nil,   name: "(",  syntax: "(<expr>",            help: "Begin expression."             , evalfn: oper_nop },
-    Oper { kind: OperKind::CloseParen, prec: 1,  params: 0, assoc: OperAssoc::Nil,   name: ")",  syntax: "<expr>)",            help: "End expression."               , evalfn: oper_nop },
+    Oper { kind: OperKind::OpenParen,  prec: 1,  params: 0, assoc: OperAssoc::Nil,   name: "(",  syntax: "(<expr>",            help: "Begin expression.",       evalfn: oper_nop },
+    Oper { kind: OperKind::CloseParen, prec: 1,  params: 0, assoc: OperAssoc::Nil,   name: ")",  syntax: "<expr>)",            help: "End expression.",         evalfn: oper_nop },
     // Precendence 4 (appears in array before 2 because of parsing logic with unary operators)
-    Oper { kind: OperKind::Regular,    prec: 4,  params: 2, assoc: OperAssoc::Left,  name: "+",  syntax: "<expr> + <expr>",    help: "Addition."                     , evalfn: oper_add },
-    Oper { kind: OperKind::Regular,    prec: 4,  params: 2, assoc: OperAssoc::Left,  name: "-",  syntax: "<expr> - <expr>",    help: "Subtraction."                  , evalfn: oper_sub },
+    Oper { kind: OperKind::Regular,    prec: 4,  params: 2, assoc: OperAssoc::Left,  name: "+",  syntax: "<expr> + <expr>",    help: "Addition.",               evalfn: oper_add },
+    Oper { kind: OperKind::Regular,    prec: 4,  params: 2, assoc: OperAssoc::Left,  name: "-",  syntax: "<expr> - <expr>",    help: "Subtraction.",            evalfn: oper_sub },
     // Precedence 2
-    Oper { kind: OperKind::Regular,    prec: 2,  params: 1, assoc: OperAssoc::Right, name: "+",  syntax: "+<expr>",            help: "Unary plus."                   , evalfn: oper_nop },
-    Oper { kind: OperKind::Regular,    prec: 2,  params: 1, assoc: OperAssoc::Right, name: "-",  syntax: "-<expr>",            help: "Unary minus."                  , evalfn: oper_unary_minus },
-    Oper { kind: OperKind::Regular,    prec: 2,  params: 1, assoc: OperAssoc::Right, name: "!",  syntax: "!<expr>",            help: "Logical NOT."                  , evalfn: oper_logical_not },
-    Oper { kind: OperKind::Regular,    prec: 2,  params: 1, assoc: OperAssoc::Right, name: "~",  syntax: "~<expr>",            help: "Bitwise NOT."                  , evalfn: oper_bit_not },
+    Oper { kind: OperKind::Regular,    prec: 2,  params: 1, assoc: OperAssoc::Right, name: "+",  syntax: "+<expr>",            help: "Unary plus.",             evalfn: oper_nop },
+    Oper { kind: OperKind::Regular,    prec: 2,  params: 1, assoc: OperAssoc::Right, name: "-",  syntax: "-<expr>",            help: "Unary minus.",            evalfn: oper_unary_minus },
+    Oper { kind: OperKind::Regular,    prec: 2,  params: 1, assoc: OperAssoc::Right, name: "!",  syntax: "!<expr>",            help: "Logical NOT.",            evalfn: oper_logical_not },
+    Oper { kind: OperKind::Regular,    prec: 2,  params: 1, assoc: OperAssoc::Right, name: "~",  syntax: "~<expr>",            help: "Bitwise NOT.",            evalfn: oper_bit_not },
     // Precedence 3
-    Oper { kind: OperKind::Regular,    prec: 3,  params: 2, assoc: OperAssoc::Left,  name: "*",  syntax: "<expr> * <expr>",    help: "Multiplication."               , evalfn: oper_mul },
-    Oper { kind: OperKind::Regular,    prec: 3,  params: 2, assoc: OperAssoc::Left,  name: "/",  syntax: "<expr> / <expr>",    help: "Division."                     , evalfn: oper_div },
-    Oper { kind: OperKind::Regular,    prec: 3,  params: 2, assoc: OperAssoc::Left,  name: "%",  syntax: "<expr> % <expr>",    help: "Remainder."                    , evalfn: oper_rem },
+    Oper { kind: OperKind::Regular,    prec: 3,  params: 2, assoc: OperAssoc::Left,  name: "*",  syntax: "<expr> * <expr>",    help: "Multiplication.",         evalfn: oper_mul },
+    Oper { kind: OperKind::Regular,    prec: 3,  params: 2, assoc: OperAssoc::Left,  name: "/",  syntax: "<expr> / <expr>",    help: "Division.",               evalfn: oper_div },
+    Oper { kind: OperKind::Regular,    prec: 3,  params: 2, assoc: OperAssoc::Left,  name: "%",  syntax: "<expr> % <expr>",    help: "Remainder.",              evalfn: oper_rem },
     // Precedence 5
-    Oper { kind: OperKind::Regular,    prec: 5,  params: 2, assoc: OperAssoc::Left,  name: "<<", syntax: "<expr> << <expr>",   help: "Bitwise left-shift."           , evalfn: oper_bit_lshift },
-    Oper { kind: OperKind::Regular,    prec: 5,  params: 2, assoc: OperAssoc::Left,  name: ">>", syntax: "<expr> >> <expr>",   help: "Bitwise right-shift."          , evalfn: oper_bit_rshift },
+    Oper { kind: OperKind::Regular,    prec: 5,  params: 2, assoc: OperAssoc::Left,  name: "<<", syntax: "<expr> << <expr>",   help: "Bitwise left-shift.",     evalfn: oper_bit_lshift },
+    Oper { kind: OperKind::Regular,    prec: 5,  params: 2, assoc: OperAssoc::Left,  name: ">>", syntax: "<expr> >> <expr>",   help: "Bitwise right-shift.",    evalfn: oper_bit_rshift },
     // Precedence 6
-    Oper { kind: OperKind::Regular,    prec: 6,  params: 2, assoc: OperAssoc::Left,  name: "<",  syntax: "<expr> < <expr>",    help: "Less-than."                    , evalfn: oper_lt },
-    Oper { kind: OperKind::Regular,    prec: 6,  params: 2, assoc: OperAssoc::Left,  name: "<=", syntax: "<expr> <= <expr>",   help: "Less-than-or-equals."          , evalfn: oper_lte },
-    Oper { kind: OperKind::Regular,    prec: 6,  params: 2, assoc: OperAssoc::Left,  name: ">",  syntax: "<expr> > <expr>",    help: "Greater-than."                 , evalfn: oper_gt },
-    Oper { kind: OperKind::Regular,    prec: 6,  params: 2, assoc: OperAssoc::Left,  name: ">=", syntax: "<expr> >= <expr>",   help: "Greater-than-or-equals."       , evalfn: oper_gte },
+    Oper { kind: OperKind::Regular,    prec: 6,  params: 2, assoc: OperAssoc::Left,  name: "<",  syntax: "<expr> < <expr>",    help: "Less-than.",              evalfn: oper_lt },
+    Oper { kind: OperKind::Regular,    prec: 6,  params: 2, assoc: OperAssoc::Left,  name: "<=", syntax: "<expr> <= <expr>",   help: "Less-than-or-equals.",    evalfn: oper_lte },
+    Oper { kind: OperKind::Regular,    prec: 6,  params: 2, assoc: OperAssoc::Left,  name: ">",  syntax: "<expr> > <expr>",    help: "Greater-than.",           evalfn: oper_gt },
+    Oper { kind: OperKind::Regular,    prec: 6,  params: 2, assoc: OperAssoc::Left,  name: ">=", syntax: "<expr> >= <expr>",   help: "Greater-than-or-equals.", evalfn: oper_gte },
     // Precedence 7
-    Oper { kind: OperKind::Regular,    prec: 7,  params: 2, assoc: OperAssoc::Left,  name: "==", syntax: "<expr> == <expr>",   help: "Equals."                       , evalfn: oper_eq },
-    Oper { kind: OperKind::Regular,    prec: 7,  params: 2, assoc: OperAssoc::Left,  name: "!=", syntax: "<expr> != <expr>",   help: "Not-equals."                   , evalfn: oper_ne },
+    Oper { kind: OperKind::Regular,    prec: 7,  params: 2, assoc: OperAssoc::Left,  name: "==", syntax: "<expr> == <expr>",   help: "Equals.",                 evalfn: oper_eq },
+    Oper { kind: OperKind::Regular,    prec: 7,  params: 2, assoc: OperAssoc::Left,  name: "!=", syntax: "<expr> != <expr>",   help: "Not-equals.",             evalfn: oper_ne },
     // Precedence 8
-    Oper { kind: OperKind::Regular,    prec: 8,  params: 2, assoc: OperAssoc::Left,  name: "&",  syntax: "<expr> & <expr>",    help: "Bitwise AND."                  , evalfn: oper_bit_and },
+    Oper { kind: OperKind::Regular,    prec: 8,  params: 2, assoc: OperAssoc::Left,  name: "&",  syntax: "<expr> & <expr>",    help: "Bitwise AND.",            evalfn: oper_bit_and },
     // Precedence 9
-    Oper { kind: OperKind::Regular,    prec: 9,  params: 2, assoc: OperAssoc::Left,  name: "^",  syntax: "<expr> ^ <expr>",    help: "Bitwise XOR."                  , evalfn: oper_bit_xor },
+    Oper { kind: OperKind::Regular,    prec: 9,  params: 2, assoc: OperAssoc::Left,  name: "^",  syntax: "<expr> ^ <expr>",    help: "Bitwise XOR.",            evalfn: oper_bit_xor },
     // Precedence 10
-    Oper { kind: OperKind::Regular,    prec: 10, params: 2, assoc: OperAssoc::Left,  name: "|",  syntax: "<expr> | <expr>",    help: "Bitwise OR."                   , evalfn: oper_bit_or },
+    Oper { kind: OperKind::Regular,    prec: 10, params: 2, assoc: OperAssoc::Left,  name: "|",  syntax: "<expr> | <expr>",    help: "Bitwise OR." ,            evalfn: oper_bit_or },
     // Precedence 11
-    Oper { kind: OperKind::Regular,    prec: 11, params: 2, assoc: OperAssoc::Left,  name: "&&", syntax: "<expr> && <expr>",   help: "Logical AND."                  , evalfn: oper_nop },
+    Oper { kind: OperKind::Regular,    prec: 11, params: 2, assoc: OperAssoc::Left,  name: "&&", syntax: "<expr> && <expr>",   help: "Logical AND.",            evalfn: oper_nop },
     // Precedence 12
-    Oper { kind: OperKind::Regular,    prec: 12, params: 2, assoc: OperAssoc::Left,  name: "||", syntax: "<expr> || <expr>",   help: "Logical OR."                   , evalfn: oper_nop },
+    Oper { kind: OperKind::Regular,    prec: 12, params: 2, assoc: OperAssoc::Left,  name: "||", syntax: "<expr> || <expr>",   help: "Logical OR." ,            evalfn: oper_nop },
     // Precedence 13
-    Oper { kind: OperKind::VarAssign,  prec: 13, params: 2, assoc: OperAssoc::Left,  name: "=",  syntax: "<var> = <expr>",     help: "Variable assignment."          , evalfn: oper_nop },
+    Oper { kind: OperKind::VarAssign,  prec: 13, params: 2, assoc: OperAssoc::Left,  name: "=",  syntax: "<var> = <expr>",     help: "Variable assignment.",    evalfn: oper_nop },
     // Precedence 14
-    Oper { kind: OperKind::ParamSep,   prec: 14, params: 2, assoc: OperAssoc::Left,  name: ",",  syntax: "<param1>, <param2>", help: "Function parameter separator." , evalfn: oper_nop },
+    Oper { kind: OperKind::ParamSep,   prec: 14, params: 2, assoc: OperAssoc::Left,  name: ",",  syntax: "<param1>, <param2>", help: "Parameter separator.",    evalfn: oper_nop },
 ];
 
 const MAX_FN_PARAMS: u8 = u8::max_value();
