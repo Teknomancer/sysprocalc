@@ -13,22 +13,22 @@ pub enum ByteOrder {
 }
 
 #[derive(Debug)]
-pub struct SysBitSetDescription {
+pub struct BitGroupDescriptor {
     spans: Range<u8>,
-    kind: SysBitSetKind,
+    kind: BitGroupKind,
     name: String,
     short: String,
     long: String,
 }
 
-impl SysBitSetDescription {
-    pub fn new(spans: Range<u8>, kind: SysBitSetKind, name: String, short: String, long: String) -> Self {
-        SysBitSetDescription { spans, kind, name, short, long }
+impl BitGroupDescriptor {
+    pub fn new(spans: Range<u8>, kind: BitGroupKind, name: String, short: String, long: String) -> Self {
+        BitGroupDescriptor { spans, kind, name, short, long }
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum SysBitSetReserved {
+pub enum BitGroupReserved {
     MustBeZero,
     MustBeOne,
     Undefined,
@@ -36,25 +36,25 @@ pub enum SysBitSetReserved {
 }
 
 #[derive(Debug)]
-pub enum SysBitSetKind {
+pub enum BitGroupKind {
     Normal,
-    Rsvd(SysBitSetReserved),
+    Reserved(BitGroupReserved),
 }
 
 #[derive(Debug)]
-pub struct SysBitSet {
+pub struct BitGroup {
     name: String,
     arch: String,
     device: String,
     byte_order: ByteOrder,
     bit_count: u8,
     chunks: Vec<u8>,
-    rsvd: SysBitSetReserved,
+    rsvd: BitGroupReserved,
     show_rsvd: bool,
-    desc: Vec<SysBitSetDescription>,
+    desc: Vec<BitGroupDescriptor>,
 }
 
-impl SysBitSet {
+impl BitGroup {
     pub fn new(
             name: String,
             arch: String,
@@ -62,15 +62,15 @@ impl SysBitSet {
             byte_order: ByteOrder,
             bit_count: u8,
             chunks: Vec<u8>,
-            desc: Vec<SysBitSetDescription>) -> Self {
-        SysBitSet {
+            desc: Vec<BitGroupDescriptor>) -> Self {
+        BitGroup {
             name,
             arch,
             device,
             byte_order,
             bit_count,
             chunks,
-            rsvd: SysBitSetReserved::MustBeZero,
+            rsvd: BitGroupReserved::MustBeZero,
             show_rsvd: false,
             desc,
         }
@@ -78,7 +78,7 @@ impl SysBitSet {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum SysBitSetError {
+pub enum BitGroupError {
     MissingName,
     MissingArch,
     MissingDevice,
@@ -90,18 +90,18 @@ pub enum SysBitSetError {
     MissingDescription,
 }
 
-impl fmt::Display for SysBitSetError {
+impl fmt::Display for BitGroupError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let str_errkind = match self {
-            SysBitSetError::MissingName => "missing name",
-            SysBitSetError::MissingArch => "missing architecture",
-            SysBitSetError::MissingDevice => "missing device",
-            SysBitSetError::UnknownArch => "unknown architecture",
-            SysBitSetError::InvalidBitCount => "invalid number of bits",
-            SysBitSetError::InvalidChunkIndex => "invalid index in chunks'",
-            SysBitSetError::InvalidChunksLength => "invalid number of chunks",
-            SysBitSetError::DuplicateChunkIndex => "duplicate index in chunks",
-            SysBitSetError::MissingDescription => "missing description",
+            BitGroupError::MissingName => "missing name",
+            BitGroupError::MissingArch => "missing architecture",
+            BitGroupError::MissingDevice => "missing device",
+            BitGroupError::UnknownArch => "unknown architecture",
+            BitGroupError::InvalidBitCount => "invalid number of bits",
+            BitGroupError::InvalidChunkIndex => "invalid index in chunks'",
+            BitGroupError::InvalidChunksLength => "invalid number of chunks",
+            BitGroupError::DuplicateChunkIndex => "duplicate index in chunks",
+            BitGroupError::MissingDescription => "missing description",
         };
         write!(f, "{}", str_errkind)
     }
@@ -116,19 +116,19 @@ where
     iter.into_iter().all(move |x| uniq.insert(x))
 }
 
-fn validate_sys_bit_set(bits: &SysBitSet) -> Result<(), SysBitSetError> {
+fn validate_bit_group(bits: &BitGroup) -> Result<(), BitGroupError> {
     if bits.bit_count > MAX_BITCOUNT {
         // The number of bits must exceeds our limit.
-        Err(SysBitSetError::InvalidBitCount)
+        Err(BitGroupError::InvalidBitCount)
     } else if bits.chunks.len() >= MAX_BITCOUNT as usize {
         // The chunks index array size exceeds the total number of bits.
-        Err(SysBitSetError::InvalidChunksLength)
+        Err(BitGroupError::InvalidChunksLength)
     } else if !has_unique_elements(&bits.chunks) {
         // The chunks index array contains duplicate indices.
-        Err(SysBitSetError::DuplicateChunkIndex)
+        Err(BitGroupError::DuplicateChunkIndex)
     } else if bits.desc.is_empty() {
        // None of the bits are described.
-       Err(SysBitSetError::MissingDescription)
+       Err(BitGroupError::MissingDescription)
     } else {
         Ok(())
     }
@@ -210,44 +210,44 @@ pub fn fmt_binary_ruler(num_bits: u32) -> String {
     }
 }
 
-pub fn fmt_sys_bit_set(bits: &SysBitSet) -> Result<String, SysBitSetError> {
-    validate_sys_bit_set(bits)?;
+pub fn fmt_bit_group(bits: &BitGroup) -> Result<String, BitGroupError> {
+    validate_bit_group(bits)?;
     Ok("Testing_Impl".to_string())
 }
 
 #[test]
-fn test_valid_sys_bit_set() {
-    let gen_bits = SysBitSet::new(
+fn test_valid_bit_group() {
+    let gen_bits = BitGroup::new(
         "generic".to_owned(),
         "x86".to_owned(),
         "cpu".to_owned(),
         ByteOrder::LittleEndian,
         64, vec![],
         vec![
-            SysBitSetDescription::new(
-                Range { start: 0, end: 0 }, SysBitSetKind::Normal,
+            BitGroupDescriptor::new(
+                Range { start: 0, end: 0 }, BitGroupKind::Normal,
                 "Gen 0".to_owned(),
                 "Generic 0".to_owned(),
                 "Generic 0 bit enable".to_owned(),
             ),
-            SysBitSetDescription::new(
-                Range { start: 8, end: 8 }, SysBitSetKind::Normal,
+            BitGroupDescriptor::new(
+                Range { start: 8, end: 8 }, BitGroupKind::Normal,
                 "Gen 1".to_owned(),
                 "Generic 1".to_owned(),
                 "Generic 1 bit enable".to_owned(),
             ),
         ]);
-    let res_fmt = validate_sys_bit_set(&gen_bits);
+    let res_fmt = validate_bit_group(&gen_bits);
     assert!(res_fmt.is_ok());
 }
 
 #[test]
-fn test_invalid_sys_bit_set() {
+fn test_invalid_bit_group() {
     let pair_invalid_bit_sets = [
         //
         // Invalid bit count
         //
-        (SysBitSet::new(
+        (BitGroup::new(
             "generic".to_owned(),
             "x86".to_owned(),
             "cpu".to_owned(),
@@ -255,17 +255,17 @@ fn test_invalid_sys_bit_set() {
             128,
             vec![],
             vec![
-                SysBitSetDescription::new(
-                    Range { start: 0, end: 0 }, SysBitSetKind::Normal,
+                BitGroupDescriptor::new(
+                    Range { start: 0, end: 0 }, BitGroupKind::Normal,
                     "Gen 0".to_owned(), "Gen 0".to_owned(), "Gen 0".to_owned(),
                 ),
-                SysBitSetDescription::new(
-                    Range { start: 8, end: 8 }, SysBitSetKind::Normal,
+                BitGroupDescriptor::new(
+                    Range { start: 8, end: 8 }, BitGroupKind::Normal,
                     "Gen 1".to_owned(), "Gen 1".to_owned(), "Gen 1".to_owned(),
                 ),
             ],
         ),
-        SysBitSetError::InvalidBitCount),
+        BitGroupError::InvalidBitCount),
 
         //
         // TODO: Invalid chunk index
@@ -273,7 +273,7 @@ fn test_invalid_sys_bit_set() {
     ];
 
     for bs in &pair_invalid_bit_sets {
-        let res_fmt = validate_sys_bit_set(&bs.0);
+        let res_fmt = validate_bit_group(&bs.0);
         assert!(res_fmt.is_err(), "{:?}", bs.0);
         assert_eq!(res_fmt.err().unwrap(), bs.1);
     }
