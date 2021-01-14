@@ -191,17 +191,14 @@ pub fn get_binary_ruler_string(num_bits: u8) -> String {
         // prior to the start of the ruler.
         // TODO: I'm sure this can be optimized, but no time now.
         let num_pad_bits = num_bits % 8;
-        let mut act_pad = 0;
-        if num_pad_bits != 0 {
-            for idx in 0..num_pad_bits {
+        for idx in 0..num_pad_bits {
+            str_bin_ruler.push(' ');
+            if idx % 4 == 0 {
                 str_bin_ruler.push(' ');
-                if idx % 4 == 0 {
-                    str_bin_ruler.push(' ');
-                }
             }
         }
 
-        // Iterate over chunks of 8-bits and makes the ruler string.
+        // Iterate over chunks of 8-bits and make the ruler
         for idx in (num_pad_bits..num_bits).rev().step_by(8) {
             str_bin_ruler.push_str(BIN_RULER[((idx + 1) >> 3) - 1]);
         }
