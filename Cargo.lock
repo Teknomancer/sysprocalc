@@ -42,6 +42,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf1de2fe8c75bc145a2f577add951f8134889b4795d47466a54a5c846d691693"
 
 [[package]]
+name = "bitgroup"
+version = "1.0.0"
+dependencies = [
+ "log",
+]
+
+[[package]]
 name = "blake2b_simd"
 version = "0.5.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -229,6 +236,7 @@ name = "sysprocalc"
 version = "1.0.0"
 dependencies = [
  "atty",
+ "bitgroup",
  "log",
  "rustyline",
  "spceval",

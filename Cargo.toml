@@ -7,7 +7,7 @@ description = "System Programmer's Calculator"
 homepage = "https://github.com/Teknomancer/sysprocalc"
 repository = "https://github.com/Teknomancer/sysprocalc"
 readme = "README.md"
-keywords = ["x86","expression","evaluator"]
+keywords = ["x86","expression","evaluator","x86-registers"]
 license = "MIT OR Apache-2.0"
 categories = ["command-line-utilities"]
 exclude = ["/.github"]
@@ -17,6 +17,7 @@ edition = "2018"
 
 [dependencies]
 spceval = { path = "spceval" }
+bitgroup = { path = "bitgroup" }
 log = "0.4"
 atty = "0.2"
 termcolor = "1.1"
