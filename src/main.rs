@@ -5,11 +5,11 @@ use std::env;
 use std::io::Write;
 use std::ops::Range;
 
-mod sys_bit_set;
-use sys_bit_set::{
-    SysBitSetDescription,
-    SysBitSet,
-    SysBitSetKind,
+mod bit_group;
+use bit_group::{
+    BitGroupDescriptor,
+    BitGroup,
+    BitGroupKind,
     ByteOrder
 };
 
@@ -52,7 +52,7 @@ fn print_result_num(stream: &mut StandardStream, number: &spceval::Number) -> st
     let str_oct = format!("{:#o}", number.integer);
 
     // Format as binary
-    let str_bin_sfill = sys_bit_set::fmt_as_spaced_binary(number.integer);
+    let str_bin_sfill = bit_group::fmt_as_spaced_binary(number.integer);
     // Compute number of bits (to make a binary ruler as well as display the number of bits).
     let mut bin_digits = u64::MAX.count_ones() - number.integer.leading_zeros();
     let str_bin_digits;
@@ -75,7 +75,7 @@ fn print_result_num(stream: &mut StandardStream, number: &spceval::Number) -> st
 
     // Display the binary ruler if we have more than 8 bits.
     if bin_digits >= 8 {
-        let str_bin_ruler = sys_bit_set::fmt_binary_ruler(bin_digits);
+        let str_bin_ruler = bit_group::fmt_binary_ruler(bin_digits);
         writeln!(stream, "     {}", str_bin_ruler)?;
     }
 
@@ -147,16 +147,16 @@ fn parse_and_eval_expr(stream: &mut StandardStream, str_expr: &str, app_mode: Ap
     Ok(())
 }
 
-fn test_bit_set_desc(stream: &mut StandardStream) -> std::io::Result<()> {
+fn test_bit_group_desc(stream: &mut StandardStream) -> std::io::Result<()> {
     let efer_bit_desc = vec![
-        SysBitSetDescription::new(
-            Range { start: 0, end: 0 }, SysBitSetKind::Normal,
+        BitGroupDescriptor::new(
+            Range { start: 0, end: 0 }, BitGroupKind::Normal,
             "SCE".to_owned(),
             "System call ext.".to_owned(),
             "System call extensions".to_owned(),
         ),
     ];
-    let efer_bits = SysBitSet::new(
+    let efer_bits = BitGroup::new(
         "EFER".to_owned(),
         "x86".to_owned(),
         "cpu".to_owned(),
@@ -165,7 +165,7 @@ fn test_bit_set_desc(stream: &mut StandardStream) -> std::io::Result<()> {
         vec![],
         efer_bit_desc
     );
-    let res_fmt = sys_bit_set::fmt_sys_bit_set(&efer_bits);
+    let res_fmt = bit_group::fmt_bit_group(&efer_bits);
     match res_fmt {
         Ok(v) => writeln!(stream, "{}", v)?,
         Err(e) => writeln!(stream, "Error: {}", e)?,
@@ -211,7 +211,7 @@ fn main() -> std::io::Result<()> {
                 match str_expr {
                     "q" | "quit" | "exit" => return Ok(()),
                     "efer" => {
-                        test_bit_set_desc(&mut stdout)?;
+                        test_bit_group_desc(&mut stdout)?;
                         continue;
                     }
                     _ => (),
