@@ -68,7 +68,7 @@ fn print_result_num(stream: &mut StandardStream, number: &spceval::Number) -> st
 
     // Display the binary ruler if we have more than 8 bits.
     if bin_digits >= 8 {
-        let str_bin_ruler = bitgroup::fmt_binary_ruler(bin_digits);
+        let str_bin_ruler = bitgroup::fmt_binary_ruler(bin_digits as u8);
         writeln!(stream, "     {}", str_bin_ruler)?;
     }
 

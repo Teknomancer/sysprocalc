@@ -158,7 +158,7 @@ pub fn fmt_as_spaced_binary(val: u64) -> String {
     vec_bin.iter().rev().collect::<String>()
 }
 
-pub fn fmt_binary_ruler(num_bits: u32) -> String {
+pub fn fmt_binary_ruler(num_bits: u8) -> String {
     // Makes a binary ruler (for every 8 bits) to ease visual counting of bits.
     // There might be a more efficient way to do this with Rust's string/vector
     // manipulation. But I can't be bothered now, just get something working.
