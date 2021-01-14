@@ -118,7 +118,7 @@ where
 
 fn validate_bit_group(bits: &BitGroup) -> Result<(), BitGroupError> {
     if bits.bit_count > MAX_BITCOUNT {
-        // The number of bits must exceeds our limit.
+        // The number of bits exceeds our limit.
         Err(BitGroupError::InvalidBitCount)
     } else if bits.chunks.len() >= MAX_BITCOUNT as usize {
         // The chunks index array size exceeds the total number of bits.
@@ -134,7 +134,7 @@ fn validate_bit_group(bits: &BitGroup) -> Result<(), BitGroupError> {
     }
 }
 
-pub fn fmt_as_spaced_binary(val: u64) -> String {
+pub fn get_binary_string(val: u64) -> String {
     // Formats the number as binary digits with a space (from the right) for every 4 binary digits.
     let mut vec_bin: Vec<char> = Vec::with_capacity(82);
     let mut val = val;
@@ -158,7 +158,7 @@ pub fn fmt_as_spaced_binary(val: u64) -> String {
     vec_bin.iter().rev().collect::<String>()
 }
 
-pub fn fmt_binary_ruler(num_bits: u8) -> String {
+pub fn get_binary_ruler_string(num_bits: u8) -> String {
     // Makes a binary ruler (for every 8 bits) to ease visual counting of bits.
     // There might be a more efficient way to do this with Rust's string/vector
     // manipulation. But I can't be bothered now, just get something working.
@@ -189,7 +189,9 @@ pub fn fmt_binary_ruler(num_bits: u8) -> String {
         // For e.g. "10 1111 1111", we need to pad the first 2 digits (and 1 space)
         // from the left. We iterate below until we no longer need to pad with spaces
         // prior to the start of the ruler.
+        // TODO: I'm sure this can be optimized, but no time now.
         let num_pad_bits = num_bits % 8;
+        let mut act_pad = 0;
         if num_pad_bits != 0 {
             for idx in 0..num_pad_bits {
                 str_bin_ruler.push(' ');
