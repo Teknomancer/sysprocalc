@@ -13,17 +13,17 @@ pub enum ByteOrder {
 }
 
 #[derive(Debug)]
-pub struct BitGroupDescriptor {
+pub struct BitSpanDescriptor {
     spans: Range<u8>,
-    kind: BitGroupKind,
+    kind: BitSpanKind,
     name: String,
     short: String,
     long: String,
 }
 
-impl BitGroupDescriptor {
-    pub fn new(spans: Range<u8>, kind: BitGroupKind, name: String, short: String, long: String) -> Self {
-        BitGroupDescriptor { spans, kind, name, short, long }
+impl BitSpanDescriptor {
+    pub fn new(spans: Range<u8>, kind: BitSpanKind, name: String, short: String, long: String) -> Self {
+        BitSpanDescriptor { spans, kind, name, short, long }
     }
 }
 
@@ -36,7 +36,7 @@ pub enum BitGroupReserved {
 }
 
 #[derive(Debug)]
-pub enum BitGroupKind {
+pub enum BitSpanKind {
     Normal,
     Reserved(BitGroupReserved),
 }
@@ -51,7 +51,7 @@ pub struct BitGroup {
     chunks: Vec<u8>,
     rsvd: BitGroupReserved,
     show_rsvd: bool,
-    desc: Vec<BitGroupDescriptor>,
+    desc: Vec<BitSpanDescriptor>,
 }
 
 impl BitGroup {
@@ -62,7 +62,7 @@ impl BitGroup {
             byte_order: ByteOrder,
             bit_count: u8,
             chunks: Vec<u8>,
-            desc: Vec<BitGroupDescriptor>) -> Self {
+            desc: Vec<BitSpanDescriptor>) -> Self {
         BitGroup {
             name,
             arch,
@@ -224,17 +224,19 @@ fn test_valid_bit_group() {
         ByteOrder::LittleEndian,
         64, vec![],
         vec![
-            BitGroupDescriptor::new(
-                Range { start: 0, end: 0 }, BitGroupKind::Normal,
-                "Gen 0".to_owned(),
-                "Generic 0".to_owned(),
-                "Generic 0 bit enable".to_owned(),
+            BitSpanDescriptor::new(
+                Range { start: 0, end: 0 },
+                BitSpanKind::Normal,
+                String::from("Gen 0"),
+                String::from("Generic 0"),
+                String::from("Generic Bit 0"),
             ),
-            BitGroupDescriptor::new(
-                Range { start: 8, end: 8 }, BitGroupKind::Normal,
-                "Gen 1".to_owned(),
-                "Generic 1".to_owned(),
-                "Generic 1 bit enable".to_owned(),
+            BitSpanDescriptor::new(
+                Range { start: 8, end: 8 },
+                BitSpanKind::Normal,
+                String::from("Gen 1"),
+                String::from("Generic 1"),
+                String::from("Generic Bit 1"),
             ),
         ]);
     let res_fmt = validate_bit_group(&gen_bits);
@@ -248,20 +250,24 @@ fn test_invalid_bit_group() {
         // Invalid bit count
         //
         (BitGroup::new(
-            "generic".to_owned(),
-            "x86".to_owned(),
-            "cpu".to_owned(),
+            String::from("generic"),
+            String::from("x86"),
+            String::from("cpu"),
             ByteOrder::LittleEndian,
             128,
             vec![],
             vec![
-                BitGroupDescriptor::new(
-                    Range { start: 0, end: 0 }, BitGroupKind::Normal,
-                    "Gen 0".to_owned(), "Gen 0".to_owned(), "Gen 0".to_owned(),
+                BitSpanDescriptor::new(
+                    Range { start: 0, end: 0 }, BitSpanKind::Normal,
+                    String::from("Gen 0"),
+                    String::from("Generic 0"),
+                    String::from("Generic Bit 0"),
                 ),
-                BitGroupDescriptor::new(
-                    Range { start: 8, end: 8 }, BitGroupKind::Normal,
-                    "Gen 1".to_owned(), "Gen 1".to_owned(), "Gen 1".to_owned(),
+                BitSpanDescriptor::new(
+                    Range { start: 8, end: 8 }, BitSpanKind::Normal,
+                    String::from("Gen 1"),
+                    String::from("Generic 1"),
+                    String::from("Generic Bit 1"),
                 ),
             ],
         ),

@@ -141,22 +141,23 @@ fn parse_and_eval_expr(stream: &mut StandardStream, str_expr: &str, app_mode: Ap
 }
 
 fn test_bitgroup_desc(stream: &mut StandardStream) -> std::io::Result<()> {
-    let efer_bit_desc = vec![
-        BitGroupDescriptor::new(
-            Range { start: 0, end: 0 }, BitGroupKind::Normal,
-            "SCE".to_owned(),
-            "System call ext.".to_owned(),
-            "System call extensions".to_owned(),
+    let efer_bit_span = vec![
+        BitSpanDescriptor::new(
+            Range { start: 0, end: 0 },
+            BitSpanKind::Normal,
+            String::from("SCE"),
+            String::from("SysCall Ext."),
+            String::from("System Call Extensions"),
         ),
     ];
     let efer_bits = BitGroup::new(
-        "EFER".to_owned(),
-        "x86".to_owned(),
-        "cpu".to_owned(),
+        String::from("EFER"),
+        String::from("x86"),
+        String::from("cpu"),
         ByteOrder::LittleEndian,
         64,
         vec![],
-        efer_bit_desc
+        efer_bit_span
     );
     let res_fmt = bitgroup::fmt_bit_group(&efer_bits);
     match res_fmt {
