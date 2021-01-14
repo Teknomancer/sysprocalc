@@ -45,7 +45,7 @@ fn print_result_num(stream: &mut StandardStream, number: &spceval::Number) -> st
     let str_oct = format!("{:#o}", number.integer);
 
     // Format as binary
-    let str_bin_sfill = bitgroup::fmt_as_spaced_binary(number.integer);
+    let str_bin_sfill = bitgroup::get_binary_string(number.integer);
     // Compute number of bits (to make a binary ruler as well as display the number of bits).
     let mut bin_digits = u64::MAX.count_ones() - number.integer.leading_zeros();
     let str_bin_digits;
@@ -68,7 +68,7 @@ fn print_result_num(stream: &mut StandardStream, number: &spceval::Number) -> st
 
     // Display the binary ruler if we have more than 8 bits.
     if bin_digits >= 8 {
-        let str_bin_ruler = bitgroup::fmt_binary_ruler(bin_digits as u8);
+        let str_bin_ruler = bitgroup::get_binary_ruler_string(bin_digits as u8);
         writeln!(stream, "     {}", str_bin_ruler)?;
     }
 
