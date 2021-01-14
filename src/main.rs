@@ -1,17 +1,10 @@
 use spceval::*;
+use bitgroup::*;
 use termcolor::*;
 use rustyline::Editor;
 use std::env;
 use std::io::Write;
 use std::ops::Range;
-
-mod bit_group;
-use bit_group::{
-    BitGroupDescriptor,
-    BitGroup,
-    BitGroupKind,
-    ByteOrder
-};
 
 #[cfg(debug_assertions)]
 mod logger;
@@ -52,7 +45,7 @@ fn print_result_num(stream: &mut StandardStream, number: &spceval::Number) -> st
     let str_oct = format!("{:#o}", number.integer);
 
     // Format as binary
-    let str_bin_sfill = bit_group::fmt_as_spaced_binary(number.integer);
+    let str_bin_sfill = bitgroup::fmt_as_spaced_binary(number.integer);
     // Compute number of bits (to make a binary ruler as well as display the number of bits).
     let mut bin_digits = u64::MAX.count_ones() - number.integer.leading_zeros();
     let str_bin_digits;
@@ -75,7 +68,7 @@ fn print_result_num(stream: &mut StandardStream, number: &spceval::Number) -> st
 
     // Display the binary ruler if we have more than 8 bits.
     if bin_digits >= 8 {
-        let str_bin_ruler = bit_group::fmt_binary_ruler(bin_digits);
+        let str_bin_ruler = bitgroup::fmt_binary_ruler(bin_digits);
         writeln!(stream, "     {}", str_bin_ruler)?;
     }
 
@@ -147,7 +140,7 @@ fn parse_and_eval_expr(stream: &mut StandardStream, str_expr: &str, app_mode: Ap
     Ok(())
 }
 
-fn test_bit_group_desc(stream: &mut StandardStream) -> std::io::Result<()> {
+fn test_bitgroup_desc(stream: &mut StandardStream) -> std::io::Result<()> {
     let efer_bit_desc = vec![
         BitGroupDescriptor::new(
             Range { start: 0, end: 0 }, BitGroupKind::Normal,
@@ -165,7 +158,7 @@ fn test_bit_group_desc(stream: &mut StandardStream) -> std::io::Result<()> {
         vec![],
         efer_bit_desc
     );
-    let res_fmt = bit_group::fmt_bit_group(&efer_bits);
+    let res_fmt = bitgroup::fmt_bit_group(&efer_bits);
     match res_fmt {
         Ok(v) => writeln!(stream, "{}", v)?,
         Err(e) => writeln!(stream, "Error: {}", e)?,
@@ -211,7 +204,7 @@ fn main() -> std::io::Result<()> {
                 match str_expr {
                     "q" | "quit" | "exit" => return Ok(()),
                     "efer" => {
-                        test_bit_group_desc(&mut stdout)?;
+                        test_bitgroup_desc(&mut stdout)?;
                         continue;
                     }
                     _ => (),
