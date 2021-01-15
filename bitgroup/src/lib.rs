@@ -16,29 +16,25 @@ pub enum ByteOrder {
 pub struct BitSpanDescriptor {
     spans: Range<u8>,
     kind: BitSpanKind,
+    show_rsvd: bool,
     name: String,
     short: String,
     long: String,
 }
 
 impl BitSpanDescriptor {
-    pub fn new(spans: Range<u8>, kind: BitSpanKind, name: String, short: String, long: String) -> Self {
-        BitSpanDescriptor { spans, kind, name, short, long }
+    pub fn new(spans: Range<u8>, kind: BitSpanKind, show_rsvd: bool, name: String, short: String, long: String) -> Self {
+        BitSpanDescriptor { spans, kind, show_rsvd, name, short, long }
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum BitGroupReserved {
-    MustBeZero,
-    MustBeOne,
-    Undefined,
-    Ignored,
 }
 
 #[derive(Debug)]
 pub enum BitSpanKind {
     Normal,
-    Reserved(BitGroupReserved),
+    ReservedMustBeZero,
+    ReservedMustBeOne,
+    ReservedUndefined,
+    ReservedIgnored,
 }
 
 #[derive(Debug)]
@@ -49,8 +45,6 @@ pub struct BitGroup {
     byte_order: ByteOrder,
     bit_count: u8,
     chunks: Vec<u8>,
-    rsvd: BitGroupReserved,
-    show_rsvd: bool,
     desc: Vec<BitSpanDescriptor>,
 }
 
@@ -70,8 +64,6 @@ impl BitGroup {
             byte_order,
             bit_count,
             chunks,
-            rsvd: BitGroupReserved::MustBeZero,
-            show_rsvd: false,
             desc,
         }
     }
@@ -226,6 +218,7 @@ fn test_valid_bit_group() {
             BitSpanDescriptor::new(
                 Range { start: 0, end: 0 },
                 BitSpanKind::Normal,
+                false,
                 String::from("Gen 0"),
                 String::from("Generic 0"),
                 String::from("Generic Bit 0"),
@@ -233,6 +226,7 @@ fn test_valid_bit_group() {
             BitSpanDescriptor::new(
                 Range { start: 8, end: 8 },
                 BitSpanKind::Normal,
+                false,
                 String::from("Gen 1"),
                 String::from("Generic 1"),
                 String::from("Generic Bit 1"),
@@ -257,13 +251,17 @@ fn test_invalid_bit_group() {
             vec![],
             vec![
                 BitSpanDescriptor::new(
-                    Range { start: 0, end: 0 }, BitSpanKind::Normal,
+                    Range { start: 0, end: 0 },
+                    BitSpanKind::Normal,
+                    false,
                     String::from("Gen 0"),
                     String::from("Generic 0"),
                     String::from("Generic Bit 0"),
                 ),
                 BitSpanDescriptor::new(
-                    Range { start: 8, end: 8 }, BitSpanKind::Normal,
+                    Range { start: 8, end: 8 },
+                    BitSpanKind::Normal,
+                    false,
                     String::from("Gen 1"),
                     String::from("Generic 1"),
                     String::from("Generic Bit 1"),

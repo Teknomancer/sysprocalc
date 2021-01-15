@@ -145,6 +145,7 @@ fn test_bitgroup_desc(stream: &mut StandardStream) -> std::io::Result<()> {
         BitSpanDescriptor::new(
             Range { start: 0, end: 0 },
             BitSpanKind::Normal,
+            false,
             String::from("SCE"),
             String::from("SysCall Ext."),
             String::from("System Call Extensions"),
