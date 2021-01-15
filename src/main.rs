@@ -142,7 +142,7 @@ fn parse_and_eval_expr(stream: &mut StandardStream, str_expr: &str, app_mode: Ap
 
 fn test_bitgroup_desc(stream: &mut StandardStream) -> std::io::Result<()> {
     let efer_bit_span = vec![
-        BitSpanDescriptor::new(
+        BitSpan::new(
             Range { start: 0, end: 0 },
             BitSpanKind::Normal,
             false,
