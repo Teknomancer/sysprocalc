@@ -768,6 +768,8 @@ impl ExprCtx {
                                 break;
                             }
                         }
+                        // Pop functions (which always take priority over a normal operator) to the output queue.
+                        Token::Func(_) => self.pop_move_to_output_queue(),
                         _ => break,
                     }
                 }
