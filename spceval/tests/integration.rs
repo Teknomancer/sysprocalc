@@ -2,6 +2,7 @@ use spceval::{self, Number, ExprError, ExprErrorKind};
 
 #[inline(always)]
 fn test_valid_expr(str_expr: &str, res_num: &Number) {
+    // Parsing and evaluation should both succeed and produce the specified result.
     let res_parse = spceval::parse(str_expr);
     assert!(res_parse.is_ok(), "{}", str_expr);
 
@@ -17,6 +18,31 @@ fn test_valid_expr(str_expr: &str, res_num: &Number) {
         }
         _ => (),
     }
+}
+
+#[inline(always)]
+fn test_invalid_expr(str_expr: &str, expr_error_kind: ExprErrorKind) {
+    // Either parsing or evaluation must fail and match the specified error.
+    let res_parse = spceval::parse(str_expr);
+    if res_parse.is_ok() {
+        let mut expr_ctx = res_parse.unwrap();
+        let res_eval = spceval::evaluate(&mut expr_ctx);
+        assert!(res_eval.is_err(), "{}", str_expr);
+        assert_eq!(expr_error_kind, res_eval.err().unwrap().kind, "{}", str_expr);
+    } else {
+        assert_eq!(expr_error_kind, res_parse.err().unwrap().kind, "{}", str_expr);
+    }
+}
+
+#[inline(always)]
+fn test_valid_expr_but_eval_fail(str_expr: &str, expr_error_kind: ExprErrorKind) {
+    // Parsing should succeed but evaluation must fail and match the specified error.
+    let res_parse = spceval::parse(str_expr);
+    assert!(res_parse.is_ok(), "{}", str_expr);
+    let mut expr_ctx = res_parse.unwrap();
+    let res_eval = spceval::evaluate(&mut expr_ctx);
+    assert!(res_eval.is_err(), "{}", str_expr);
+    assert_eq!(expr_error_kind, res_eval.err().unwrap().kind, "{}", str_expr);
 }
 
 #[test]
@@ -67,9 +93,7 @@ fn valid_exprs_unary_opers() {
 #[test]
 fn valid_exprs_binary_opers() {
     let expr_results = vec![
-        //
         // Add
-        //
         ("0+0", Number { integer: 0, float: 0.0 }),
         ("0+1", Number { integer: 1, float: 1.0 }),
         ("1+1", Number { integer: 2, float: 2.0 }),
@@ -104,9 +128,7 @@ fn valid_exprs_binary_opers() {
             Number { integer: 0xffffffffffffffffu64.wrapping_add(0xffffffffffffffff),
                      float: 0xffffffffffffffffu64 as f64 + 0xffffffffffffffffu64 as f64 }),
 
-        //
         // Subtract
-        //
         ("0-0", Number { integer: 0, float: 0.0 }),
         ("0-1", Number { integer: 0u64.wrapping_sub(1), float: -1.0 }),
         ("1-1", Number { integer: 0, float: 0.0 }),
@@ -142,9 +164,7 @@ fn valid_exprs_binary_opers() {
             Number { integer: 0xffffffffffffffffu64.wrapping_sub(0xffffffffffffffff),
                      float: 0xffffffffffffffffu64 as f64 - 0xffffffffffffffffu64 as f64 }),
 
-        //
         // Multiply
-        //
         ("0*0", Number { integer: 0, float: 0.0 }),
         ("0*1", Number { integer: 0u64.wrapping_mul(1), float: 0.0 }),
         ("1*1", Number { integer: 1, float: 1.0 }),
@@ -177,9 +197,7 @@ fn valid_exprs_binary_opers() {
             Number { integer: 0xffffffffffffffffu64.wrapping_mul(0xffffffffffffffff),
                      float: 0xffffffffffffffffu64 as f64 * 0xffffffffffffffffu64 as f64 }),
 
-        //
         // Divide
-        //
         ("1/1", Number { integer: 1, float: 1.0 }),
         ("12/6", Number { integer: 12u64.wrapping_div(6), float: 2.0 }),
         ("132/100", Number { integer: 132u64.wrapping_div(100), float: 132.0 / 100.0 }),
@@ -205,9 +223,7 @@ fn valid_exprs_binary_opers() {
             Number { integer: 0xffffffffffffffffu64.wrapping_div(0xffffffffffffffff),
                      float: 0xffffffffffffffffu64 as f64 / 0xffffffffffffffffu64 as f64 }),
 
-        //
         // Remainder
-        //
         ("1%1", Number { integer: 0, float: 0.0 }),
         ("12%6", Number { integer: 12u64.wrapping_rem(6), float: 12.0 % 6.0 }),
         ("132%100", Number { integer: 132u64.wrapping_rem(100), float: 132.0 % 100.0 }),
@@ -356,12 +372,7 @@ fn valid_exprs_eval_fail() {
         ("bit(0x7fffffffffffffff)", ExprErrorKind::FailedEvaluation),
     ];
     for expr_res in expr_results {
-        let res_parse = spceval::parse(&expr_res.0);
-        assert!(res_parse.is_ok(), "{}", expr_res.0);
-        let mut expr_ctx = res_parse.unwrap();
-        let res_eval = spceval::evaluate(&mut expr_ctx);
-        assert!(res_eval.is_err(), "{}", expr_res.0);
-        assert_eq!(expr_res.1, res_eval.err().unwrap().kind, "{}", expr_res.0);
+        test_valid_expr_but_eval_fail(&expr_res.0, expr_res.1);
     }
 }
 
@@ -429,15 +440,7 @@ fn invalid_exprs() {
         ("sum(0xff)", ExprErrorKind::InvalidParamCount),
     ];
     for expr_res in expr_results {
-        let res_parse = spceval::parse(&expr_res.0);
-        if res_parse.is_ok() {
-            let mut expr_ctx = res_parse.unwrap();
-            let res_eval = spceval::evaluate(&mut expr_ctx);
-            assert!(res_eval.is_err(), "{}", expr_res.0);
-            assert_eq!(expr_res.1, res_eval.err().unwrap().kind, "{}", expr_res.0);
-        } else {
-            assert_eq!(expr_res.1, res_parse.err().unwrap().kind, "{}", expr_res.0);
-        }
+        test_invalid_expr(&expr_res.0, expr_res.1);
     }
 }
 
