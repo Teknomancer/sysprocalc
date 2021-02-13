@@ -389,6 +389,7 @@ fn valid_exprs_eval_fail() {
         ("bit(0x7fffffffffffffff)", ExprErrorKind::FailedEvaluation),
 
         // bits
+        ("bits(0,-1)", ExprErrorKind::FailedEvaluation),
         ("bits(-1,-1)", ExprErrorKind::FailedEvaluation),
         ("bits(64,0)", ExprErrorKind::FailedEvaluation),
         ("bits(0,64)", ExprErrorKind::FailedEvaluation),
