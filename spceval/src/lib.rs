@@ -52,14 +52,7 @@ static OPERS: [Oper<'static>; 26] = [
 ];
 
 const MAX_FN_PARAMS: u8 = u8::max_value();
-static FUNCS: [Func<'static>; 3] = [
-    Func {
-        name: "sum",
-        params: Range { start: 2, end: MAX_FN_PARAMS },
-        syntax: "<n1>,<n2>[,<n3>...<nX>]",
-        help: "Sum",
-        evalfn: func_sum,
-    },
+static FUNCS: [Func<'static>; 4] = [
     Func {
         name: "avg",
         params: Range { start: 2, end: MAX_FN_PARAMS },
@@ -68,11 +61,25 @@ static FUNCS: [Func<'static>; 3] = [
         evalfn: func_avg,
     },
     Func {
+        name: "bit",
+        params: Range { start: 1, end: 2 },
+        syntax: "<n1>",
+        help: "Set nth bit (from 0..63).",
+        evalfn: func_bit,
+    },
+    Func {
         name: "if",
         params: Range { start: 3, end: 4 },
         syntax: "<cond>,<n1>,<n2>",
         help: "If <cond> is true, returns <n1> else <n2>",
         evalfn: func_dummy,
+    },
+    Func {
+        name: "sum",
+        params: Range { start: 2, end: MAX_FN_PARAMS },
+        syntax: "<n1>,<n2>[,<n3>...<nX>]",
+        help: "Sum",
+        evalfn: func_sum,
     },
 ];
 
@@ -375,7 +382,7 @@ fn func_dummy(_idx_expr: usize, _nums: &[Number]) -> Result<Number, ExprError> {
 fn func_sum(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let mut res = Number { integer: 0u64, float: 0f64 };
     for arg in nums  {
-        res.integer += arg.integer;
+        res.integer = res.integer.wrapping_add(arg.integer);
         res.float += arg.float;
     }
     Ok(res)
@@ -386,6 +393,19 @@ fn func_avg(idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     res.integer /= nums.len() as u64;
     res.float /= nums.len() as f64;
     Ok(res)
+}
+
+fn func_bit(idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
+    let shift = nums[0].integer as i64;
+    if (0..64).contains(&shift) {
+        let integer = 1_u64.wrapping_shl(nums[0].integer as u32);
+        let float = integer as f64;
+        Ok(Number { integer, float })
+    } else {
+        let message = format!("due to invalid shift of {} for function at {} (shift must be 0..63)",
+                              nums[0].integer as i64, idx_expr);
+        Err(ExprError { idx_expr, kind: ExprErrorKind::FailedEvaluation, message })
+    }
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -645,7 +665,7 @@ impl ExprCtx {
     }
 
     #[inline]
-    fn process_parsed_param_sep(&mut self, oper_token: OperToken) -> Result<(), ExprError> {
+    fn process_parsed_param_sep(&mut self, oper_token: OperToken, opt_prev_token: &mut Option<Token>) -> Result<(), ExprError> {
         let oper = &OPERS[oper_token.idx_oper];
         // Find the previous open parenthesis.
         while let Some(ref_token) = self.stack_op.last() {
@@ -668,9 +688,7 @@ impl ExprCtx {
 
             // If a function preceeds the open parenthesis, increment its parameter count by 2
             // and re-push the function and the previously popped open parenthesis back to the
-            // op stack. It is important we do -NOT- update "opt_prev_token" while doing this
-            // temporary modification of a token's data in stack. The operator parsing code has
-            // already ensured valid tokens exists before and after the parameter separator.
+            // op stack.
             if let Some(mut func_token) = self.pop_func_from_op_stack() {
                 func_token.params += 2;
                 self.stack_op.push(Token::Func(func_token));
@@ -684,6 +702,9 @@ impl ExprCtx {
                                        message });
             }
 
+            // Update param separator as the previous token (mainly required while parsing unary
+            // operators following param separator), e.g., "sum(5,-5)"
+            *opt_prev_token = Some(Token::Oper(oper_token));
             Ok(())
         } else {
             // No matching open parenthesis for the parameter separator. E.g "32,4".
@@ -703,7 +724,7 @@ impl ExprCtx {
         match oper.kind {
             OperKind::OpenParen => self.process_parsed_open_paren(oper_token, opt_prev_token)?,
             OperKind::CloseParen => self.process_parsed_close_paren(oper_token, opt_prev_token)?,
-            OperKind::ParamSep => self.process_parsed_param_sep(oper_token)?,
+            OperKind::ParamSep => self.process_parsed_param_sep(oper_token, opt_prev_token)?,
             _ => {
                 // Validate left associative operator.
                 // NOTE: We could squeeze this into parse_operator() but this gives us better error messages
@@ -901,7 +922,8 @@ fn parse_oper(str_expr: &str, opers: &[Oper], opt_prev_token: &mut Option<Token>
                         // E.g. ")-5" when parsing "-" can be valid. So don't skip finding "-".
                         // E.g. "(<<7" when parsing "<<" is invalid, so skip finding it.
                         if opers[*idx_oper].assoc == OperAssoc::Left
-                            || opers[*idx_oper].kind == OperKind::OpenParen {
+                            || opers[*idx_oper].kind == OperKind::OpenParen
+                            || opers[*idx_oper].kind == OperKind::ParamSep {
                             continue;
                         }
                     }

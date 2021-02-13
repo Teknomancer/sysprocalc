@@ -260,6 +260,9 @@ fn is_func_table_valid() {
         assert!(!func.params.contains(&MAX_FN_PARAMS),
                 "Function '{}' at {} exceeds maximum parameters of {}. Use/alter the maximum.",
                 func.name, idx, MAX_FN_PARAMS);
+        assert!(!func.params.is_empty(),
+                "Function '{}' at {} must have at least 1 parameter. Use/alter the maximum.",
+                func.name, idx);
 
         assert_eq!(func.name.is_empty(), false,
                 "Function at {} invalid. Name cannot be 0 length.", idx);
