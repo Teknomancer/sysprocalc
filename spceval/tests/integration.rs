@@ -263,12 +263,14 @@ fn valid_exprs_funcs() {
         ("avg(1,3)", Number { integer: 2, float: 2 as f64 }),
         ("avg(0xf,0x1e,0x2d)", Number { integer: 0x1e, float: 0x1e as f64 }),
         ("avg(1,2,3,4,5,6,7,8,9,10)", Number { integer: 5, float: 5.5f64 }),
+        ("avg(35,75,125,25,45) + avg(1,2,3)", Number { integer: 63, float: 63.0 }),
 
         // bit
         ("bit(0)", Number { integer: 1_u64.wrapping_shl(0), float: 1_u64.wrapping_shl(0) as f64 }),
         ("bit(1)", Number { integer: 1_u64.wrapping_shl(1), float: 1_u64.wrapping_shl(1) as f64 }),
         ("bit(31)", Number { integer: 1_u64.wrapping_shl(31), float: 1_u64.wrapping_shl(31) as f64 }),
         ("bit(63)", Number { integer: 1_u64.wrapping_shl(63), float: 1_u64.wrapping_shl(63) as f64 }),
+        ("bit(0) | bit(1) | bit(2)", Number { integer: 7, float: 7.0 }),
 
         // if
         // TODO
@@ -279,6 +281,7 @@ fn valid_exprs_funcs() {
         ("sum(0xffff,0xffffffff)", Number { integer: 0xffff + 0xffffffff_u64, float: (0xffff + 0xffffffff_u64) as f64 }),
         ("sum(-1,4)", Number { integer: 3, float: 3 as f64 }),
         ("sum(-5,-5,10)", Number { integer: 0, float: 0 as f64 }),
+        ("sum(10,5) * sum(1,2)", Number { integer: 45, float: 45.0 }),
     ];
     for expr_res in expr_results {
         test_valid_expr(&expr_res.0, &expr_res.1);
@@ -418,6 +421,12 @@ fn invalid_exprs() {
         ("0 x123", ExprErrorKind::InvalidExpr),
         ("0 n123", ExprErrorKind::InvalidExpr),
         ("0 o1011", ExprErrorKind::InvalidExpr),
+
+        // Functions
+        ("avg(123)", ExprErrorKind::InvalidParamCount),
+        ("bit(1,2)", ExprErrorKind::InvalidParamCount),
+        // TODO if
+        ("sum(0xff)", ExprErrorKind::InvalidParamCount),
     ];
     for expr_res in expr_results {
         let res_parse = spceval::parse(&expr_res.0);
