@@ -52,7 +52,7 @@ static OPERS: [Oper<'static>; 26] = [
 ];
 
 const MAX_FN_PARAMS: u8 = u8::max_value();
-static FUNCS: [Func<'static>; 4] = [
+static FUNCS: [Func<'static>; 5] = [
     Func {
         name: "avg",
         params: Range { start: 2, end: MAX_FN_PARAMS },
@@ -64,8 +64,15 @@ static FUNCS: [Func<'static>; 4] = [
         name: "bit",
         params: Range { start: 1, end: 2 },
         syntax: "<n1>",
-        help: "Set nth bit (from 0..63).",
+        help: "Set nth bit (n is 0..63)",
         evalfn: func_bit,
+    },
+    Func {
+        name: "bits",
+        params: Range { start: 2, end: 3 },
+        syntax: "<n1>,<n2>",
+        help: "Set set of bits from [n1, n2]",
+        evalfn: func_bits,
     },
     Func {
         name: "if",
@@ -404,6 +411,23 @@ fn func_bit(idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     } else {
         let message = format!("due to invalid shift of {} for function at {} (shift must be 0..63)",
                               nums[0].integer as i64, idx_expr);
+        Err(ExprError { idx_expr, kind: ExprErrorKind::FailedEvaluation, message })
+    }
+}
+
+fn func_bits(idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
+    let min = std::cmp::min(nums[0].integer, nums[1].integer);
+    let max = std::cmp::max(nums[0].integer, nums[1].integer);
+    if (0..64).contains(&min) && (0..64).contains(&max) {
+        let mut integer : u64 = 0;
+        for n in min..max + 1  {
+            integer |= 1_u64.wrapping_shl(n as u32);
+        }
+        let float = integer as f64;
+        Ok(Number { integer, float })
+    } else {
+        let message = format!("due to invalid bit range ({}, {}) for function at {} (range must be 0..63)",
+                              nums[0].integer as i64, nums[1].integer as i64, idx_expr);
         Err(ExprError { idx_expr, kind: ExprErrorKind::FailedEvaluation, message })
     }
 }
@@ -783,10 +807,13 @@ fn parse_function(str_expr: &str, funcs: &[Func]) -> Option<usize> {
     let mut is_found = false;
     let mut idx_found = 0;
     for (idx, func) in funcs.iter().enumerate() {
-        if str_expr.starts_with(func.name) {
+        // If this is the first occurrence of this function, record where we found it.
+        // Otherwise, record the currently found function only if its length exceeds that
+        // of a previously found one (i.e., we should be able to find "bits" and not stop at "bit").
+        if str_expr.starts_with(func.name)
+           && (!is_found || func.name.len() > funcs[idx_found].name.len()) {
             idx_found = idx;
             is_found = true;
-            break;
         }
     }
 
@@ -905,7 +932,7 @@ fn parse_oper(str_expr: &str, opers: &[Oper], opt_prev_token: &mut Option<Token>
     for (idx, op) in opers.iter().enumerate() {
         // If this is the first occurrence of this operator, record where we found it.
         // Otherwise, record the currently found operator only if its length exceeds that
-        // of a previously found (i.e., we should be able to find "<<" and not stop at "<"),
+        // of a previously found one (i.e., we should be able to find "<<" and not stop at "<").
         if str_expr.starts_with(op.name)
            && (!is_found
                 || op.name.len() > opers[idx_found].name.len()) {
