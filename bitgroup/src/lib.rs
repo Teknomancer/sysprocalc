@@ -238,7 +238,7 @@ fn test_valid_bit_group() {
 
 #[test]
 fn test_invalid_bit_group() {
-    let pair_invalid_bit_sets = [
+    let pair_invalid_bit_grps = [
         //
         // Invalid bit count
         //
@@ -275,7 +275,7 @@ fn test_invalid_bit_group() {
         //
     ];
 
-    for bs in &pair_invalid_bit_sets {
+    for bs in &pair_invalid_bit_grps {
         let res_fmt = validate_bit_group(&bs.0);
         assert!(res_fmt.is_err(), "{:?}", bs.0);
         assert_eq!(res_fmt.err().unwrap(), bs.1);
