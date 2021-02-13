@@ -288,6 +288,20 @@ fn valid_exprs_funcs() {
         ("bit(63)", Number { integer: 1_u64.wrapping_shl(63), float: 1_u64.wrapping_shl(63) as f64 }),
         ("bit(0) | bit(1) | bit(2)", Number { integer: 7, float: 7.0 }),
 
+        // bits
+        ("bits(0,0)", Number { integer: 1, float: 1.0 }),
+        ("bits(0,1)", Number { integer: 3, float: 3.0 }),
+        ("bits(1,0)", Number { integer: 3, float: 3.0 }),
+        ("bits(1,1)", Number { integer: 2, float: 2.0 }),
+        ("bits(0,2)", Number { integer: 7, float: 7.0 }),
+        ("bits(2,0)", Number { integer: 7, float: 7.0 }),
+        ("bits(0,63)", Number { integer: 0xffffffffffffffffu64, float: 0xffffffffffffffffu64 as f64 }),
+        ("bits(63,0)", Number { integer: 0xffffffffffffffffu64, float: 0xffffffffffffffffu64 as f64 }),
+        ("bits(0,31)", Number { integer: 0xffffffffu64, float: 0xffffffffu64 as f64 }),
+        ("bits(31,0)", Number { integer: 0xffffffffu64, float: 0xffffffffu64 as f64 }),
+        ("bits(32,63)", Number { integer: 0xffffffff00000000u64, float: 0xffffffff00000000u64 as f64 }),
+        ("bits(63,32)", Number { integer: 0xffffffff00000000u64, float: 0xffffffff00000000u64 as f64 }),
+
         // if
         // TODO
 
@@ -364,12 +378,21 @@ fn valid_exprs_eval_fail() {
         ("2/0", ExprErrorKind::FailedEvaluation),
         ("0xffffffffffffffff/0", ExprErrorKind::FailedEvaluation),
 
+        //
         // Functions
+        //
+        // bit
         ("bit(-1)", ExprErrorKind::FailedEvaluation),
         ("bit(64)", ExprErrorKind::FailedEvaluation),
         ("bit(~0)", ExprErrorKind::FailedEvaluation),
         ("bit(0xffffffffffffffff)", ExprErrorKind::FailedEvaluation),
         ("bit(0x7fffffffffffffff)", ExprErrorKind::FailedEvaluation),
+
+        // bits
+        ("bits(-1,-1)", ExprErrorKind::FailedEvaluation),
+        ("bits(64,0)", ExprErrorKind::FailedEvaluation),
+        ("bits(0,64)", ExprErrorKind::FailedEvaluation),
+        ("bits(~0,0)", ExprErrorKind::FailedEvaluation),
     ];
     for expr_res in expr_results {
         test_valid_expr_but_eval_fail(&expr_res.0, expr_res.1);
@@ -436,6 +459,9 @@ fn invalid_exprs() {
         // Functions
         ("avg(123)", ExprErrorKind::InvalidParamCount),
         ("bit(1,2)", ExprErrorKind::InvalidParamCount),
+        ("bits(0)", ExprErrorKind::InvalidParamCount),
+        ("bits(63)", ExprErrorKind::InvalidParamCount),
+        ("bits(64)", ExprErrorKind::InvalidParamCount),
         // TODO if
         ("sum(0xff)", ExprErrorKind::InvalidParamCount),
     ];
