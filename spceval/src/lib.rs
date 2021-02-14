@@ -53,41 +53,30 @@ static OPERS: [Oper<'static>; 26] = [
 
 const MAX_FN_PARAMS: u8 = u8::max_value();
 static FUNCS: [Func<'static>; 5] = [
-    Func {
-        name: "avg",
-        params: Range { start: 2, end: MAX_FN_PARAMS },
-        syntax: "<n1>,<n2>[,<n3>...<nX>]",
-        help: "Average",
-        evalfn: func_avg,
-    },
-    Func {
-        name: "bit",
-        params: Range { start: 1, end: 2 },
-        syntax: "<n1>",
-        help: "Set nth bit (n is 0..63)",
-        evalfn: func_bit,
-    },
-    Func {
-        name: "bits",
-        params: Range { start: 2, end: 3 },
-        syntax: "<n1>,<n2>",
-        help: "Set set of bits from [n1, n2]",
-        evalfn: func_bits,
-    },
-    Func {
-        name: "if",
-        params: Range { start: 3, end: 4 },
-        syntax: "<cond>,<n1>,<n2>",
-        help: "If <cond> is true, returns <n1> else <n2>",
-        evalfn: func_dummy,
-    },
-    Func {
-        name: "sum",
-        params: Range { start: 2, end: MAX_FN_PARAMS },
-        syntax: "<n1>,<n2>[,<n3>...<nX>]",
-        help: "Sum",
-        evalfn: func_sum,
-    },
+    Func { name: "avg",
+           params: Range { start: 2, end: MAX_FN_PARAMS },
+           syntax: "<n1>,<n2>[,<n3>...<nX>]",
+           help: "Average",
+           evalfn: func_avg, },
+    Func { name: "bit", params: Range { start: 1, end: 2 },
+           syntax: "<n1>",
+           help: "Set nth bit (n is 0..63)",
+           evalfn: func_bit, },
+    Func { name: "bits",
+           params: Range { start: 2, end: 3 },
+           syntax: "<n1>,<n2>",
+           help: "Set set of bits from [n1, n2]",
+           evalfn: func_bits, },
+    Func { name: "if",
+           params: Range { start: 3, end: 4 },
+           syntax: "<cond>,<n1>,<n2>",
+           help: "If <cond> is true, returns <n1> else <n2>",
+           evalfn: func_dummy, },
+    Func { name: "sum",
+           params: Range { start: 2, end: MAX_FN_PARAMS },
+           syntax: "<n1>,<n2>[,<n3>...<nX>]",
+           help: "Sum",
+           evalfn: func_sum, },
 ];
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -402,7 +391,7 @@ fn func_sum(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, E
     func_sum__(nums)
 }
 
-fn func_avg(func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
+fn func_avg(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let mut res = func_sum__(nums)?;
     res.integer /= nums.len() as u64;
     res.float /= nums.len() as f64;

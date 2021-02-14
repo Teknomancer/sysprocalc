@@ -1,4 +1,4 @@
-use spceval::{self, Number, ExprError, ExprErrorKind};
+use spceval::{self, Number, ExprErrorKind};
 
 #[inline(always)]
 fn test_valid_expr(str_expr: &str, res_num: &Number) {
@@ -371,7 +371,6 @@ fn valid_exprs_eval_fail() {
     // These are expressions that are syntactically valid but guaranteed to fail during
     // evaluation. E.g "1/0" is perfectly valid syntax but fails due to division by zero.
     // These must never produce errors during the parsing phase.
-    use ExprErrorKind::*;
     let expr_results = vec![
         ("0/0", ExprErrorKind::FailedEvaluation),
         ("1/0", ExprErrorKind::FailedEvaluation),
@@ -407,7 +406,6 @@ fn invalid_exprs() {
     // like "2 +" fail during evaluation due to the way we parse operators but others
     // like ",5" will fail during parsing.
     // TODO: Try split this into logical categories.
-    use ExprErrorKind::*;
     let expr_results = vec![
         ("", ExprErrorKind::EmptyExpr),
         ("()", ExprErrorKind::EmptyExpr),
