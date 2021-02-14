@@ -145,7 +145,7 @@ pub struct Number {
 }
 
 type PfnOper = fn(idx_expr: usize, &[Number]) -> Result<Number, ExprError>;
-type PfnFunc = fn(idx_expr: usize, &[Number]) -> Result<Number, ExprError>;
+type PfnFunc = fn(func: &Func, idx_expr: usize, &[Number]) -> Result<Number, ExprError>;
 
 #[derive(Eq, PartialEq, Ord, PartialOrd, Debug)]
 enum OperAssoc {
@@ -384,11 +384,12 @@ fn oper_bit_or(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     Ok(Number { integer, float })
 }
 
-fn func_dummy(_idx_expr: usize, _nums: &[Number]) -> Result<Number, ExprError> {
+fn func_dummy(_func: &Func, _idx_expr: usize, _nums: &[Number]) -> Result<Number, ExprError> {
     Ok (Number { integer: 0u64, float: 0f64 })
 }
 
-fn func_sum(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
+fn func_sum__(nums: &[Number]) -> Result<Number, ExprError>
+{
     let mut res = Number { integer: 0u64, float: 0f64 };
     for arg in nums  {
         res.integer = res.integer.wrapping_add(arg.integer);
@@ -397,27 +398,31 @@ fn func_sum(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     Ok(res)
 }
 
-fn func_avg(idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
-    let mut res = func_sum(idx_expr, nums)?;
+fn func_sum(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
+    func_sum__(nums)
+}
+
+fn func_avg(func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
+    let mut res = func_sum__(nums)?;
     res.integer /= nums.len() as u64;
     res.float /= nums.len() as f64;
     Ok(res)
 }
 
-fn func_bit(idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
+fn func_bit(func: &Func, idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let shift = nums[0].integer as i64;
     if (0..64).contains(&shift) {
         let integer = 1_u64.wrapping_shl(nums[0].integer as u32);
         let float = integer as f64;
         Ok(Number { integer, float })
     } else {
-        let message = format!("due to invalid shift of {} for function at {} (shift must be 0..63)",
-                              nums[0].integer as i64, idx_expr);
+        let message = format!("in function '{}' at {} due to invalid shift {} (must be 0..63)",
+                              func.name, idx_expr, nums[0].integer as i64);
         Err(ExprError { idx_expr, kind: ExprErrorKind::FailedEvaluation, message })
     }
 }
 
-fn func_bits(idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
+fn func_bits(func: &Func, idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let min = std::cmp::min(nums[0].integer, nums[1].integer);
     let max = std::cmp::max(nums[0].integer, nums[1].integer);
     if (0..64).contains(&min) && (0..64).contains(&max) {
@@ -428,8 +433,8 @@ fn func_bits(idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
         let float = integer as f64;
         Ok(Number { integer, float })
     } else {
-        let message = format!("due to invalid bit range ({}, {}) for function at {} (range must be 0..63)",
-                              nums[0].integer as i64, nums[1].integer as i64, idx_expr);
+        let message = format!("in function '{}' at {} due to invalid bit range ({}, {}) (must be 0..63)",
+                              func.name, idx_expr, nums[0].integer as i64, nums[1].integer as i64);
         Err(ExprError { idx_expr, kind: ExprErrorKind::FailedEvaluation, message })
     }
 }
@@ -1157,7 +1162,7 @@ pub fn evaluate(expr_ctx: &mut ExprCtx) -> Result<ExprResult, ExprError> {
                 let function = &FUNCS[idx_func];
                 if let Some(parameters) = expr_ctx.collect_params(params as usize, &mut stack_output) {
                     debug_assert!(parameters.len() == params as usize);
-                    let res_expr = (function.evalfn)(idx_expr, &parameters)?;
+                    let res_expr = (function.evalfn)(function, idx_expr, &parameters)?;
                     stack_output.push(res_expr);
                 } else {
                     let message = format!("for function '{}' at {}", function.name, idx_expr);
