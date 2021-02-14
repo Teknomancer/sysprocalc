@@ -101,6 +101,7 @@ pub enum ExprErrorKind {
     MismatchParenthesis,
     MissingFunction,
     MissingOperand,
+    MissingOperator,
     MissingOperatorOrFunction,
     MissingParenthesis,
 }
@@ -129,6 +130,7 @@ impl fmt::Display for ExprError {
             ExprErrorKind::MismatchParenthesis => "parenthesis mismatch",
             ExprErrorKind::MissingFunction => "function missing",
             ExprErrorKind::MissingOperand => "operand missing",
+            ExprErrorKind::MissingOperator => "operator missing",
             ExprErrorKind::MissingOperatorOrFunction => "operator or function missing",
             ExprErrorKind::MissingParenthesis => "parenthesis missing",
         };
@@ -1000,6 +1002,19 @@ fn verify_prev_token_not_function(opt_prev_token: &Option<Token>) -> Result<(), 
     }
 }
 
+fn verify_prev_token_not_number(opt_prev_token: &Option<Token>) -> Result<(), ExprError> {
+    match opt_prev_token {
+        Some(Token::Num(NumToken { number, idx_expr })) => {
+            let message = format!("following number {} at {}", number.float, idx_expr);
+            trace!("{:?} {}", ExprErrorKind::MissingOperator, message);
+            Err(ExprError { idx_expr: *idx_expr,
+                            kind: ExprErrorKind::MissingOperator,
+                            message })
+        }
+        _ => Ok(())
+    }
+}
+
 fn verify_prev_token_not_close_paren(opt_prev_token: &Option<Token>) -> Result<(), ExprError> {
     match opt_prev_token {
         Some(Token::Oper(
@@ -1068,9 +1083,10 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
             expr_ctx.process_parsed_oper(oper_token, &mut opt_prev_token)?;
         } else if let Some(idx_func) = parse_function(str_subexpr, &FUNCS) {
             debug_assert!(idx_func < FUNCS.len());
-            // If the previous token was a function, we have an invalid expression.
-            // E.g "avg avg"; FUNCS must be followed by open parenthesis only.
+            // If the previous token was a function or a number, we have an invalid expression.
+            // E.g "avg avg" or "5 bit(2)"
             verify_prev_token_not_function(&opt_prev_token)?;
+            verify_prev_token_not_number(&opt_prev_token)?;
             trace!("function: {}", &FUNCS[idx_func].name);
             len_token = FUNCS[idx_func].name.len();
             let func_token = FuncToken { idx_func, idx_expr: idx, params: 0 };
