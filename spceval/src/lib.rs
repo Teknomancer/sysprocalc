@@ -416,7 +416,7 @@ fn func_bit(func: &Func, idx_expr: usize, nums: &[Number]) -> Result<Number, Exp
         let float = integer as f64;
         Ok(Number { integer, float })
     } else {
-        let message = format!("in function '{}' at {} due to invalid shift {} (must be 0..63)",
+        let message = format!("for function '{}' at {} due to invalid shift {} (must be 0..63)",
                               func.name, idx_expr, nums[0].integer as i64);
         Err(ExprError { idx_expr, kind: ExprErrorKind::FailedEvaluation, message })
     }
@@ -433,7 +433,7 @@ fn func_bits(func: &Func, idx_expr: usize, nums: &[Number]) -> Result<Number, Ex
         let float = integer as f64;
         Ok(Number { integer, float })
     } else {
-        let message = format!("in function '{}' at {} due to invalid bit range ({}, {}) (must be 0..63)",
+        let message = format!("for function '{}' at {} due to invalid bit range ({}, {}) (must be 0..63)",
                               func.name, idx_expr, nums[0].integer as i64, nums[1].integer as i64);
         Err(ExprError { idx_expr, kind: ExprErrorKind::FailedEvaluation, message })
     }
