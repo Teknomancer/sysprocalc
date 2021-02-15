@@ -13,9 +13,9 @@ Variables/constants and common x86-register descriptions aren't supported yet bu
 
 ### Executable and Library
 
-The project is split into a main executable `sysprocalc` and the core parser/evaluator library (`spceval`).
+The project is split into a main executable `sysprocalc` and the core parser/evaluator library (`spceval`). While I don't have any plans of publishing the library as a crate, the library and executable are not tightly coupled. The library exists in its own workspace, making publishing it as a crate easier in the future.
 
-Though I do not have any current plans of publishing the library as a crate, the library and executable are not tightly coupled. The library exists in its own workspace, making publishing it as a crate easier in the future.
+There are no binary downloads available, so you'll have to build the sources for now.
 
 ### Building from source
 
