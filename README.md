@@ -19,7 +19,7 @@ There are no binary downloads available, so you'll have to build the sources for
 
 ### Building from source
 
-1. Download and [install Rust](https://www.rust-lang.org/tools/install)
+1. Download and [install Rust](https://www.rust-lang.org/tools/install).
 2. Clone sysprocalc's git repository to your computer using:
    ```
    git clone https://github.com/Teknomancer/sysprocalc.git
@@ -28,9 +28,9 @@ There are no binary downloads available, so you'll have to build the sources for
    ```
    cargo build && cargo clippy && cargo test --all && cargo run
    ```
-   The `--all` is required to make sure tests in the library are also run and not just the executable's tests.
+   The `--all` is required to run tests for the library and not just the executable.
    
-   To build a release target, append `--release` to each of the above commands.
+   To build a release target, append `--release` to each of the above `cargo` commands.
 
 ### License
 
