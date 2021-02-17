@@ -612,15 +612,18 @@ impl ExprCtx {
             }
             _ => false,
         };
+
         if missing_oper_or_func {
             let message = format!("for open parenthesis at '{}'", oper_token.idx_expr);
             trace!("{:?} {}", ExprErrorKind::MissingOperatorOrFunction, message);
-            return Err(ExprError { idx_expr: oper_token.idx_expr,
-                                   kind: ExprErrorKind::MissingOperatorOrFunction,
-                                   message });
+            Err(ExprError { idx_expr: oper_token.idx_expr,
+                            kind: ExprErrorKind::MissingOperatorOrFunction,
+                            message })
         }
-        self.push_to_op_stack(Token::Oper(oper_token), opt_prev_token);
-        Ok(())
+        else {
+            self.push_to_op_stack(Token::Oper(oper_token), opt_prev_token);
+            Ok(())
+        }
     }
 
     fn process_parsed_close_paren(&mut self,
