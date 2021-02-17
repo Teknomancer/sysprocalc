@@ -59,13 +59,13 @@ static FUNCS: [Func<'static>; 5] = [
            help: "Average",
            evalfn: func_avg, },
     Func { name: "bit", params: Range { start: 1, end: 2 },
-           syntax: "<n1>",
-           help: "Set nth bit (n is 0..63)",
+           syntax: "<n>",
+           help: "Set nth bit (n is [0..63])",
            evalfn: func_bit, },
     Func { name: "bits",
            params: Range { start: 2, end: 3 },
            syntax: "<n1>,<n2>",
-           help: "Set set of bits from [n1, n2]",
+           help: "Set set of bits from [n1..n2]",
            evalfn: func_bits, },
     Func { name: "if",
            params: Range { start: 3, end: 4 },
@@ -74,7 +74,7 @@ static FUNCS: [Func<'static>; 5] = [
            evalfn: func_dummy, },
     Func { name: "sum",
            params: Range { start: 2, end: MAX_FN_PARAMS },
-           syntax: "<n1>,<n2>[,<n3>...<nX>]",
+           syntax: "<n1>,<n2>[,<n3>..<nX>]",
            help: "Sum",
            evalfn: func_sum, },
 ];
@@ -683,8 +683,8 @@ impl ExprCtx {
     }
 
     fn process_parsed_param_sep(&mut self, oper_token: OperToken, opt_prev_token: &mut Option<Token>) -> Result<(), ExprError> {
-        let oper = &OPERS[oper_token.idx_oper];
         // Find the previous open parenthesis.
+        let oper = &OPERS[oper_token.idx_oper];
         while let Some(ref_token) = self.stack_op.last() {
             match ref_token {
                 Token::Oper(OperToken { idx_oper, .. })
@@ -704,32 +704,31 @@ impl ExprCtx {
             }
 
             // If a function preceeds the open parenthesis, increment its parameter count by 2
-            // and re-push the function and the previously popped open parenthesis back to the
-            // op stack.
+            // and re-push the function and the previously popped open parenthesis back to the op stack.
             if let Some(mut func_token) = self.pop_func_from_op_stack() {
                 func_token.params += 2;
                 self.stack_op.push(Token::Func(func_token));
                 self.stack_op.push(paren_token);
+
+                // Update param separator as the previous token (mainly required while parsing unary
+                // operators following param separator), e.g., "sum(5,-5)"
+                *opt_prev_token = Some(Token::Oper(oper_token));
+                Ok(())
             } else {
                 // No function preceeding open parenthesis for a parameter separator. E.g "(32,5)"
                 let message = format!("for parameter separator '{}' at {}", oper.name, oper_token.idx_expr);
                 trace!("{:?} {}", ExprErrorKind::MissingFunction, message);
-                return Err(ExprError { idx_expr: oper_token.idx_expr,
-                                       kind: ExprErrorKind::MissingFunction,
-                                       message });
+                Err(ExprError { idx_expr: oper_token.idx_expr,
+                                kind: ExprErrorKind::MissingFunction,
+                                message })
             }
-
-            // Update param separator as the previous token (mainly required while parsing unary
-            // operators following param separator), e.g., "sum(5,-5)"
-            *opt_prev_token = Some(Token::Oper(oper_token));
-            Ok(())
         } else {
             // No matching open parenthesis for the parameter separator. E.g "32,4".
             let message = format!("for parameter separator '{}' at {}", oper.name, oper_token.idx_expr);
             trace!("{:?} {}", ExprErrorKind::MissingParenthesis, message);
             Err(ExprError { idx_expr: oper_token.idx_expr,
-                            kind: ExprErrorKind::MissingParenthesis,
-                            message })
+                             kind: ExprErrorKind::MissingParenthesis,
+                             message })
         }
     }
 
@@ -756,13 +755,13 @@ impl ExprCtx {
                     //   - Must not be a right associative operator.
                     debug_assert!(opt_prev_token.is_some());
                     match opt_prev_token {
-                        Some(Token::Oper(
-                            OperToken { idx_oper, .. })) if OPERS[*idx_oper].kind != OperKind::CloseParen => {
-                            let message = format!("for operator '{}' at {}", oper.name, oper_token.idx_expr);
-                            trace!("{:?} {}", ExprErrorKind::MissingOperand, message);
-                            return Err(ExprError { idx_expr: oper_token.idx_expr,
-                                                   kind: ExprErrorKind::MissingOperand,
-                                                   message });
+                        Some(Token::Oper(OperToken { idx_oper, .. }))
+                            if OPERS[*idx_oper].kind != OperKind::CloseParen => {
+                                let message = format!("for operator '{}' at {}", oper.name, oper_token.idx_expr);
+                                trace!("{:?} {}", ExprErrorKind::MissingOperand, message);
+                                return Err(ExprError { idx_expr: oper_token.idx_expr,
+                                                       kind: ExprErrorKind::MissingOperand,
+                                                       message });
                         }
                         _ => (),
                     }
