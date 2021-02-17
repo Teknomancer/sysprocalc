@@ -203,11 +203,7 @@ fn cmp_eq_f64(a: f64, b: f64) -> bool {
     let abs_a = a.abs();
     let abs_b = b.abs();
     let abs_diff = (a - b).abs();
-    let abs_cmp = if abs_a > abs_b {
-        abs_b
-    } else {
-        abs_a
-    };
+    let abs_cmp = if abs_a > abs_b { abs_b } else { abs_a };
 
     abs_diff <= abs_cmp * std::f64::EPSILON
 }
