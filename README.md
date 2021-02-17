@@ -13,13 +13,13 @@ Variables/constants and common x86-register descriptions aren't supported yet bu
 
 ### Executable and Library
 
-The project is split into a main executable `sysprocalc` and the core parser/evaluator library (`spceval`).
+The project is split into a main executable `sysprocalc` and the core parser/evaluator library (`spceval`). While I don't have any plans of publishing the library as a crate, the library and executable are not tightly coupled. The library exists in its own workspace, making publishing it as a crate easier in the future.
 
-Though I do not have any current plans of publishing the library as a crate, the library and executable are not tightly coupled. The library exists in its own workspace, making publishing it as a crate easier in the future.
+There are no binary downloads available, so you'll have to build the sources for now.
 
 ### Building from source
 
-1. Download and [install Rust](https://www.rust-lang.org/tools/install)
+1. Download and [install Rust](https://www.rust-lang.org/tools/install).
 2. Clone sysprocalc's git repository to your computer using:
    ```
    git clone https://github.com/Teknomancer/sysprocalc.git
@@ -28,9 +28,9 @@ Though I do not have any current plans of publishing the library as a crate, the
    ```
    cargo build && cargo clippy && cargo test --all && cargo run
    ```
-   The `--all` is required to make sure tests in the library are also run and not just the executable's tests.
+   The `--all` is required to run tests for the library and not just the executable.
    
-   To build a release target, append `--release` to each of the above commands.
+   To build a release target, append `--release` to each of the above `cargo` commands.
 
 ### License
 
