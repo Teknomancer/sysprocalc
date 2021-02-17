@@ -180,7 +180,6 @@ fn parse_valid_nums_f64() {
 fn is_oper_table_valid() {
     let mut open_paren_count = 0;
     let mut close_paren_count = 0;
-    let mut var_assign_count = 0;
     let mut param_sep_count = 0;
     for (idx, oper) in OPERS.iter().enumerate() {
         assert!(oper.params < 3, "Oper '{}' at {} has {} parameters. \
@@ -213,7 +212,6 @@ fn is_oper_table_valid() {
                         "Close parenthesis operator '{}' at {} must have no associativity.", oper.name, idx);
                 close_paren_count += 1;
             }
-            OperKind::VarAssign => var_assign_count += 1,
             OperKind::ParamSep => param_sep_count += 1,
             _ => (),
         }
@@ -250,7 +248,6 @@ fn is_oper_table_valid() {
     // Ensure there's exactly one of the following operators in the table.
     assert_eq!(open_paren_count, 1);
     assert_eq!(close_paren_count, 1);
-    assert_eq!(var_assign_count, 1);
     assert_eq!(param_sep_count, 1);
 }
 
