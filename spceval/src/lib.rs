@@ -8,7 +8,7 @@ use log::{trace, debug};   // others: {warn,info}
 // Number of tokens to pre-allocate per ExprCtx.
 const PRE_ALLOC_TOKENS: usize = 16;
 
-static OPERS: [Oper<'static>; 26] = [
+static OPERS: [Oper<'static>; 25] = [
     // Precedence 1 (highest priority)
     Oper { kind: OperKind::OpenParen,  prec: 1,  params: 0, assoc: OperAssoc::Nil,   evalfn: oper_nop,         name: "(",  syntax: "(<expr>",            help: "Begin expression.",       },
     Oper { kind: OperKind::CloseParen, prec: 1,  params: 0, assoc: OperAssoc::Nil,   evalfn: oper_nop,         name: ")",  syntax: "<expr>)",            help: "End expression.",         },
@@ -46,9 +46,7 @@ static OPERS: [Oper<'static>; 26] = [
     // Precedence 12
     Oper { kind: OperKind::Regular,    prec: 12, params: 2, assoc: OperAssoc::Left,  evalfn: oper_nop,         name: "||", syntax: "<expr> || <expr>",   help: "Logical OR." ,            },
     // Precedence 13
-    Oper { kind: OperKind::VarAssign,  prec: 13, params: 2, assoc: OperAssoc::Left,  evalfn: oper_nop,         name: "=",  syntax: "<var> = <expr>",     help: "Variable assignment.",    },
-    // Precedence 14
-    Oper { kind: OperKind::ParamSep,   prec: 14, params: 2, assoc: OperAssoc::Left,  evalfn: oper_nop,         name: ",",  syntax: "<param1>, <param2>", help: "Parameter separator.",    },
+    Oper { kind: OperKind::ParamSep,   prec: 13, params: 2, assoc: OperAssoc::Left,  evalfn: oper_nop,         name: ",",  syntax: "<param1>, <param2>", help: "Parameter separator.",    },
 ];
 
 const MAX_FN_PARAMS: u8 = u8::max_value();
@@ -149,7 +147,6 @@ enum OperKind {
     OpenParen,
     CloseParen,
     ParamSep,
-    VarAssign,
 }
 
 struct Oper<'a> {
@@ -605,7 +602,7 @@ impl ExprCtx {
                                  opt_prev_token: &mut Option<Token>) -> Result<(), ExprError> {
         // Previous token if any cannot be a close parenthesis or a number.
         // E.g "(5)(2)" or "5(2)".
-        let missing_oper_or_func = match opt_prev_token {
+        let is_oper_or_func_missing = match opt_prev_token {
             Some(Token::Num(_)) => true,
             Some(Token::Oper(OperToken { idx_oper, .. })) => {
                 OPERS[*idx_oper].kind == OperKind::CloseParen
@@ -613,7 +610,7 @@ impl ExprCtx {
             _ => false,
         };
 
-        if missing_oper_or_func {
+        if is_oper_or_func_missing {
             let message = format!("for open parenthesis at '{}'", oper_token.idx_expr);
             trace!("{:?} {}", ExprErrorKind::MissingOperatorOrFunction, message);
             Err(ExprError { idx_expr: oper_token.idx_expr,
@@ -630,12 +627,12 @@ impl ExprCtx {
                                   oper_token: OperToken,
                                   opt_prev_token: &mut Option<Token>) -> Result<(), ExprError> {
         // Find matching open parenthesis.
-        let mut found_open_paren = false;
+        let mut is_open_paren_found = false;
         while let Some(ref_token) = self.stack_op.last() {
             match ref_token {
                 Token::Oper(OperToken { idx_oper, .. })
                         if OPERS[*idx_oper].kind == OperKind::OpenParen => {
-                    found_open_paren = true;
+                    is_open_paren_found = true;
                     break;
                 }
                 // Pop any other tokens to the output queue.
@@ -643,24 +640,22 @@ impl ExprCtx {
             }
         }
 
-        if found_open_paren {
+        if is_open_paren_found {
             // Discard open parenthesis from the stack.
             self.stack_op.pop().unwrap();
 
             // Check if a function preceeds the open parenthesis.
             if let Some(mut func_token) = self.pop_func_from_op_stack() {
-                // If we've already counted parameters (due to parameter separators),
-                // we will fix up the overlapping parameter count here.
-                // E.g "avg(5,6,7)" -- the count will be 4 (i.e 2 for each
-                // parameter separator) but it should be 3 (N/2+1).
+                // If we've already counted parameters (due to parameter separators), we will fix up
+                // the overlapping parameter count here. E.g "avg(5,6,7)" -- the count will be 4
+                // (i.e 2 for each parameter separator) but it should be 3 (N/2+1).
                 if func_token.params >= 2 {
                     func_token.params /= 2;
                     func_token.params += 1;
                 } else {
                     // If the previous token is a number, the function has 1 parameter.
                     // If the previous token is a unary left associative operator, the function has 1 parameter.
-                    // The operator parsing code should've verified the
-                    // unary left associative operator has a valid parameter.
+                    // Operator parsing code should've verified the unary operator has a valid parameter.
                     // Any other token implies an invalid sequence and we count it as 0 parameters.
                     func_token.params = match opt_prev_token {
                         Some(Token::Num(_)) => 1,
@@ -696,8 +691,8 @@ impl ExprCtx {
             }
         }
 
-        // If a token exists at the top of the op stack, it's an open parenthesis (due to the loop above).
-        // This is debug asserted below for paranoia.
+        // If a token exists at the top of the op stack, it's an open parenthesis (guaranteed by loop above).
+        // We debug asserted below for paranoia.
         if self.stack_op.last().is_some() {
             let paren_token = self.stack_op.pop().unwrap();
             #[cfg(debug_assertions)]
@@ -713,12 +708,12 @@ impl ExprCtx {
                 self.stack_op.push(Token::Func(func_token));
                 self.stack_op.push(paren_token);
 
-                // Update param separator as the previous token (mainly required while parsing unary
-                // operators following param separator), e.g., "sum(5,-5)"
+                // Update param separator as the previous token (required while parsing unary operators
+                // following a param separator), e.g. "sum(5,-5)"
                 *opt_prev_token = Some(Token::Oper(oper_token));
                 Ok(())
             } else {
-                // No function preceeding open parenthesis for a parameter separator. E.g "(32,5)"
+                // No function preceeding open parenthesis for a parameter separator, e.g. "(32,5)"
                 let message = format!("for parameter separator '{}' at {}", oper.name, oper_token.idx_expr);
                 trace!("{:?} {}", ExprErrorKind::MissingFunction, message);
                 Err(ExprError { idx_expr: oper_token.idx_expr,
@@ -726,7 +721,7 @@ impl ExprCtx {
                                 message })
             }
         } else {
-            // No matching open parenthesis for the parameter separator. E.g "32,4".
+            // No matching open parenthesis for the parameter separator, e.g. "32,4".
             let message = format!("for parameter separator '{}' at {}", oper.name, oper_token.idx_expr);
             trace!("{:?} {}", ExprErrorKind::MissingParenthesis, message);
             Err(ExprError { idx_expr: oper_token.idx_expr,
@@ -746,16 +741,16 @@ impl ExprCtx {
             OperKind::ParamSep => self.process_parsed_param_sep(oper_token, opt_prev_token)?,
             _ => {
                 // Validate left associative operator.
-                // NOTE: We could squeeze this into parse_operator() but this gives us better error messages
-                // in some cases (see integration test).
+                // We could squeeze this into parse_oper() but doing it here gives us better
+                // error messages in some cases (see integration test).
                 if oper.assoc == OperAssoc::Left {
-                    // Assume we've parsed left-associative operator "<<".
+                    // Assuming we've parsed left-associative operator "<<".
                     // Rules for previous token are:
-                    //   - Must exist. E.g. "<< 2" is invalid but we've already handled this in parse_oeprator.
-                    //     We simply debug asserted it below for parnoia.
-                    //   - Must not be an operator (but close parenthesis is allowed)
-                    //     E.g. "/ << 2" and "( << 2" are invalid but ") << 2" can be valid.
-                    //   - Must not be a right associative operator.
+                    // 1. It must exist. E.g. "<< 2" is invalid but we've already handled this in parse_oper().
+                    //    Debug asserted below for parnoia.
+                    // 2. Must not be an operator (although close parenthesis is allowed).
+                    //    E.g. "/ << 2" and "( << 2" are always invalid but ") << 2" may be part of a valid expr.
+                    // 3. Must not be a right associative operator.
                     debug_assert!(opt_prev_token.is_some());
                     match opt_prev_token {
                         Some(Token::Oper(OperToken { idx_oper, .. }))
@@ -787,7 +782,7 @@ impl ExprCtx {
                                 break;
                             }
                         }
-                        // Pop functions (which always take priority over a normal operator) to the output queue.
+                        // Pop functions (which always take priority over a normal operators) to the output queue.
                         Token::Func(_) => self.pop_move_to_output_queue(),
                         _ => break,
                     }
@@ -807,7 +802,7 @@ fn parse_function(str_expr: &str, funcs: &[Func]) -> Option<usize> {
     for (idx, func) in funcs.iter().enumerate() {
         // If this is the first occurrence of this function, record where we found it.
         // Otherwise, record the currently found function only if its length exceeds that
-        // of a previously found one (i.e., we should be able to find "bits" and not stop at "bit").
+        // of a previously found one (e.g., find "bits" and not stop at "bit").
         if str_expr.starts_with(func.name)
            && (!is_found || func.name.len() > funcs[idx_found].name.len()) {
             idx_found = idx;
@@ -830,7 +825,7 @@ fn parse_num(str_expr: &str) -> (Option<Number>, usize) {
     let mut len_prefix = 0;
     let mut iter_expr = str_expr.chars().peekable();
 
-    // Parse any prefix that is explicitly part of the given expression
+    // Parse any prefix that is explicitly part of the given expression.
     if str_expr.starts_with('0') {
         len_prefix += 1;
         iter_expr.next();
@@ -930,7 +925,7 @@ fn parse_oper(str_expr: &str, opers: &[Oper], opt_prev_token: &mut Option<Token>
     for (idx, op) in opers.iter().enumerate() {
         // If this is the first occurrence of this operator, record where we found it.
         // Otherwise, record the currently found operator only if its length exceeds that
-        // of a previously found one (i.e., we should be able to find "<<" and not stop at "<").
+        // of a previously found one (e.g., find "<<" and not stop at "<").
         if str_expr.starts_with(op.name)
            && (!is_found
                 || op.name.len() > opers[idx_found].name.len()) {
@@ -958,8 +953,8 @@ fn parse_oper(str_expr: &str, opers: &[Oper], opt_prev_token: &mut Option<Token>
             // that it's not a right associative unary operator. If it is, it's a malformed
             // expression like "2+++4". Note: "2++4" is 2+(+4), i.e. 2 plus unary plus 4 which is valid.
             //
-            // NOTE: I've got rid of post/pre inc/dec. operators but this does handle the case
-            // if I add it back.  Maybe error messages might not be great.
+            // I've got rid of post/pre inc/dec. operators but this does handle the case if I add it back.
+            // Maybe error messages might not be great.
             else if op.assoc == OperAssoc::Right {
                 match opt_prev_token {
                     None => (),
@@ -1063,7 +1058,7 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
                 // Calculate where the open parenthesis must appear, we don't use "idx" because
                 // it includes all the whitespace after the function name. We want to report the
                 // character immediately after the name of the function.
-                // E.g we want position X in "avgX Y+" rather than position Y.
+                // E.g. we want position X in "avgX  Y+" rather than position Y.
                 let idx_open_paren = idx_expr_func + FUNCS[idx_func].name.len();
                 if OPERS[idx_oper].kind != OperKind::OpenParen {
                     let message = format!("at {} for function '{}'", idx_open_paren, &FUNCS[idx_func].name);
@@ -1105,24 +1100,23 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
 
     if expr_ctx.stack_op.is_empty() && expr_ctx.queue_output.is_empty() {
         trace!("'{:?}", ExprErrorKind::EmptyExpr);
-        return Err(ExprError { idx_expr: 0,
-                               kind: ExprErrorKind::EmptyExpr,
-                               message: "".to_string() });
-    }
+        Err(ExprError { idx_expr: 0,
+                        kind: ExprErrorKind::EmptyExpr,
+                        message: "".to_string() })
+    } else {
+        debug!("Op Stack:");
+        for (idx,token) in expr_ctx.stack_op.iter().rev().enumerate() {
+            debug!("  stack[{}]: {:?}", expr_ctx.stack_op.len() - 1 - idx, token);
+        }
+        debug!("Output Queue:");
+        for (idx,token) in expr_ctx.queue_output.iter().enumerate() {
+            debug!("  queue[{}]: {:?}", idx, token);
+        }
 
-    debug!("Op Stack:");
-    for (idx,token) in expr_ctx.stack_op.iter().rev().enumerate() {
-        debug!("  stack[{}]: {:?}", expr_ctx.stack_op.len() - 1 - idx, token);
+        // Pop and move remaining tokens from op stack to the output queue.
+        expr_ctx.pop_move_all_to_output_queue()?;
+        Ok(expr_ctx)
     }
-    debug!("Output Queue:");
-    for (idx,token) in expr_ctx.queue_output.iter().enumerate() {
-        debug!("  queue[{}]: {:?}", idx, token);
-    }
-
-    // Pop and move remaining tokens from op stack to the output queue.
-    expr_ctx.pop_move_all_to_output_queue()?;
-
-    Ok(expr_ctx)
 }
 
 pub fn evaluate(expr_ctx: &mut ExprCtx) -> Result<ExprResult, ExprError> {
