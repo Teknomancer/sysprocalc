@@ -727,8 +727,8 @@ impl ExprCtx {
             let message = format!("for parameter separator '{}' at {}", oper.name, oper_token.idx_expr);
             trace!("{:?} {}", ExprErrorKind::MissingParenthesis, message);
             Err(ExprError { idx_expr: oper_token.idx_expr,
-                             kind: ExprErrorKind::MissingParenthesis,
-                             message })
+                            kind: ExprErrorKind::MissingParenthesis,
+                            message })
         }
     }
 
