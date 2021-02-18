@@ -952,14 +952,10 @@ fn parse_oper(str_expr: &str, opers: &[Oper], opt_prev_token: &mut Option<Token>
             // I've got rid of post/pre inc/dec. operators but this does handle the case if I add it back.
             // Maybe error messages might not be great.
             else if op.assoc == OperAssoc::Right {
-                match opt_prev_token {
-                    None => (),
-                    Some(Token::Oper(OperToken { idx_oper, .. })) => {
-                        if opers[*idx_oper].assoc == OperAssoc::Right {
-                            continue;
-                        }
+                if let Some(Token::Oper(OperToken { idx_oper, .. })) = opt_prev_token {
+                    if opers[*idx_oper].assoc == OperAssoc::Right {
+                        continue;
                     }
-                    _ => (),
                 }
             }
             is_found = true;
