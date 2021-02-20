@@ -79,7 +79,6 @@ fn print_result_num(stream: &mut StandardStream, number: &spceval::Number) -> st
 // Get a character index given a byte index in a string.
 // This ensures the character index is always at a UTF-8 boundary.
 fn byte_index_to_char_index(str_expr: &str, idx_byte: usize) -> usize {
-    debug_assert!(idx_byte < str_expr.as_bytes().len());
     let mut idx_char = 0;
     for i in 0..idx_byte {
         if str_expr.is_char_boundary(i) {
