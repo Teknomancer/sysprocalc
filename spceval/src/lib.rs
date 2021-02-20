@@ -598,24 +598,20 @@ impl ExprCtx {
                                  opt_prev_token: &mut Option<Token>) -> Result<(), ExprError> {
         // Previous token if any cannot be a close parenthesis or a number.
         // E.g "(5)(2)" or "5(2)".
-        let is_oper_or_func_missing = match opt_prev_token {
+        let is_prev_token_invalid = match opt_prev_token {
             Some(Token::Num(_)) => true,
-            Some(Token::Oper(OperToken { idx_oper, .. })) => {
-                OPERS[*idx_oper].kind == OperKind::CloseParen
-            }
+            Some(Token::Oper(OperToken { idx_oper, .. })) => OPERS[*idx_oper].kind == OperKind::CloseParen,
             _ => false,
         };
-
-        if is_oper_or_func_missing {
+        if !is_prev_token_invalid {
+            self.push_to_op_stack(Token::Oper(oper_token), opt_prev_token);
+            Ok(())
+        } else {
             let message = format!("for open parenthesis at '{}'", oper_token.idx_expr);
             trace!("{:?} {}", ExprErrorKind::MissingOperatorOrFunction, message);
             Err(ExprError { idx_expr: oper_token.idx_expr,
                             kind: ExprErrorKind::MissingOperatorOrFunction,
                             message })
-        }
-        else {
-            self.push_to_op_stack(Token::Oper(oper_token), opt_prev_token);
-            Ok(())
         }
     }
 
@@ -1078,8 +1074,8 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
             let message = format!("at {}", idx);
             trace!("{:?} {}", ExprErrorKind::InvalidExpr, message);
             return Err(ExprError { idx_expr: idx,
-                                    kind: ExprErrorKind::InvalidExpr,
-                                    message });
+                                   kind: ExprErrorKind::InvalidExpr,
+                                   message });
         }
         if len_token >= 2 {
             iter_str.nth(len_token - 2);
