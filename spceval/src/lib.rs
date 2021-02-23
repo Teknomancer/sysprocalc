@@ -169,10 +169,10 @@ struct Func<'a> {
 }
 
 // Eq specifies that the equality relationship defined by PartialEq is a total equality.
-impl<'a> Eq for Oper<'a> {}
+impl Eq for Oper<'_> {}
 
 // PartialEq is required by PartialOrd which is required for sorting.
-impl<'a> PartialEq for Oper<'a> {
+impl PartialEq for Oper<'_> {
     fn eq(&self, other: &Oper) -> bool {
            self.kind == other.kind
         && self.prec == other.prec
@@ -186,14 +186,14 @@ impl<'a> PartialEq for Oper<'a> {
 // shorter ones. This is so that while iterating operators, we might want to encounter longer
 // operator names before shorter ones (e.g., "<=" before "<" and "<<" before "<") regardless of
 // their precedence. This is so if we use 'starts_with' and find a match we can stop searching.
-impl<'a> Ord for Oper<'a> {
+impl Ord for Oper<'_> {
     fn cmp(&self, other: &Self) -> Ordering {
         other.name.cmp(&self.name)
     }
 }
 
 // Ord specifies that the ordering relationship defined by PartialOrd is total ordering.
-impl<'a> PartialOrd for Oper<'a> {
+impl PartialOrd for Oper<'_> {
     fn partial_cmp(&self, other: &Oper) -> Option<Ordering> {
         Some(self.cmp(other))
     }
