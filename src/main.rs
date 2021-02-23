@@ -1,4 +1,3 @@
-use spceval::*;
 use bitgroup::*;
 use termcolor::*;
 use rustyline::Editor;
@@ -88,7 +87,7 @@ fn byte_index_to_char_index(str_expr: &str, idx_byte: usize) -> usize {
     idx_char
 }
 
-fn print_error(stream: &mut StandardStream, str_expr: &str, err: ExprError, app_mode: AppMode) -> std::io::Result<()> {
+fn print_error(stream: &mut StandardStream, str_expr: &str, err: spceval::ExprError, app_mode: AppMode) -> std::io::Result<()> {
     // Print the caret indicating where in the expression the error occurs in interactive mode.
     if let AppMode::Interactive = app_mode {
         let idx_char = byte_index_to_char_index(str_expr, err.idx_expr);
