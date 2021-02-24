@@ -13,6 +13,11 @@ categories = ["command-line-utilities"]
 exclude = ["/.github"]
 edition = "2018"
 
+[[bin]]
+name = "spc"
+path = "src/main.rs"
+bench = false
+
 [workspace]
 
 [dependencies]
