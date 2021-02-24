@@ -36,7 +36,7 @@ fn write_color(stream: &mut StandardStream, s: &str, col: Color, is_intense: boo
 
 fn print_result_num(stream: &mut StandardStream, number: &spceval::Number) -> std::io::Result<()> {
     // Format as hex
-    let str_hex_zfill = format!("{:#016x}", number.integer);
+    let str_hex_zfill = format!("{:#018x}", number.integer);
     let str_hex = format!("{:#x}", number.integer);
 
     // Format as octal
