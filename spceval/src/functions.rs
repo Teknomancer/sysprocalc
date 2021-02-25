@@ -1,4 +1,5 @@
-use super::*;
+use super::{Number, ExprError, ExprErrorKind};
+use std::ops::Range;
 
 pub const MAX_FN_PARAMS: u8 = u8::max_value();
 pub static FUNCS: [Func<'static>; 4] = [

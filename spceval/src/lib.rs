@@ -1,15 +1,12 @@
+mod functions;
+mod operators;
+use functions::{FUNCS, Func};
+use operators::{OPERS, Oper, OperKind, OperAssoc};
+
 use std::fmt;
-use std::ops::Range;
-use std::cmp::Ordering;
 use std::collections::VecDeque;
 use std::convert::TryFrom;
 use log::{trace, debug};   // others: {warn,info}
-
-mod functions;
-use functions::*;
-
-mod operators;
-use operators::*;
 
 // Number of tokens to pre-allocate per ExprCtx.
 const PRE_ALLOC_TOKENS: usize = 16;

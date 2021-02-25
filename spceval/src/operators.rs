@@ -1,4 +1,5 @@
-use super::*;
+use super::{Number, ExprError, ExprErrorKind};
+use std::cmp::Ordering;
 
 pub static OPERS: [Oper<'static>; 25] = [
     // Precedence 1 (highest priority)
