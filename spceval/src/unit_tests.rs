@@ -1,4 +1,6 @@
-use super::*;
+use super::parse_num;
+use super::operators::{OPERS, OperKind, OperAssoc};
+use super::functions::{FUNCS, MAX_FN_PARAMS};
 
 #[test]
 fn parse_invalid_nums() {

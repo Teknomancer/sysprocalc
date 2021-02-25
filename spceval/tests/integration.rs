@@ -1,4 +1,4 @@
-use spceval::{self, Number, ExprErrorKind};
+use spceval::{Number, ExprErrorKind};
 
 #[inline(always)]
 fn test_valid_expr(str_expr: &str, res_num: &Number) {
