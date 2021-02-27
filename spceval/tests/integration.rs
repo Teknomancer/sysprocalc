@@ -1,18 +1,12 @@
-use spceval::{Number, ExprErrorKind};
+use spceval::{Number, ExprResult, ExprErrorKind};
 
 #[inline(always)]
 fn test_valid_expr(str_expr: &str, res_num: &Number) {
-    // Parsing and evaluation should both succeed and produce the specified result.
-    let res_parse = spceval::parse(str_expr);
-    assert!(res_parse.is_ok(), "{}", str_expr);
-
-    let mut expr_ctx = res_parse.unwrap();
-    let res_eval = spceval::evaluate(&mut expr_ctx);
+    let res_eval = spceval::evaluate(str_expr);
     assert!(res_eval.is_ok(), "{}", str_expr);
-
-    let res_expr = res_eval.unwrap();
-    match res_expr {
-        spceval::ExprResult::Number(n) => {
+    let res = res_eval.unwrap();
+    match res {
+        ExprResult::Number(n) => {
             assert_eq!(res_num.integer, n.integer, "{}", str_expr);
             assert_eq!(res_num.float, n.float, "{}", str_expr);
         }
@@ -22,25 +16,7 @@ fn test_valid_expr(str_expr: &str, res_num: &Number) {
 
 #[inline(always)]
 fn test_invalid_expr(str_expr: &str, expr_error_kind: ExprErrorKind) {
-    // Either parsing or evaluation must fail and match the specified error.
-    let res_parse = spceval::parse(str_expr);
-    if res_parse.is_ok() {
-        let mut expr_ctx = res_parse.unwrap();
-        let res_eval = spceval::evaluate(&mut expr_ctx);
-        assert!(res_eval.is_err(), "{}", str_expr);
-        assert_eq!(expr_error_kind, res_eval.err().unwrap().kind, "{}", str_expr);
-    } else {
-        assert_eq!(expr_error_kind, res_parse.err().unwrap().kind, "{}", str_expr);
-    }
-}
-
-#[inline(always)]
-fn test_valid_expr_but_eval_fail(str_expr: &str, expr_error_kind: ExprErrorKind) {
-    // Parsing should succeed but evaluation must fail and match the specified error.
-    let res_parse = spceval::parse(str_expr);
-    assert!(res_parse.is_ok(), "{}", str_expr);
-    let mut expr_ctx = res_parse.unwrap();
-    let res_eval = spceval::evaluate(&mut expr_ctx);
+    let res_eval = spceval::evaluate(str_expr);
     assert!(res_eval.is_err(), "{}", str_expr);
     assert_eq!(expr_error_kind, res_eval.err().unwrap().kind, "{}", str_expr);
 }
@@ -363,39 +339,6 @@ fn valid_exprs() {
     ];
     for expr_res in expr_results {
         test_valid_expr(&expr_res.0, &expr_res.1);
-    }
-}
-
-#[test]
-fn valid_exprs_eval_fail() {
-    // These are expressions that are syntactically valid but guaranteed to fail during
-    // evaluation. E.g "1/0" is perfectly valid syntax but fails due to division by zero.
-    // These must never produce errors during the parsing phase.
-    let expr_results = vec![
-        ("0/0", ExprErrorKind::FailedEvaluation),
-        ("1/0", ExprErrorKind::FailedEvaluation),
-        ("2/0", ExprErrorKind::FailedEvaluation),
-        ("0xffffffffffffffff/0", ExprErrorKind::FailedEvaluation),
-
-        //
-        // Functions
-        //
-        // bit
-        ("bit(-1)", ExprErrorKind::FailedEvaluation),
-        ("bit(64)", ExprErrorKind::FailedEvaluation),
-        ("bit(~0)", ExprErrorKind::FailedEvaluation),
-        ("bit(0xffffffffffffffff)", ExprErrorKind::FailedEvaluation),
-        ("bit(0x7fffffffffffffff)", ExprErrorKind::FailedEvaluation),
-
-        // bits
-        ("bits(0,-1)", ExprErrorKind::FailedEvaluation),
-        ("bits(-1,-1)", ExprErrorKind::FailedEvaluation),
-        ("bits(64,0)", ExprErrorKind::FailedEvaluation),
-        ("bits(0,64)", ExprErrorKind::FailedEvaluation),
-        ("bits(~0,0)", ExprErrorKind::FailedEvaluation),
-    ];
-    for expr_res in expr_results {
-        test_valid_expr_but_eval_fail(&expr_res.0, expr_res.1);
     }
 }
 
