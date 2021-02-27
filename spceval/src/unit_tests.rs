@@ -1,4 +1,4 @@
-use super::parse_num;
+use super::{parse_num, parse_expr, evaluate_expr, ExprErrorKind};
 use super::operators::{OPERS, OperKind, OperAssoc};
 use super::functions::{FUNCS, MAX_FN_PARAMS};
 
@@ -277,6 +277,50 @@ fn is_func_table_valid() {
                         "Duplicate function '{}' at {} and {}", func.name, idx, idxcmp);
             }
         }
+    }
+}
+
+#[inline(always)]
+fn test_valid_expr_but_eval_fail(str_expr: &str, expr_error_kind: ExprErrorKind) {
+    // Parsing should succeed but evaluation must fail and match the specified error.
+    let res_parse = parse_expr(str_expr);
+    assert!(res_parse.is_ok(), "{}", str_expr);
+    let mut expr_ctx = res_parse.unwrap();
+    let res_eval = evaluate_expr(&mut expr_ctx);
+    assert!(res_eval.is_err(), "{}", str_expr);
+    assert_eq!(expr_error_kind, res_eval.err().unwrap().kind, "{}", str_expr);
+}
+
+#[test]
+fn valid_exprs_eval_fail() {
+    // These are expressions that are syntactically valid but guaranteed to fail during
+    // evaluation. E.g "1/0" is perfectly valid syntax but fails due to division by zero.
+    // These must never produce errors during the parsing phase.
+    let expr_results = vec![
+        ("0/0", ExprErrorKind::FailedEvaluation),
+        ("1/0", ExprErrorKind::FailedEvaluation),
+        ("2/0", ExprErrorKind::FailedEvaluation),
+        ("0xffffffffffffffff/0", ExprErrorKind::FailedEvaluation),
+
+        //
+        // Functions
+        //
+        // bit
+        ("bit(-1)", ExprErrorKind::FailedEvaluation),
+        ("bit(64)", ExprErrorKind::FailedEvaluation),
+        ("bit(~0)", ExprErrorKind::FailedEvaluation),
+        ("bit(0xffffffffffffffff)", ExprErrorKind::FailedEvaluation),
+        ("bit(0x7fffffffffffffff)", ExprErrorKind::FailedEvaluation),
+
+        // bits
+        ("bits(0,-1)", ExprErrorKind::FailedEvaluation),
+        ("bits(-1,-1)", ExprErrorKind::FailedEvaluation),
+        ("bits(64,0)", ExprErrorKind::FailedEvaluation),
+        ("bits(0,64)", ExprErrorKind::FailedEvaluation),
+        ("bits(~0,0)", ExprErrorKind::FailedEvaluation),
+    ];
+    for expr_res in expr_results {
+        test_valid_expr_but_eval_fail(&expr_res.0, expr_res.1);
     }
 }
 

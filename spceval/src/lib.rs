@@ -653,7 +653,7 @@ fn verify_open_paren_for_func(oper_token: &OperToken, opt_prev_token: &Option<To
     }
 }
 
-pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
+fn parse_expr(str_expr: &str) -> Result<ExprCtx, ExprError> {
     // We iterate by characters here because we want to know the index of every token.
     // The index is primarily for reporting parsing and evaluation errors.
     // If we didn't need to store the index, we can easily loop, trim_start whitespaces,
@@ -739,7 +739,7 @@ pub fn parse(str_expr: &str) -> Result<ExprCtx, ExprError> {
     }
 }
 
-pub fn evaluate(expr_ctx: &mut ExprCtx) -> Result<ExprResult, ExprError> {
+fn evaluate_expr(expr_ctx: &mut ExprCtx) -> Result<ExprResult, ExprError> {
     // Pop tokens from the output queue to an output stack and process them.
     let mut stack_output: Vec<Number> = Vec::with_capacity(PRE_ALLOC_TOKENS);
     while let Some(token) = expr_ctx.queue_output.pop_front() {
@@ -787,6 +787,11 @@ pub fn evaluate(expr_ctx: &mut ExprCtx) -> Result<ExprResult, ExprError> {
         trace!("{}", message);
         Err(ExprError { idx_expr: 0, kind: ExprErrorKind::InvalidExpr, message })
     }
+}
+
+pub fn evaluate(str_expr: &str) -> Result<ExprResult, ExprError> {
+    let mut expr_ctx = parse_expr(str_expr)?;
+    evaluate_expr(&mut expr_ctx)
 }
 
 #[cfg(test)]
