@@ -111,7 +111,7 @@ enum Token {
     Func(FuncToken),
 }
 
-pub struct ExprCtx {
+struct ExprCtx {
     queue_output: VecDeque<Token>,
     stack_op: Vec<Token>,
 }
