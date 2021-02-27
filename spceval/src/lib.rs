@@ -11,7 +11,7 @@ use log::{trace, debug};   // others: {warn,info}
 // Number of tokens to pre-allocate per ExprCtx.
 const PRE_ALLOC_TOKENS: usize = 16;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum ExprErrorKind {
     EmptyExpr,
@@ -29,14 +29,22 @@ pub enum ExprErrorKind {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExprError {
-    pub idx_expr: usize,
-    pub kind: ExprErrorKind,
-    pub message: String,
+    idx_expr: usize,
+    kind: ExprErrorKind,
+    message: String,
 }
 
 impl ExprError {
-    pub fn kind(&self) -> &ExprErrorKind {
-        &self.kind
+    pub fn index(&self) -> usize {
+        self.idx_expr
+    }
+
+    pub fn kind(&self) -> ExprErrorKind {
+        self.kind
+    }
+
+    pub fn message(&self) -> &str {
+        &self.message
     }
 }
 
