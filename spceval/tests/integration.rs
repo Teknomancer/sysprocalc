@@ -13,7 +13,7 @@ fn test_valid_expr(str_expr: &str, num_expected: &Number) {
 fn test_invalid_expr(str_expr: &str, expr_error_kind: ExprErrorKind) {
     let res_eval = spceval::evaluate(str_expr);
     assert!(res_eval.is_err(), "{}", str_expr);
-    assert_eq!(expr_error_kind, res_eval.err().unwrap().kind, "{}", str_expr);
+    assert_eq!(expr_error_kind, res_eval.err().unwrap().kind(), "{}", str_expr);
 }
 
 #[test]

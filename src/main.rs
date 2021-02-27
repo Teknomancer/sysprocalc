@@ -90,7 +90,7 @@ fn byte_index_to_char_index(str_expr: &str, idx_byte: usize) -> usize {
 fn print_error(stream: &mut StandardStream, str_expr: &str, err: spceval::ExprError, app_mode: AppMode) -> std::io::Result<()> {
     // Print the caret indicating where in the expression the error occurs in interactive mode.
     if let AppMode::Interactive = app_mode {
-        let idx_char = byte_index_to_char_index(str_expr, err.idx_expr);
+        let idx_char = byte_index_to_char_index(str_expr, err.index());
         write!(stream, "{:width$}", " ", width = idx_char + USER_PROMPT.len())?;
         write_color(stream, "^", Color::Red, true)?;
         writeln!(stream)?;
