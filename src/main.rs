@@ -109,12 +109,7 @@ fn print_error(stream: &mut StandardStream, str_expr: &str, err: spceval::ExprEr
 #[inline(always)]
 fn parse_and_eval_expr_internal(stream: &mut StandardStream, str_expr: &str, app_mode: AppMode) -> std::io::Result<()> {
     match spceval::evaluate(str_expr) {
-        Ok(expr_result) => {
-            match expr_result {
-                spceval::ExprResult::Number(n) => print_result_num(stream, &n)?,
-                spceval::ExprResult::Command(c) => println!("Result: {}", c),
-            }
-        }
+        Ok(number) => print_result_num(stream, &number)?,
         Err(e) => print_error(stream, str_expr, e, app_mode)?,
     }
     Ok(())
