@@ -111,11 +111,6 @@ enum Token {
     Func(FuncToken),
 }
 
-pub enum ExprResult {
-    Number(Number),
-    Command(String),
-}
-
 pub struct ExprCtx {
     queue_output: VecDeque<Token>,
     stack_op: Vec<Token>,
@@ -739,7 +734,7 @@ fn parse_expr(str_expr: &str) -> Result<ExprCtx, ExprError> {
     }
 }
 
-fn evaluate_expr(expr_ctx: &mut ExprCtx) -> Result<ExprResult, ExprError> {
+fn evaluate_expr(expr_ctx: &mut ExprCtx) -> Result<Number, ExprError> {
     // Pop tokens from the output queue to an output stack and process them.
     let mut stack_output: Vec<Number> = Vec::with_capacity(PRE_ALLOC_TOKENS);
     while let Some(token) = expr_ctx.queue_output.pop_front() {
@@ -780,8 +775,8 @@ fn evaluate_expr(expr_ctx: &mut ExprCtx) -> Result<ExprResult, ExprError> {
         }
     }
 
-    if let Some(token) = stack_output.pop() {
-        Ok(ExprResult::Number(token))
+    if let Some(n) = stack_output.pop() {
+        Ok(n)
     } else {
         let message = "evaluation failed".to_string();
         trace!("{}", message);
@@ -789,7 +784,7 @@ fn evaluate_expr(expr_ctx: &mut ExprCtx) -> Result<ExprResult, ExprError> {
     }
 }
 
-pub fn evaluate(str_expr: &str) -> Result<ExprResult, ExprError> {
+pub fn evaluate(str_expr: &str) -> Result<Number, ExprError> {
     let mut expr_ctx = parse_expr(str_expr)?;
     evaluate_expr(&mut expr_ctx)
 }

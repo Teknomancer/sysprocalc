@@ -1,17 +1,12 @@
-use spceval::{Number, ExprResult, ExprErrorKind};
+use spceval::{Number, ExprErrorKind};
 
 #[inline(always)]
-fn test_valid_expr(str_expr: &str, res_num: &Number) {
+fn test_valid_expr(str_expr: &str, num_expected: &Number) {
     let res_eval = spceval::evaluate(str_expr);
     assert!(res_eval.is_ok(), "{}", str_expr);
-    let res = res_eval.unwrap();
-    match res {
-        ExprResult::Number(n) => {
-            assert_eq!(res_num.integer, n.integer, "{}", str_expr);
-            assert_eq!(res_num.float, n.float, "{}", str_expr);
-        }
-        _ => (),
-    }
+    let num_computed = res_eval.unwrap();
+    assert_eq!(num_expected.integer, num_computed.integer, "{}", str_expr);
+    assert_eq!(num_expected.float, num_computed.float, "{}", str_expr);
 }
 
 #[inline(always)]
