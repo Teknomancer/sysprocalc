@@ -1,6 +1,6 @@
 [package]
 name = "bitgroup"
-version = "1.0.0"
+version = "0.0.1"
 authors = ["Ramshankar <v.ramshankar@gmail.com>"]
 description = "System Programmer's Calculator's BitGroup Library"
 license = "MIT OR Apache-2.0"
