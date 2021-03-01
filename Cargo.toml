@@ -1,8 +1,11 @@
 [package]
 name = "sysprocalc"
-version = "1.0.0"
+version = "0.0.1"
 authors = ["Ramshankar <v.ramshankar@gmail.com>"]
-description = "System Programmer's Calculator"
+description = """
+A command-line calculator for evaluating expressions with support for
+x86/x64 register descriptions and common unit conversions for system programmers.
+"""
 # documentation =
 homepage = "https://github.com/Teknomancer/sysprocalc"
 repository = "https://github.com/Teknomancer/sysprocalc"

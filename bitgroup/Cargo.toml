@@ -2,7 +2,7 @@
 name = "bitgroup"
 version = "0.0.1"
 authors = ["Ramshankar <v.ramshankar@gmail.com>"]
-description = "System Programmer's Calculator's BitGroup Library"
+description = "System Programmer's Calculator's BitGroup Library for describing bits of hardware registers."
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/Teknomancer/sysprocalc"
 
