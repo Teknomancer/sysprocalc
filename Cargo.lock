@@ -19,7 +19,7 @@ checksum = "cf1de2fe8c75bc145a2f577add951f8134889b4795d47466a54a5c846d691693"
 
 [[package]]
 name = "bitgroup"
-version = "1.0.0"
+version = "0.0.1"
 dependencies = [
  "log",
 ]
@@ -162,14 +162,14 @@ checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
 
 [[package]]
 name = "spceval"
-version = "1.0.0"
+version = "0.0.1"
 dependencies = [
  "log",
 ]
 
 [[package]]
 name = "sysprocalc"
-version = "1.0.0"
+version = "0.0.1"
 dependencies = [
  "atty",
  "bitgroup",
