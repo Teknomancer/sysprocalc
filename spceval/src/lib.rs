@@ -530,7 +530,7 @@ fn parse_num(str_expr: &str) -> (Option<Number>, usize) {
             // No numeric characters with/without prefix, it's invalid (e.g "0x", "0n" or "/").
             (None, 0)
         }
-    } else if str_num.as_str().ends_with('.') {
+    } else if str_num.ends_with('.') {
         // Number ends in a decimal point, return invalid.
         (None, 0)
     }
