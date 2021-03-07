@@ -36,7 +36,7 @@ fn write_color(stream: &mut StandardStream, message: &str, col: Color, is_intens
     Ok(())
 }
 
-fn print_result_num(stream: &mut StandardStream, number: &Number) -> std::io::Result<()> {
+fn print_result(stream: &mut StandardStream, number: &Number) -> std::io::Result<()> {
     // Format as hex
     let str_hex_zfill = format!("{:#018x}", number.integer);
     let str_hex = format!("{:#x}", number.integer);
@@ -115,7 +115,7 @@ fn evaluate_expr(stream: &mut StandardStream, str_expr: &str, app_mode: AppMode)
     }
 
     match spceval::evaluate(str_expr) {
-        Ok(number) => print_result_num(stream, &number)?,
+        Ok(number) => print_result(stream, &number)?,
         Err(e) => print_error(stream, str_expr, e, app_mode)?,
     }
 
@@ -158,9 +158,10 @@ fn test_bitgroup_desc(stream: &mut StandardStream) -> std::io::Result<()> {
 fn main() -> std::io::Result<()> {
     // Create a logger but keep logging disabled to shut up rustyline's logging.
     // Need to find a way to disable rustyline's logger at compile time...
-    #[cfg(debug_assertions)]
-    if let Err(e) = logger::init(log::LevelFilter::Off) {
-        println!("{} {:?}", ERR_INIT_LOGGER, e);
+    if cfg!(debug_assertions) {
+        if let Err(e) = logger::init(log::LevelFilter::Off) {
+            println!("{} {:?}", ERR_INIT_LOGGER, e);
+        }
     }
 
     // Detect presence of a terminal to determine use of color output.
@@ -205,6 +206,7 @@ fn main() -> std::io::Result<()> {
             }
         }
     }
+
     Ok(())
 }
 
