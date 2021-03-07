@@ -209,9 +209,9 @@ pub fn fmt_bit_group(bits: &BitGroup) -> Result<String, BitGroupError> {
 #[test]
 fn test_valid_bit_group() {
     let gen_bits = BitGroup::new(
-        "generic".to_owned(),
-        "x86".to_owned(),
-        "cpu".to_owned(),
+        String::from("generic"),
+        String::from("x86"),
+        String::from("cpu"),
         ByteOrder::LittleEndian,
         64, vec![],
         vec![
