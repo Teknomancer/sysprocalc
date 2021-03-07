@@ -480,6 +480,7 @@ fn parse_num(str_expr: &str) -> (Option<Number>, usize) {
     let mut str_num = String::with_capacity(64);
     let mut has_dec_pt = false;
     let mut is_fp_exp_notation = false;
+    let mut is_fp_exp_sign = false;
     debug_assert!(radix != 0);
 
     // 'consumed' should contain the number of characters consumed by parsing this number
@@ -496,13 +497,14 @@ fn parse_num(str_expr: &str) -> (Option<Number>, usize) {
             } else if chr == '.' && radix == 10 && !has_dec_pt {
                 has_dec_pt = true;
                 str_num.push(chr);
-            } else if has_dec_pt && (chr == 'e' || chr == 'E') {
+            } else if (chr == 'e' || chr == 'E') && has_dec_pt  {
                 // Floating point exponent notation (e.g., "2.5e10" or "2.5E-10").
                 str_num.push(chr);
                 is_fp_exp_notation = true;
-            } else if is_fp_exp_notation && (chr == '+' || chr == '-') {
+            } else if (chr == '+' || chr == '-') && is_fp_exp_notation && !is_fp_exp_sign {
                 // Floating point exponent notation (e.g, +/- power-of character).
                 str_num.push(chr);
+                is_fp_exp_sign = true;
             } else {
                 consumed -= 1;
                 break;
