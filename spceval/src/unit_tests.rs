@@ -32,6 +32,7 @@ fn parse_invalid_nums() {
                         "2.5ee++4",
                         "2.5e--5",
                         "2..5",
+                        "0b11111111111111111111111111111111111111111111111111111111111111111",  // tests 1 more than 64 1's.
     ];
     // Make sure we never parse operators as valid numbers.
     for i in 0..OPERS.len() {
