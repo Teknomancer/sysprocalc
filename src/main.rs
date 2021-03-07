@@ -1,6 +1,8 @@
 use bitgroup::*;
-use termcolor::*;
 use rustyline::Editor;
+use spceval::{Number, ExprError};
+use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
+
 use std::env;
 use std::io::Write;
 use std::ops::Range;
@@ -34,7 +36,7 @@ fn write_color(stream: &mut StandardStream, message: &str, col: Color, is_intens
     Ok(())
 }
 
-fn print_result_num(stream: &mut StandardStream, number: &spceval::Number) -> std::io::Result<()> {
+fn print_result_num(stream: &mut StandardStream, number: &Number) -> std::io::Result<()> {
     // Format as hex
     let str_hex_zfill = format!("{:#018x}", number.integer);
     let str_hex = format!("{:#x}", number.integer);
@@ -87,7 +89,7 @@ fn byte_index_to_char_index(str_expr: &str, idx_byte: usize) -> usize {
     idx_char
 }
 
-fn print_error(stream: &mut StandardStream, str_expr: &str, err: spceval::ExprError, app_mode: AppMode) -> std::io::Result<()> {
+fn print_error(stream: &mut StandardStream, str_expr: &str, err: ExprError, app_mode: AppMode) -> std::io::Result<()> {
     // Print the caret indicating where in the expression the error occurs in interactive mode.
     if let AppMode::Interactive = app_mode {
         let idx_char = byte_index_to_char_index(str_expr, err.index());
