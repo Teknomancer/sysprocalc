@@ -7,6 +7,7 @@ use std::fmt;
 use std::collections::VecDeque;
 use std::convert::TryFrom;
 use log::{trace, debug};   // others: {warn,info}
+use arrayvec::ArrayString;
 
 // Number of tokens to pre-allocate per ExprCtx.
 const PRE_ALLOC_TOKENS: usize = 16;
@@ -477,7 +478,13 @@ fn parse_num(str_expr: &str) -> (Option<Number>, usize) {
     // of the length of any prefix that's already part of the expression in 'len_prefix' (as
     // done above). This also has a side effect in making the loop below faster as we eliminate
     // checks that doesn't need to happen on every iteration.
-    let mut str_num = String::with_capacity(64);        // TODO: Replace with arrayvec::ArrayString
+    const MAX_DIGITS: usize = 64 + b"0b".len();
+    const STR_SIZE: usize = 100;        // What the absolute hell... Why can't I create an ArrayVec with 66 chars?
+                                        // Compiler says the trait bound `[_; 66]: Array` is not satisfied and lists a few
+                                        // like  <[T; 0] as Array>, <[T; 100] as Array> <[T; 1024] as Array> etc. so I'm
+                                        // choosing the next largest, i.e. 100. This is bizzare because I cannot find in the
+                                        // sources of arrayvec such a restriction. Sigh.
+    let mut str_num = ArrayString::<[_;STR_SIZE]>::new();
     let mut has_dec_pt = false;
     let mut is_fp_exp_notation = false;
     let mut is_fp_exp_sign = false;
@@ -491,6 +498,9 @@ fn parse_num(str_expr: &str) -> (Option<Number>, usize) {
     let mut consumed = len_prefix;
     for chr in iter_expr {
         consumed += 1;
+        if consumed > MAX_DIGITS {
+            return (None, 0);
+        }
         if !chr.is_whitespace() {
             if chr.is_digit(radix) {
                 str_num.push(chr);
@@ -520,7 +530,7 @@ fn parse_num(str_expr: &str) -> (Option<Number>, usize) {
             // No numeric characters with/without prefix, it's invalid (e.g "0x", "0n" or "/").
             (None, 0)
         }
-    } else if str_num.ends_with('.') {
+    } else if str_num.as_str().ends_with('.') {
         // Number ends in a decimal point, return invalid.
         (None, 0)
     }
