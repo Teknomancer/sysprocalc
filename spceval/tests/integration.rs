@@ -331,6 +331,8 @@ fn valid_exprs() {
         ("0*5", Number { integer: 0, float: 0.0 }),
         ("0/5", Number { integer: 0, float: 0.0 }),
         ("0x f f f f + 0xf ff f", Number { integer: 0x1fffe, float: 0x1fffeu64 as f64 }),
+        ("2.5e+3+3", Number { integer: 2503, float: 2503.0 } ),
+        ("2.5e+3-4", Number { integer: 2496, float: 2496.0 } ),
     ];
     for expr_res in expr_results {
         test_valid_expr(&expr_res.0, &expr_res.1);
@@ -392,6 +394,8 @@ fn invalid_exprs() {
         ("0 x123", ExprErrorKind::InvalidExpr),
         ("0 n123", ExprErrorKind::InvalidExpr),
         ("0 o1011", ExprErrorKind::InvalidExpr),
+        ("2.5e++4", ExprErrorKind::InvalidExpr),
+        ("2.5e--1", ExprErrorKind::InvalidExpr),
 
         // General function syntax
         (")avg(5,3,5)", ExprErrorKind::MismatchParenthesis),
