@@ -501,6 +501,7 @@ fn parse_num(str_expr: &str) -> (Option<Number>, usize) {
         if consumed > MAX_DIGITS {
             return (None, 0);
         }
+
         if !chr.is_whitespace() {
             if chr.is_digit(radix) {
                 str_num.push(chr);
