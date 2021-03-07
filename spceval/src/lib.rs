@@ -9,6 +9,8 @@ use std::convert::TryFrom;
 use log::{trace, debug};   // others: {warn,info}
 use arrayvec::ArrayString;
 
+extern crate static_assertions as sa;
+
 // Number of tokens to pre-allocate per ExprCtx.
 const PRE_ALLOC_TOKENS: usize = 16;
 
@@ -473,22 +475,20 @@ fn parse_num(str_expr: &str) -> (Option<Number>, usize) {
         }
     }
 
+    const MAX_DIGITS: usize = 64 + b"0b".len();
+    const STR_SIZE: usize = 72; // Allowed array sizes (for u8) in https://docs.rs/arrayvec/0.3.25/src/arrayvec/array.rs.html
+
     // Rust string to number conversion functions do not grok prefixes (e.g., "0xf" will have
     // to be fed to it as just "f"). So we aggregate the number into 'str_num' and keep track
     // of the length of any prefix that's already part of the expression in 'len_prefix' (as
     // done above). This also has a side effect in making the loop below faster as we eliminate
     // checks that doesn't need to happen on every iteration.
-    const MAX_DIGITS: usize = 64 + b"0b".len();
-    const STR_SIZE: usize = 100;        // What the absolute hell... Why can't I create an ArrayVec with 66 chars?
-                                        // Compiler says the trait bound `[_; 66]: Array` is not satisfied and lists a few
-                                        // like  <[T; 0] as Array>, <[T; 100] as Array> <[T; 1024] as Array> etc. so I'm
-                                        // choosing the next largest, i.e. 100. This is bizzare because I cannot find in the
-                                        // sources of arrayvec such a restriction. Sigh.
     let mut str_num = ArrayString::<[_;STR_SIZE]>::new();
     let mut has_dec_pt = false;
     let mut is_fp_exp_notation = false;
     let mut is_fp_exp_sign = false;
     debug_assert!(radix != 0);
+    sa::const_assert!(MAX_DIGITS < STR_SIZE);   // Code below relies on this otherwise we risk panicking at runtime.
 
     // 'consumed' should contain the number of characters consumed by parsing this number
     // including whitespace. We count all the characters ourselves since we need to count

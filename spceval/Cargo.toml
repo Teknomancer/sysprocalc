@@ -13,4 +13,4 @@ edition = "2018"
 [dependencies]
 log = "0.4"
 arrayvec = "0.5.2"
-
+static_assertions = "1.1.0"
