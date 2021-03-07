@@ -25,11 +25,11 @@ enum AppMode {
     NonInteractive,
 }
 
-fn write_color(stream: &mut StandardStream, s: &str, col: Color, is_intense: bool) -> std::io::Result<()> {
+fn write_color(stream: &mut StandardStream, message: &str, col: Color, is_intense: bool) -> std::io::Result<()> {
     stream.set_color(ColorSpec::new()
                      .set_fg(Some(col))
                      .set_intense(is_intense))?;
-    write!(stream, "{}", s)?;
+    write!(stream, "{}", message)?;
     stream.reset()?;
     Ok(())
 }
