@@ -106,21 +106,15 @@ fn print_error(stream: &mut StandardStream, str_expr: &str, err: spceval::ExprEr
     Ok(())
 }
 
-#[inline(always)]
-fn parse_and_eval_expr_internal(stream: &mut StandardStream, str_expr: &str, app_mode: AppMode) -> std::io::Result<()> {
-    match spceval::evaluate(str_expr) {
-        Ok(number) => print_result_num(stream, &number)?,
-        Err(e) => print_error(stream, str_expr, e, app_mode)?,
-    }
-    Ok(())
-}
-
-fn parse_and_eval_expr(stream: &mut StandardStream, str_expr: &str, app_mode: AppMode) -> std::io::Result<()> {
+fn evaluate_expr(stream: &mut StandardStream, str_expr: &str, app_mode: AppMode) -> std::io::Result<()> {
     // Enable trace level logging while parsing and evaluating using spceval.
     #[cfg(debug_assertions)]
     log::set_max_level(log::LevelFilter::Trace);
 
-    parse_and_eval_expr_internal(stream, str_expr, app_mode)?;
+    match spceval::evaluate(str_expr) {
+        Ok(number) => print_result_num(stream, &number)?,
+        Err(e) => print_error(stream, str_expr, e, app_mode)?,
+    }
 
     // Disable logging.
     #[cfg(debug_assertions)]
@@ -176,37 +170,37 @@ fn main() -> std::io::Result<()> {
     let mut stdout = StandardStream::stdout(color_choice);
     let args: Vec<String> = env::args().collect();
 
-    // Command-line mode, evaluate and quit.
     if args.len() > 1 {
-        parse_and_eval_expr(&mut stdout, args.get(1).unwrap(), AppMode::NonInteractive)?;
-        return Ok(());
-    }
+        // Command-line mode.
+        evaluate_expr(&mut stdout, args.get(1).unwrap(), AppMode::NonInteractive)?;
+    } else {
+        // Interactive mode.
+        let mut line_editor = Editor::<()>::new();
+        loop {
+            let res_readline = line_editor.readline(USER_PROMPT);
+            if let Ok(str_input) = res_readline {
+                let str_expr = str_input.as_str();
+                line_editor.add_history_entry(str_expr);
 
-    // Interactive mode.
-    let mut line_editor = Editor::<()>::new();
-    loop {
-        let res_readline = line_editor.readline(USER_PROMPT);
-        if let Ok(str_input) = res_readline {
-            let str_expr = str_input.as_str();
-            line_editor.add_history_entry(str_expr);
-
-            if !str_expr.is_empty() {
-                match str_expr {
-                    "q" | "quit" | "exit" => return Ok(()),
-                    "efer" => {
-                        test_bitgroup_desc(&mut stdout)?;
-                        continue;
+                if !str_expr.is_empty() {
+                    match str_expr {
+                        "q" | "quit" | "exit" => return Ok(()),
+                        "efer" => {
+                            test_bitgroup_desc(&mut stdout)?;
+                            continue;
+                        }
+                        _ => (),
                     }
-                    _ => (),
+                    evaluate_expr(&mut stdout, str_expr, AppMode::Interactive)?;
                 }
-                parse_and_eval_expr(&mut stdout, str_expr, AppMode::Interactive)?;
+            } else {
+                let mut stderr = StandardStream::stderr(color_choice);
+                write_color(&mut stderr, EXITING_APP, Color::Red, true)?;
+                writeln!(&mut stderr, " {:?}", res_readline.err().unwrap())?;
+                break;
             }
-        } else {
-            let mut stderr = StandardStream::stderr(color_choice);
-            write_color(&mut stderr, EXITING_APP, Color::Red, true)?;
-            writeln!(&mut stderr, " {:?}", res_readline.err().unwrap())?;
-            return Ok(());
         }
     }
+    Ok(())
 }
 
