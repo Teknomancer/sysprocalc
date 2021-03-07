@@ -110,8 +110,9 @@ fn print_error(stream: &mut StandardStream, str_expr: &str, err: ExprError, app_
 
 fn evaluate_expr(stream: &mut StandardStream, str_expr: &str, app_mode: AppMode) -> std::io::Result<()> {
     // Enable trace level logging while parsing and evaluating using spceval.
-    #[cfg(debug_assertions)]
-    log::set_max_level(log::LevelFilter::Trace);
+    if cfg!(debug_assertions) {
+        log::set_max_level(log::LevelFilter::Trace);
+    }
 
     match spceval::evaluate(str_expr) {
         Ok(number) => print_result_num(stream, &number)?,
@@ -119,8 +120,9 @@ fn evaluate_expr(stream: &mut StandardStream, str_expr: &str, app_mode: AppMode)
     }
 
     // Disable logging.
-    #[cfg(debug_assertions)]
-    log::set_max_level(log::LevelFilter::Off);
+    if cfg!(debug_assertions) {
+        log::set_max_level(log::LevelFilter::Off);
+    }
     Ok(())
 }
 
@@ -177,12 +179,12 @@ fn main() -> std::io::Result<()> {
         evaluate_expr(&mut stdout, args.get(1).unwrap(), AppMode::NonInteractive)?;
     } else {
         // Interactive mode.
-        let mut line_editor = Editor::<()>::new();
+        let mut editor = Editor::<()>::new();
         loop {
-            let res_readline = line_editor.readline(USER_PROMPT);
-            if let Ok(str_input) = res_readline {
+            let res_line = editor.readline(USER_PROMPT);
+            if let Ok(str_input) = res_line {
                 let str_expr = str_input.as_str();
-                line_editor.add_history_entry(str_expr);
+                editor.add_history_entry(str_expr);
 
                 if !str_expr.is_empty() {
                     match str_expr {
@@ -198,7 +200,7 @@ fn main() -> std::io::Result<()> {
             } else {
                 let mut stderr = StandardStream::stderr(color_choice);
                 write_color(&mut stderr, EXITING_APP, Color::Red, true)?;
-                writeln!(&mut stderr, " {:?}", res_readline.err().unwrap())?;
+                writeln!(&mut stderr, " {:?}", res_line.err().unwrap())?;
                 break;
             }
         }
