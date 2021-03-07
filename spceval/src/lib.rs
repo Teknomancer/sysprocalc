@@ -48,6 +48,17 @@ impl ExprError {
     }
 }
 
+pub fn evaluate(str_expr: &str) -> Result<Number, ExprError> {
+    let mut expr_ctx = parse_expr(str_expr)?;
+    evaluate_expr(&mut expr_ctx)
+}
+
+#[derive(Default, Copy, Clone, Debug)]
+pub struct Number {
+    pub integer: u64,
+    pub float: f64,
+}
+
 impl fmt::Display for ExprError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let str_errkind = match self.kind {
@@ -65,12 +76,6 @@ impl fmt::Display for ExprError {
         };
         write!(f, "{} {}", str_errkind, self.message)
     }
-}
-
-#[derive(Default, Copy, Clone, Debug)]
-pub struct Number {
-    pub integer: u64,
-    pub float: f64,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -218,11 +223,7 @@ impl ExprCtx {
         }
     }
 
-    fn collect_params(
-        &mut self,
-        params: usize,
-        stack_output: &mut Vec<Number>
-    ) -> Option<Vec<Number>> {
+    fn collect_params(&mut self, params: usize, stack_output: &mut Vec<Number> ) -> Option<Vec<Number>> {
         debug_assert!(params > 0);
         let stack_len = stack_output.len();
         if stack_len >= params {
@@ -234,11 +235,7 @@ impl ExprCtx {
         }
     }
 
-    fn process_open_paren(
-        &mut self,
-        oper_token: OperToken,
-        opt_prev_token: &Option<Token>
-    ) -> Result<(), ExprError> {
+    fn process_open_paren(&mut self, oper_token: OperToken, opt_prev_token: &Option<Token> ) -> Result<(), ExprError> {
         // Previous token if any cannot be a close parenthesis or a number.
         // E.g "(5)(2)" or "5(2)".
         let is_prev_token_invalid = match opt_prev_token {
@@ -258,17 +255,14 @@ impl ExprCtx {
         }
     }
 
-    fn process_close_paren(
-        &mut self,
-        oper_token: OperToken,
-        opt_prev_token: &Option<Token>
-    ) -> Result<(), ExprError> {
+    fn process_close_paren(&mut self, oper_token: OperToken, opt_prev_token: &Option<Token> ) -> Result<(), ExprError> {
         // Find matching open parenthesis.
         let mut is_open_paren_found = false;
         while let Some(ref_token) = self.stack_op.last() {
             match ref_token {
                 Token::Oper(OperToken { idx_oper, .. })
-                        if OPERS[*idx_oper].kind == OperKind::OpenParen => {
+                    if OPERS[*idx_oper].kind == OperKind::OpenParen =>
+                {
                     is_open_paren_found = true;
                     break;
                 }
@@ -314,10 +308,7 @@ impl ExprCtx {
         }
     }
 
-    fn process_param_sep(
-        &mut self,
-        oper_token: OperToken
-    ) -> Result<(), ExprError> {
+    fn process_param_sep(&mut self, oper_token: OperToken) -> Result<(), ExprError> {
         // Find the previous open parenthesis.
         let oper = &OPERS[oper_token.idx_oper];
         while let Some(ref_token) = self.stack_op.last() {
@@ -328,11 +319,11 @@ impl ExprCtx {
             }
         }
 
-        // If a token exists at the top of the op stack, it's an open parenthesis (guaranteed by loop above).
+        // If a token exists at the top of the stack, it's an open parenthesis (guaranteed by loop above).
         // We debug asserted below for paranoia.
         if self.stack_op.last().is_some() {
             let paren_token = self.stack_op.pop().unwrap();
-            #[cfg(debug_assertions)]
+            if cfg!(debug_assertions)
             {
                 let oper_paren = OperToken::try_from(paren_token).unwrap();
                 debug_assert!(OPERS[oper_paren.idx_oper].kind == OperKind::OpenParen);
@@ -363,67 +354,69 @@ impl ExprCtx {
         }
     }
 
-    fn process_oper(
-        &mut self,
-        oper_token: OperToken,
-        opt_prev_token: &Option<Token>
-    ) -> Result<(), ExprError> {
+    fn process_regular_oper(&mut self, oper_token: OperToken, opt_prev_token: &Option<Token>) -> Result<(), ExprError> {
+        let oper = &OPERS[oper_token.idx_oper];
+        // Validate left associative operator.
+        // We could squeeze this into parse_oper() but doing it here gives us better
+        // error messages in some cases (see integration test).
+        if oper.assoc == OperAssoc::Left {
+            // Assuming we've parsed left-associative operator "<<".
+            // Rules for previous token are:
+            // 1. It must exist. E.g. "<< 2" is invalid but we've already handled this in parse_oper().
+            //    Debug asserted below for parnoia.
+            // 2. Must not be an operator (although close parenthesis is allowed).
+            //    E.g. "/ << 2" and "( << 2" are always invalid but ") << 2" may be part of a valid expr.
+            // 3. Must not be a right associative operator.
+            debug_assert!(opt_prev_token.is_some());
+            match opt_prev_token {
+                Some(Token::Oper(OperToken { idx_oper, .. }))
+                    if OPERS[*idx_oper].kind != OperKind::CloseParen =>
+                {
+                    let message = format!("for operator '{}' at {}", oper.name, oper_token.idx_expr);
+                    trace!("{:?} {}", ExprErrorKind::MissingOperand, message);
+                    return Err(ExprError { idx_expr: oper_token.idx_expr,
+                                           kind: ExprErrorKind::MissingOperand,
+                                           message });
+                }
+                _ => (),
+            }
+        }
+
+        while let Some(ref_token) = self.stack_op.last() {
+            match ref_token {
+                Token::Oper(OperToken { idx_oper, .. }) => {
+                    let token_stack_oper = &OPERS[*idx_oper];
+                    debug_assert!(token_stack_oper.kind != OperKind::CloseParen);
+                    if token_stack_oper.kind == OperKind::OpenParen {
+                        break;
+                    } else if token_stack_oper.prec < oper.prec
+                               || (oper.assoc == OperAssoc::Left && oper.prec == token_stack_oper.prec) {
+                        // Pop operator with higher priority (depending on associativity) to the output queue.
+                        self.pop_to_output_queue();
+                    } else {
+                        break;
+                    }
+                }
+
+                // Pop functions (which always take priority over a normal operators) to the output queue.
+                Token::Func(_) => self.pop_to_output_queue(),
+
+                _ => break,
+            }
+        }
+        self.stack_op.push(Token::Oper(oper_token));
+        Ok(())
+    }
+
+    #[inline]
+    fn process_oper(&mut self, oper_token: OperToken, opt_prev_token: &Option<Token> ) -> Result<(), ExprError> {
         debug_assert!(oper_token.idx_oper < OPERS.len());
         let oper = &OPERS[oper_token.idx_oper];
         match oper.kind {
             OperKind::OpenParen => self.process_open_paren(oper_token, opt_prev_token)?,
             OperKind::CloseParen => self.process_close_paren(oper_token, opt_prev_token)?,
             OperKind::ParamSep => self.process_param_sep(oper_token)?,
-            _ => {
-                // Validate left associative operator.
-                // We could squeeze this into parse_oper() but doing it here gives us better
-                // error messages in some cases (see integration test).
-                if oper.assoc == OperAssoc::Left {
-                    // Assuming we've parsed left-associative operator "<<".
-                    // Rules for previous token are:
-                    // 1. It must exist. E.g. "<< 2" is invalid but we've already handled this in parse_oper().
-                    //    Debug asserted below for parnoia.
-                    // 2. Must not be an operator (although close parenthesis is allowed).
-                    //    E.g. "/ << 2" and "( << 2" are always invalid but ") << 2" may be part of a valid expr.
-                    // 3. Must not be a right associative operator.
-                    debug_assert!(opt_prev_token.is_some());
-                    match opt_prev_token {
-                        Some(Token::Oper(OperToken { idx_oper, .. }))
-                            if OPERS[*idx_oper].kind != OperKind::CloseParen => {
-                                let message = format!("for operator '{}' at {}", oper.name, oper_token.idx_expr);
-                                trace!("{:?} {}", ExprErrorKind::MissingOperand, message);
-                                return Err(ExprError { idx_expr: oper_token.idx_expr,
-                                                       kind: ExprErrorKind::MissingOperand,
-                                                       message });
-                        }
-                        _ => (),
-                    }
-                }
-
-                while let Some(ref_token) = self.stack_op.last() {
-                    match ref_token {
-                        Token::Oper(OperToken { idx_oper, .. }) => {
-                            let token_stack_oper = &OPERS[*idx_oper];
-                            debug_assert!(token_stack_oper.kind != OperKind::CloseParen);
-                            if token_stack_oper.kind == OperKind::OpenParen {
-                                break;
-                            }
-
-                            // Pop operator with higher priority (depending on associativity) to the output queue.
-                            if token_stack_oper.prec < oper.prec
-                                || (oper.assoc == OperAssoc::Left && oper.prec == token_stack_oper.prec) {
-                                self.pop_to_output_queue();
-                            } else {
-                                break;
-                            }
-                        }
-                        // Pop functions (which always take priority over a normal operators) to the output queue.
-                        Token::Func(_) => self.pop_to_output_queue(),
-                        _ => break,
-                    }
-                }
-                self.stack_op.push(Token::Oper(oper_token))
-            }
+            _ => self.process_regular_oper(oper_token, opt_prev_token)?,
         }
         Ok(())
     }
@@ -472,7 +465,7 @@ fn parse_num(str_expr: &str) -> (Option<Number>, usize) {
                 _ => (),
             }
         } else {
-            return (Some(Number { integer: 0u64, float: 0f64 }), 1);
+            return (Some(Number { integer: 0, float: 0.0 }), 1);
         }
     }
 
@@ -494,51 +487,46 @@ fn parse_num(str_expr: &str) -> (Option<Number>, usize) {
     let mut consumed = len_prefix;
     for chr in iter_expr {
         consumed += 1;
-        if chr.is_whitespace() {
-            continue;
-        }
-
-        if chr.is_digit(radix) {
-            // Valid digit for the radix.
-            str_num.push(chr);
-        } else if chr == '.' && radix == 10 && !has_dec_pt {
-            // Valid decimal point for decimal number and is the first decimal point.
-            has_dec_pt = true;
-            str_num.push(chr);
-        } else if has_dec_pt && (chr == 'e' || chr == 'E') {
-            // Floating point exponent notation ("2.5e10" or "2.5E-10").
-            str_num.push(chr);
-            is_fp_exp_notation = true;
-        } else if is_fp_exp_notation && (chr == '+' || chr == '-') {
-            // FP exponent notation +/- power-of character.
-            str_num.push(chr);
-        } else {
-            consumed -= 1;
-            break;
+        if !chr.is_whitespace() {
+            if chr.is_digit(radix) {
+                str_num.push(chr);
+            } else if chr == '.' && radix == 10 && !has_dec_pt {
+                has_dec_pt = true;
+                str_num.push(chr);
+            } else if has_dec_pt && (chr == 'e' || chr == 'E') {
+                // Floating point exponent notation (e.g., "2.5e10" or "2.5E-10").
+                str_num.push(chr);
+                is_fp_exp_notation = true;
+            } else if is_fp_exp_notation && (chr == '+' || chr == '-') {
+                // Floating point exponent notation (e.g, +/- power-of character).
+                str_num.push(chr);
+            } else {
+                consumed -= 1;
+                break;
+            }
         }
     }
 
     if str_num.is_empty() {
         // The number is "0" followed by some non-numeric character, return 0.
         if len_prefix == 1 {
-            return (Some(Number { integer: 0u64, float: 0f64 }), 1);
+            (Some(Number { integer: 0, float: 0.0 }), 1)
+        } else {
+            // No numeric characters with/without prefix, it's invalid (e.g "0x", "0n" or "/").
+            (None, 0)
         }
-        // No numeric characters with or without a prefix, either way it's invalid.
-        // E.g "0x", "0n" or "/".
-        return (None, 0);
     } else if str_num.ends_with('.') {
         // Number ends in a decimal point, return invalid.
-        return (None, 0);
+        (None, 0)
     }
-
-    if !has_dec_pt {
-        // Parse as integer.
+    else if !has_dec_pt {
+        // Integer.
         match u64::from_str_radix(&str_num, radix) {
             Ok(v) => (Some(Number { integer: v, float: v as f64 }), consumed),
             _ => (None, 0),
         }
     } else {
-        // Parse as float.
+        // Float.
         // If the float is (+/-)Inf/NaN or otherwise not representable in a u64, casting it
         // results in 0. Right now, I don't know a fool proof way of determining this.
         // Do it later.
@@ -551,11 +539,7 @@ fn parse_num(str_expr: &str) -> (Option<Number>, usize) {
     }
 }
 
-fn parse_oper(
-    str_expr: &str,
-    opers: &[Oper],
-    opt_prev_token: &Option<Token>
-) -> Option<usize> {
+fn parse_oper(str_expr: &str, opers: &[Oper], opt_prev_token: &Option<Token> ) -> Option<usize> {
     debug_assert_eq!(str_expr.trim_start_matches(char::is_whitespace), str_expr);
 
     let mut is_found = false;
@@ -567,7 +551,7 @@ fn parse_oper(
         // of a previously found one (e.g., find "<<" and not stop at "<").
         if str_expr.starts_with(op.name)
            && (!is_found
-                || op.name.len() > opers[idx_found].name.len()) {
+               || op.name.len() > opers[idx_found].name.len()) {
             // Is this a left associative operator, ensure a previous token exists and that
             // it's not an operator (other than close parenthesis), otherwise skip finding
             // it as a valid operator.
@@ -614,7 +598,7 @@ fn parse_oper(
     }
 }
 
-fn verify_prev_token_not_function(opt_prev_token: &Option<Token>) -> Result<(), ExprError> {
+fn check_prev_token_not_function(opt_prev_token: &Option<Token>) -> Result<(), ExprError> {
     match opt_prev_token {
         Some(Token::Func(FuncToken { idx_func, idx_expr, .. })) => {
             let idx_open_paren = idx_expr + FUNCS[*idx_func].name.len();
@@ -628,7 +612,7 @@ fn verify_prev_token_not_function(opt_prev_token: &Option<Token>) -> Result<(), 
     }
 }
 
-fn verify_prev_token_not_number(opt_prev_token: &Option<Token>) -> Result<(), ExprError> {
+fn check_prev_token_not_number(opt_prev_token: &Option<Token>) -> Result<(), ExprError> {
     match opt_prev_token {
         Some(Token::Num(NumToken { number, idx_expr })) => {
             let message = format!("following number {} at {}", number.float, idx_expr);
@@ -641,10 +625,11 @@ fn verify_prev_token_not_number(opt_prev_token: &Option<Token>) -> Result<(), Ex
     }
 }
 
-fn verify_prev_token_not_close_paren(opt_prev_token: &Option<Token>) -> Result<(), ExprError> {
+fn check_prev_token_not_close_paren(opt_prev_token: &Option<Token>) -> Result<(), ExprError> {
     match opt_prev_token {
-        Some(Token::Oper(
-            OperToken { idx_oper, idx_expr })) if OPERS[*idx_oper].kind == OperKind::CloseParen => {
+        Some(Token::Oper(OperToken { idx_oper, idx_expr }))
+            if OPERS[*idx_oper].kind == OperKind::CloseParen =>
+        {
             let idx_oper_or_func = idx_expr + OPERS[*idx_oper].name.len();
             let message = format!("at {}", idx_oper_or_func);
             trace!("{:?} {}", ExprErrorKind::MissingOperatorOrFunction, message);
@@ -656,12 +641,13 @@ fn verify_prev_token_not_close_paren(opt_prev_token: &Option<Token>) -> Result<(
     }
 }
 
-fn verify_open_paren_for_func(oper_token: &OperToken, opt_prev_token: &Option<Token>) -> Result<(), ExprError> {
+fn check_open_paren_for_func(oper_token: &OperToken, opt_prev_token: &Option<Token>) -> Result<(), ExprError> {
     debug_assert!(oper_token.idx_oper < OPERS.len());
     let oper = &OPERS[oper_token.idx_oper];
     match opt_prev_token {
         Some(Token::Func(FuncToken { idx_func, idx_expr, .. } ))
-                if oper.kind != OperKind::OpenParen => {
+            if oper.kind != OperKind::OpenParen =>
+        {
             let idx_open_paren = idx_expr + FUNCS[*idx_func].name.len();
             let message = format!("at {} for function '{}'", idx_open_paren, &FUNCS[*idx_func].name);
             trace!("{:?} {}", ExprErrorKind::MissingParenthesis, message);
@@ -694,8 +680,8 @@ fn parse_expr(str_expr: &str) -> Result<ExprCtx, ExprError> {
         if let (Some(number), len_str) = parse_num(str_subexpr) {
             // If the previous token was a function or a close parenthesis, it's invalid.
             // E.g "avg 32.5" or "(2)3" or "(1).5".
-            verify_prev_token_not_function(&opt_prev_token)?;
-            verify_prev_token_not_close_paren(&opt_prev_token)?;
+            check_prev_token_not_function(&opt_prev_token)?;
+            check_prev_token_not_close_paren(&opt_prev_token)?;
             trace!("number  : {} (0x{:x})", number.integer, number.integer);
             let num_token = NumToken { number, idx_expr: idx };
             expr_ctx.queue_output.push_back(Token::Num(num_token));
@@ -706,7 +692,7 @@ fn parse_expr(str_expr: &str) -> Result<ExprCtx, ExprError> {
             let oper_token = OperToken { idx_oper, idx_expr: idx };
             // If the previous token was a function, this must be an open parenthesis.
             // E.g "avg +"; otherwise this is an invalid expression.
-            verify_open_paren_for_func(&oper_token, &opt_prev_token)?;
+            check_open_paren_for_func(&oper_token, &opt_prev_token)?;
             trace!("operator: {}", &OPERS[idx_oper].name);
             expr_ctx.process_oper(oper_token, &opt_prev_token)?;
             len_token = OPERS[idx_oper].name.len();
@@ -715,8 +701,8 @@ fn parse_expr(str_expr: &str) -> Result<ExprCtx, ExprError> {
             debug_assert!(idx_func < FUNCS.len());
             // If the previous token was a function or a number, we have an invalid expression.
             // E.g "avg avg" or "5 bit(2)"
-            verify_prev_token_not_function(&opt_prev_token)?;
-            verify_prev_token_not_number(&opt_prev_token)?;
+            check_prev_token_not_function(&opt_prev_token)?;
+            check_prev_token_not_number(&opt_prev_token)?;
             trace!("function: {}", &FUNCS[idx_func].name);
             let func_token = FuncToken { idx_func, idx_expr: idx, params: 0 };
             expr_ctx.stack_op.push(Token::Func(func_token));
@@ -729,6 +715,7 @@ fn parse_expr(str_expr: &str) -> Result<ExprCtx, ExprError> {
                                    kind: ExprErrorKind::InvalidExpr,
                                    message });
         }
+
         if len_token >= 2 {
             iter_str.nth(len_token - 2);
         }
@@ -736,7 +723,7 @@ fn parse_expr(str_expr: &str) -> Result<ExprCtx, ExprError> {
 
     // If the last parsed token was a function, that's an invalid expression.
     // E.g "23 + avg".
-    verify_prev_token_not_function(&opt_prev_token)?;
+    check_prev_token_not_function(&opt_prev_token)?;
 
     if expr_ctx.stack_op.is_empty() && expr_ctx.queue_output.is_empty() {
         trace!("'{:?}", ExprErrorKind::EmptyExpr);
@@ -753,7 +740,7 @@ fn parse_expr(str_expr: &str) -> Result<ExprCtx, ExprError> {
             debug!("  queue[{}]: {:?}", idx, token);
         }
 
-        // Pop and move remaining tokens from op stack to the output queue.
+        // Pop remaining tokens from op stack to the output queue.
         expr_ctx.pop_all_to_output_queue()?;
         Ok(expr_ctx)
     }
@@ -807,11 +794,6 @@ fn evaluate_expr(expr_ctx: &mut ExprCtx) -> Result<Number, ExprError> {
         trace!("{}", message);
         Err(ExprError { idx_expr: 0, kind: ExprErrorKind::InvalidExpr, message })
     }
-}
-
-pub fn evaluate(str_expr: &str) -> Result<Number, ExprError> {
-    let mut expr_ctx = parse_expr(str_expr)?;
-    evaluate_expr(&mut expr_ctx)
 }
 
 #[cfg(test)]
