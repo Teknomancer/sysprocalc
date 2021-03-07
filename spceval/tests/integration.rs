@@ -404,8 +404,11 @@ fn invalid_exprs() {
         ("bit(2) 32", ExprErrorKind::MissingOperatorOrFunction),
         ("avg +", ExprErrorKind::MissingParenthesis),
         ("* avg", ExprErrorKind::InvalidExpr),
-        ("- avg", ExprErrorKind::MissingParenthesis),
+        ("- avg", ExprErrorKind::InvalidParamCount),
         ("avg *", ExprErrorKind::MissingParenthesis),
+        ("avg + sum", ExprErrorKind::MissingParenthesis),
+        ("avg() + sum(2,5)", ExprErrorKind::InvalidParamCount),
+        ("avg(2,5) + sum()", ExprErrorKind::InvalidParamCount),
 
         // Functions
         ("avg(123)", ExprErrorKind::InvalidParamCount),

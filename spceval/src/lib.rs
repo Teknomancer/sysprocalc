@@ -224,13 +224,16 @@ impl ExprCtx {
     }
 
     fn collect_params(&mut self, params: usize, stack_output: &mut Vec<Number> ) -> Option<Vec<Number>> {
-        debug_assert!(params > 0);
-        let stack_len = stack_output.len();
-        if stack_len >= params {
-            let parameters = stack_output.split_off(stack_len - params);
-            Some(parameters)
-        } else {
-            stack_output.clear();
+        if params > 0 {
+            let stack_len = stack_output.len();
+            if stack_len >= params {
+                let parameters = stack_output.split_off(stack_len - params);
+                Some(parameters)
+            } else {
+                stack_output.clear();
+                None
+            }
+        } else  {
             None
         }
     }
@@ -720,10 +723,6 @@ fn parse_expr(str_expr: &str) -> Result<ExprCtx, ExprError> {
             iter_str.nth(len_token - 2);
         }
     }
-
-    // If the last parsed token was a function, that's an invalid expression.
-    // E.g "23 + avg".
-    check_prev_token_not_function(&opt_prev_token)?;
 
     if expr_ctx.stack_op.is_empty() && expr_ctx.queue_output.is_empty() {
         trace!("'{:?}", ExprErrorKind::EmptyExpr);
