@@ -186,9 +186,11 @@ impl ExprCtx {
                     if oper.kind == OperKind::OpenParen {
                         let message = format!("for opening parenthesis at {}", *idx_expr);
                         trace!("Parenthesis mismatch {}", message);
-                        return Err(ExprError { idx_expr: *idx_expr,
-                                               kind: ExprErrorKind::MismatchParenthesis,
-                                               message });
+                        return Err(ExprError {
+                            idx_expr: *idx_expr,
+                            kind: ExprErrorKind::MismatchParenthesis,
+                            message
+                        });
                     } else {
                         self.pop_to_output_queue();
                     }
@@ -220,9 +222,11 @@ impl ExprCtx {
             // Too many or too few parameters passed to the function, bail.
             let message = format!("for function '{}'. expects [{}..{}) parameters, got {} instead",
                                   func.name, func.params.start, func.params.end, func_token.params);
-            Err(ExprError { idx_expr: func_token.idx_expr,
-                            kind: ExprErrorKind::InvalidParamCount,
-                            message })
+            Err(ExprError {
+                idx_expr: func_token.idx_expr,
+                kind: ExprErrorKind::InvalidParamCount,
+                message
+            })
         }
     }
 
@@ -255,9 +259,11 @@ impl ExprCtx {
         } else {
             let message = format!("for open parenthesis at '{}'", oper_token.idx_expr);
             trace!("{:?} {}", ExprErrorKind::MissingOperatorOrFunction, message);
-            Err(ExprError { idx_expr: oper_token.idx_expr,
-                            kind: ExprErrorKind::MissingOperatorOrFunction,
-                            message })
+            Err(ExprError {
+                idx_expr: oper_token.idx_expr,
+                kind: ExprErrorKind::MissingOperatorOrFunction,
+                message
+            })
         }
     }
 
@@ -308,9 +314,11 @@ impl ExprCtx {
             // If we didn't find a matching opening parenthesis, bail.
             let message = format!("for closing parenthesis at {}", oper_token.idx_expr);
             trace!("Parenthesis mismatch {}", message);
-            Err(ExprError { idx_expr: oper_token.idx_expr,
-                            kind: ExprErrorKind::MismatchParenthesis,
-                            message })
+            Err(ExprError {
+                idx_expr: oper_token.idx_expr,
+                kind: ExprErrorKind::MismatchParenthesis,
+                message
+            })
         }
     }
 
@@ -346,17 +354,21 @@ impl ExprCtx {
                 // No function preceeding open parenthesis for a parameter separator, e.g. "(32,5)"
                 let message = format!("for parameter separator '{}' at {}", oper.name, oper_token.idx_expr);
                 trace!("{:?} {}", ExprErrorKind::MissingFunction, message);
-                Err(ExprError { idx_expr: oper_token.idx_expr,
-                                kind: ExprErrorKind::MissingFunction,
-                                message })
+                Err(ExprError {
+                    idx_expr: oper_token.idx_expr,
+                    kind: ExprErrorKind::MissingFunction,
+                    message
+                })
             }
         } else {
             // No matching open parenthesis for the parameter separator, e.g. "32,4".
             let message = format!("for parameter separator '{}' at {}", oper.name, oper_token.idx_expr);
             trace!("{:?} {}", ExprErrorKind::MissingParenthesis, message);
-            Err(ExprError { idx_expr: oper_token.idx_expr,
-                            kind: ExprErrorKind::MissingParenthesis,
-                            message })
+            Err(ExprError {
+                idx_expr: oper_token.idx_expr,
+                kind: ExprErrorKind::MissingParenthesis,
+                message
+            })
         }
     }
 
@@ -380,9 +392,11 @@ impl ExprCtx {
                 {
                     let message = format!("for operator '{}' at {}", oper.name, oper_token.idx_expr);
                     trace!("{:?} {}", ExprErrorKind::MissingOperand, message);
-                    return Err(ExprError { idx_expr: oper_token.idx_expr,
-                                           kind: ExprErrorKind::MissingOperand,
-                                           message });
+                    return Err(ExprError {
+                        idx_expr: oper_token.idx_expr,
+                        kind: ExprErrorKind::MissingOperand,
+                        message
+                    });
                 }
                 _ => (),
             }
@@ -488,7 +502,7 @@ fn parse_num(str_expr: &str) -> (Option<Number>, usize) {
     let mut is_fp_exp_notation = false;
     let mut is_fp_exp_sign = false;
     debug_assert!(radix != 0);
-    sa::const_assert!(MAX_DIGITS < STR_SIZE);   // Code below relies on this otherwise we risk panicking at runtime.
+    sa::const_assert!(MAX_DIGITS < STR_SIZE); // Code below relies on this otherwise we may panic at runtime.
 
     // 'consumed' should contain the number of characters consumed by parsing this number
     // including whitespace. We count all the characters ourselves since we need to count
@@ -500,9 +514,7 @@ fn parse_num(str_expr: &str) -> (Option<Number>, usize) {
         consumed += 1;
         if consumed > MAX_DIGITS {
             return (None, 0);
-        }
-
-        if !chr.is_whitespace() {
+        } else if !chr.is_whitespace() {
             if chr.is_digit(radix) {
                 str_num.push(chr);
             } else if chr == '.' && radix == 10 && !has_dec_pt {
@@ -524,8 +536,8 @@ fn parse_num(str_expr: &str) -> (Option<Number>, usize) {
     }
 
     if str_num.is_empty() {
-        // The number is "0" followed by some non-numeric character, return 0.
         if len_prefix == 1 {
+            // The number is "0" followed by some non-numeric character, return 0.
             (Some(Number { integer: 0, float: 0.0 }), 1)
         } else {
             // No numeric characters with/without prefix, it's invalid (e.g "0x", "0n" or "/").
@@ -545,7 +557,6 @@ fn parse_num(str_expr: &str) -> (Option<Number>, usize) {
         // Float.
         // If the float is (+/-)Inf/NaN or otherwise not representable in a u64, casting it
         // results in 0. Right now, I don't know a fool proof way of determining this.
-        // Do it later.
         // TODO: We might also want to consider aborting parsing here in the Inf/NaN case.
         use std::str::FromStr;
         match f64::from_str(&str_num) {
@@ -620,9 +631,11 @@ fn check_prev_token_not_function(opt_prev_token: &Option<Token>) -> Result<(), E
             let idx_open_paren = idx_expr + FUNCS[*idx_func].name.len();
             let message = format!("at {} for function '{}'", idx_open_paren, &FUNCS[*idx_func].name);
             trace!("{:?} {}", ExprErrorKind::MissingParenthesis, message);
-            Err(ExprError { idx_expr: idx_open_paren,
-                            kind: ExprErrorKind::MissingParenthesis,
-                            message })
+            Err(ExprError {
+                idx_expr: idx_open_paren,
+                kind: ExprErrorKind::MissingParenthesis,
+                message
+            })
         }
         _ => Ok(())
     }
@@ -633,9 +646,11 @@ fn check_prev_token_not_number(opt_prev_token: &Option<Token>) -> Result<(), Exp
         Some(Token::Num(NumToken { number, idx_expr })) => {
             let message = format!("following number {} at {}", number.float, idx_expr);
             trace!("{:?} {}", ExprErrorKind::MissingOperator, message);
-            Err(ExprError { idx_expr: *idx_expr,
-                            kind: ExprErrorKind::MissingOperator,
-                            message })
+            Err(ExprError {
+                idx_expr: *idx_expr,
+                kind: ExprErrorKind::MissingOperator,
+                message
+            })
         }
         _ => Ok(())
     }
@@ -649,9 +664,11 @@ fn check_prev_token_not_close_paren(opt_prev_token: &Option<Token>) -> Result<()
             let idx_oper_or_func = idx_expr + OPERS[*idx_oper].name.len();
             let message = format!("at {}", idx_oper_or_func);
             trace!("{:?} {}", ExprErrorKind::MissingOperatorOrFunction, message);
-            Err(ExprError { idx_expr: idx_oper_or_func,
-                            kind: ExprErrorKind::MissingOperatorOrFunction,
-                            message })
+            Err(ExprError {
+                idx_expr: idx_oper_or_func,
+                kind: ExprErrorKind::MissingOperatorOrFunction,
+                message
+            })
         }
         _ => Ok(())
     }
@@ -667,9 +684,11 @@ fn check_open_paren_for_func(oper_token: &OperToken, opt_prev_token: &Option<Tok
             let idx_open_paren = idx_expr + FUNCS[*idx_func].name.len();
             let message = format!("at {} for function '{}'", idx_open_paren, &FUNCS[*idx_func].name);
             trace!("{:?} {}", ExprErrorKind::MissingParenthesis, message);
-            Err(ExprError { idx_expr: idx_open_paren,
-                            kind: ExprErrorKind::MissingParenthesis,
-                            message })
+            Err(ExprError {
+                idx_expr: idx_open_paren,
+                kind: ExprErrorKind::MissingParenthesis,
+                message
+            })
         }
         _ => Ok(())
     }
@@ -727,9 +746,11 @@ fn parse_expr(str_expr: &str) -> Result<ExprCtx, ExprError> {
         } else {
             let message = format!("at {}", idx);
             trace!("{:?} {}", ExprErrorKind::InvalidExpr, message);
-            return Err(ExprError { idx_expr: idx,
-                                   kind: ExprErrorKind::InvalidExpr,
-                                   message });
+            return Err(ExprError {
+                idx_expr: idx,
+                kind: ExprErrorKind::InvalidExpr,
+                message
+            });
         }
 
         if len_token >= 2 {
@@ -739,9 +760,11 @@ fn parse_expr(str_expr: &str) -> Result<ExprCtx, ExprError> {
 
     if expr_ctx.stack_op.is_empty() && expr_ctx.queue_output.is_empty() {
         trace!("'{:?}", ExprErrorKind::EmptyExpr);
-        Err(ExprError { idx_expr: 0,
-                        kind: ExprErrorKind::EmptyExpr,
-                        message: "".to_string() })
+        Err(ExprError {
+            idx_expr: 0,
+            kind: ExprErrorKind::EmptyExpr,
+            message: "".to_string()
+        })
     } else {
         debug!("Op Stack:");
         for (idx,token) in expr_ctx.stack_op.iter().rev().enumerate() {
@@ -775,9 +798,11 @@ fn evaluate_expr(expr_ctx: &mut ExprCtx) -> Result<Number, ExprError> {
                 } else {
                     let message = format!("for operator '{}' at {}", oper.name, idx_expr);
                     trace!("{:?} {}", ExprErrorKind::InvalidParamCount, message);
-                    return Err(ExprError { idx_expr,
-                                           kind: ExprErrorKind::InvalidParamCount,
-                                           message });
+                    return Err(ExprError {
+                        idx_expr,
+                        kind: ExprErrorKind::InvalidParamCount,
+                        message
+                    });
                 }
             }
 
@@ -791,9 +816,11 @@ fn evaluate_expr(expr_ctx: &mut ExprCtx) -> Result<Number, ExprError> {
                 } else {
                     let message = format!("for function '{}' at {}", function.name, idx_expr);
                     trace!("{:?} {}", ExprErrorKind::InvalidParamCount, message);
-                    return Err(ExprError { idx_expr,
-                                           kind: ExprErrorKind::InvalidParamCount,
-                                           message });
+                    return Err(ExprError {
+                        idx_expr,
+                        kind: ExprErrorKind::InvalidParamCount,
+                        message
+                    });
                 }
             }
         }
@@ -804,7 +831,11 @@ fn evaluate_expr(expr_ctx: &mut ExprCtx) -> Result<Number, ExprError> {
     } else {
         let message = "evaluation failed".to_string();
         trace!("{}", message);
-        Err(ExprError { idx_expr: 0, kind: ExprErrorKind::InvalidExpr, message })
+        Err(ExprError {
+            idx_expr: 0,
+            kind: ExprErrorKind::InvalidExpr,
+            message
+        })
     }
 }
 
