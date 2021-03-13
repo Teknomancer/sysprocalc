@@ -860,7 +860,7 @@ fn evaluate_expr(expr_ctx: &mut ExprCtx) -> Result<Number, ExprError> {
     }
 }
 
-pub fn max_sub_expressions() -> usize {
+pub const fn max_sub_expressions() -> usize {
     MAX_SUB_EXPRS as usize
 }
 

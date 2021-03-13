@@ -305,15 +305,13 @@ fn valid_exprs() {
     // TODO: Try to split this into logical categories like unary, binary,
     // paranthesis, operator priority etc.
 
-    debug_assert!(spceval::max_sub_expressions() > 1);
-    let max_valid_parens = spceval::max_sub_expressions() - 1;
-    let open_parens = &"(".repeat(max_valid_parens);
-    let close_parens = &")".repeat(max_valid_parens);
-    let num_max_sub_expr: u64 = 0xf0e1d2c3b4a5;
+    const MAX_VALID_PARENS: usize = spceval::max_sub_expressions() - 1;
 
-    let mut max_sub_expr = String::from(open_parens);
-    max_sub_expr.push_str(&num_max_sub_expr.to_string());
-    max_sub_expr.push_str(close_parens);
+    debug_assert!((1..u8::max as usize).contains(&MAX_VALID_PARENS));   // Sanity, arbitrary bounds check before str::repeat().
+    let open_parens = "(".repeat(MAX_VALID_PARENS);
+    let close_parens = ")".repeat(MAX_VALID_PARENS);
+    const NUM_MAX_SUB_EXPR: u64 = 0xf0e1d2c3b4a59687;
+    let max_sub_expr = format!("{}{}{}", open_parens, NUM_MAX_SUB_EXPR.to_string(), close_parens);
 
     let expr_results = vec![
         ("2+2", Number { integer: 4, float: 4.0 }),
@@ -344,7 +342,7 @@ fn valid_exprs() {
         ("0x f f f f + 0xf ff f", Number { integer: 0x1fffe, float: 0x1fffeu64 as f64 }),
         ("2.5e+3+3", Number { integer: 2503, float: 2503.0 } ),
         ("2.5e+3-4", Number { integer: 2496, float: 2496.0 } ),
-        (&max_sub_expr, Number { integer: num_max_sub_expr, float: num_max_sub_expr as f64 }),
+        (&max_sub_expr, Number { integer: NUM_MAX_SUB_EXPR, float: NUM_MAX_SUB_EXPR as f64 }),
     ];
     for expr_res in expr_results {
         test_valid_expr(&expr_res.0, &expr_res.1);
