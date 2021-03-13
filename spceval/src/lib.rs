@@ -14,10 +14,14 @@ extern crate static_assertions as sa;
 // Number of tokens to pre-allocate per ExprCtx.
 const PRE_ALLOC_TOKENS: usize = 16;
 
+// Maximum number of sub-expressions supported (inclusive).
+const MAX_SUB_EXPRS: u16 = 64;
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum ExprErrorKind {
     EmptyExpr,
+    ExceededMaxSubExpr,
     FailedEvaluation,
     InvalidExpr,
     InvalidParamCount,
@@ -66,6 +70,7 @@ impl fmt::Display for ExprError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let str_errkind = match self.kind {
             ExprErrorKind::EmptyExpr => "expression empty",
+            ExprErrorKind::ExceededMaxSubExpr => "exceeded maximum sub-expression count",
             ExprErrorKind::FailedEvaluation => "evaluation failed",
             ExprErrorKind::InvalidExpr => "invalid character",
             ExprErrorKind::InvalidParamCount => "incorrect number of parameters",
@@ -130,6 +135,7 @@ enum Token {
 struct ExprCtx {
     queue_output: VecDeque<Token>,
     stack_op: Vec<Token>,
+    sub_exprs: u16,
 }
 
 impl TryFrom<Token> for NumToken {
@@ -166,7 +172,8 @@ impl ExprCtx {
     fn new() -> Self {
         ExprCtx {
             queue_output: VecDeque::with_capacity(PRE_ALLOC_TOKENS),
-            stack_op: Vec::with_capacity(PRE_ALLOC_TOKENS)
+            stack_op: Vec::with_capacity(PRE_ALLOC_TOKENS),
+            sub_exprs: 0,
         }
     }
 
@@ -254,8 +261,19 @@ impl ExprCtx {
             _ => false,
         };
         if !is_prev_token_invalid {
-            self.stack_op.push(Token::Oper(oper_token));
-            Ok(())
+            self.sub_exprs += 1;
+            if self.sub_exprs == MAX_SUB_EXPRS {
+                let message = format!("starting with open parenthesis at '{}'", oper_token.idx_expr);
+                trace!("{:?} {}", ExprErrorKind::ExceededMaxSubExpr, message);
+                Err(ExprError {
+                    idx_expr: oper_token.idx_expr,
+                    kind: ExprErrorKind::ExceededMaxSubExpr,
+                    message
+                })
+            } else {
+                self.stack_op.push(Token::Oper(oper_token));
+                Ok(())
+            }
         } else {
             let message = format!("for open parenthesis at '{}'", oper_token.idx_expr);
             trace!("{:?} {}", ExprErrorKind::MissingOperatorOrFunction, message);
@@ -286,6 +304,9 @@ impl ExprCtx {
         if is_open_paren_found {
             // Discard open parenthesis from the stack.
             self.stack_op.pop().unwrap();
+
+            debug_assert!(self.sub_exprs > 0);
+            self.sub_exprs -= 1;
 
             // Check if a function preceeds the open parenthesis.
             if let Some(mut func_token) = self.pop_func_from_op_stack() {
@@ -837,6 +858,10 @@ fn evaluate_expr(expr_ctx: &mut ExprCtx) -> Result<Number, ExprError> {
             message
         })
     }
+}
+
+pub fn max_sub_expressions() -> usize {
+    MAX_SUB_EXPRS as usize
 }
 
 #[cfg(test)]

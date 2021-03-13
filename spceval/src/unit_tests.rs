@@ -286,12 +286,13 @@ fn is_func_table_valid() {
 fn test_valid_expr_but_eval_fail(str_expr: &str, expr_error_kind: ExprErrorKind) {
     // Parsing should succeed but evaluation must fail and match the specified error.
     let res_parse = parse_expr(str_expr);
-    assert!(res_parse.is_ok(), "{}", str_expr);
+    assert!(res_parse.is_ok(), "{} err={}", str_expr, res_parse.err().unwrap());
     let mut expr_ctx = res_parse.unwrap();
     let res_eval = evaluate_expr(&mut expr_ctx);
     assert!(res_eval.is_err(), "{}", str_expr);
     assert_eq!(expr_error_kind, res_eval.err().unwrap().kind, "{}", str_expr);
 }
+
 
 #[test]
 fn valid_exprs_eval_fail() {
