@@ -3,7 +3,7 @@ use spceval::{Number, ExprErrorKind};
 #[inline(always)]
 fn test_valid_expr(str_expr: &str, num_expected: &Number) {
     let res_eval = spceval::evaluate(str_expr);
-    assert!(res_eval.is_ok(), "{}", str_expr);
+    assert!(res_eval.is_ok(), "{} err={}", str_expr, res_eval.err().unwrap());
     let num_computed = res_eval.unwrap();
     assert_eq!(num_expected.integer, num_computed.integer, "{}", str_expr);
     assert_eq!(num_expected.float, num_computed.float, "{}", str_expr);
@@ -304,6 +304,17 @@ fn valid_exprs() {
     // Make each expression test meaningful and try not to have redundant tests.
     // TODO: Try to split this into logical categories like unary, binary,
     // paranthesis, operator priority etc.
+
+    debug_assert!(spceval::max_sub_expressions() > 1);
+    let max_valid_parens = spceval::max_sub_expressions() - 1;
+    let open_parens = &"(".repeat(max_valid_parens);
+    let close_parens = &")".repeat(max_valid_parens);
+    let num_max_sub_expr: u64 = 0xf0e1d2c3b4a5;
+
+    let mut max_sub_expr = String::from(open_parens);
+    max_sub_expr.push_str(&num_max_sub_expr.to_string());
+    max_sub_expr.push_str(close_parens);
+
     let expr_results = vec![
         ("2+2", Number { integer: 4, float: 4.0 }),
         ("+55.5", Number { integer: 55, float: 55.5 }),
@@ -333,6 +344,7 @@ fn valid_exprs() {
         ("0x f f f f + 0xf ff f", Number { integer: 0x1fffe, float: 0x1fffeu64 as f64 }),
         ("2.5e+3+3", Number { integer: 2503, float: 2503.0 } ),
         ("2.5e+3-4", Number { integer: 2496, float: 2496.0 } ),
+        (&max_sub_expr, Number { integer: num_max_sub_expr, float: num_max_sub_expr as f64 }),
     ];
     for expr_res in expr_results {
         test_valid_expr(&expr_res.0, &expr_res.1);
@@ -346,6 +358,7 @@ fn invalid_exprs() {
     // like "2 +" fail during evaluation due to the way we parse operators but others
     // like ",5" will fail during parsing.
     // TODO: Try split this into logical categories.
+    let max_sub_expr = &"(".repeat(spceval::max_sub_expressions());
     let expr_results = vec![
         ("", ExprErrorKind::EmptyExpr),
         ("()", ExprErrorKind::EmptyExpr),
@@ -422,6 +435,10 @@ fn invalid_exprs() {
         ("bits(64)", ExprErrorKind::InvalidParamCount),
         // TODO if
         ("sum(0xff)", ExprErrorKind::InvalidParamCount),
+
+        // Maximum sub expressions (i.e. parenthesis) since we push/pop these from
+        // the stack, we want to keep this limited.
+        (max_sub_expr, ExprErrorKind::ExceededMaxSubExpr),
     ];
     for expr_res in expr_results {
         test_invalid_expr(&expr_res.0, expr_res.1);
