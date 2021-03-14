@@ -608,12 +608,10 @@ fn parse_oper(str_expr: &str, opers: &[Oper], opt_prev_token: &Option<Token> ) -
                     // E.g. "<<4" or ",5".
                     None => continue,
                     Some(Token::Oper(OperToken { idx_oper, .. })) => {
-                        debug_assert!(*idx_oper < opers.len());
                         // E.g. ")-5" when parsing "-" can be valid. So don't skip finding "-".
                         // E.g. "(<<7" when parsing "<<" is invalid, so skip finding it.
-                        if opers[*idx_oper].assoc == OperAssoc::Left
-                            || opers[*idx_oper].kind == OperKind::OpenParen
-                            || opers[*idx_oper].kind == OperKind::ParamSep {
+                        if opers[*idx_oper].kind == OperKind::OpenParen
+                           || opers[*idx_oper].kind == OperKind::ParamSep {
                             continue;
                         }
                     }
