@@ -110,9 +110,8 @@ fn print_error(stream: &mut StandardStream, str_expr: &str, err: ExprError, app_
 
 fn evaluate_expr(stream: &mut StandardStream, str_expr: &str, app_mode: AppMode) -> std::io::Result<()> {
     // Enable trace level logging while parsing and evaluating using spceval.
-    if cfg!(debug_assertions) {
-        log::set_max_level(log::LevelFilter::Trace);
-    }
+    #[cfg(debug_assertions)]
+    log::set_max_level(log::LevelFilter::Trace);
 
     match spceval::evaluate(str_expr) {
         Ok(number) => print_result(stream, &number)?,
@@ -120,9 +119,9 @@ fn evaluate_expr(stream: &mut StandardStream, str_expr: &str, app_mode: AppMode)
     }
 
     // Disable logging.
-    if cfg!(debug_assertions) {
-        log::set_max_level(log::LevelFilter::Off);
-    }
+    #[cfg(debug_assertions)]
+    log::set_max_level(log::LevelFilter::Off);
+
     Ok(())
 }
 
@@ -158,7 +157,8 @@ fn test_bitgroup_desc(stream: &mut StandardStream) -> std::io::Result<()> {
 fn main() -> std::io::Result<()> {
     // Create a logger but keep logging disabled to shut up rustyline's logging.
     // Need to find a way to disable rustyline's logger at compile time...
-    if cfg!(debug_assertions) {
+    #[cfg(debug_assertions)]
+    {
         if let Err(e) = logger::init(log::LevelFilter::Off) {
             println!("{} {:?}", ERR_INIT_LOGGER, e);
         }
@@ -189,7 +189,7 @@ fn main() -> std::io::Result<()> {
 
                 if !str_expr.is_empty() {
                     match str_expr {
-                        "q" | "quit" | "exit" => return Ok(()),
+                        "q" | "quit" | "exit" => break,
                         "efer" => {
                             test_bitgroup_desc(&mut stdout)?;
                             continue;
