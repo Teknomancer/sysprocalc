@@ -1,7 +1,7 @@
 use super::{Number, ExprError, ExprErrorKind};
 use std::cmp::Ordering;
 
-pub static OPERS: [Oper<'static>; 25] = [
+pub static OPERS: [Oper<'static>; 24] = [
     // Precedence 1 (highest priority)
     Oper { kind: OperKind::OpenParen,  prec: 1,  params: 0, assoc: OperAssoc::Nil,   evalfn: oper_nop,         name: "(",  syntax: "(<expr>",            help: "Begin expression.",       },
     Oper { kind: OperKind::CloseParen, prec: 1,  params: 0, assoc: OperAssoc::Nil,   evalfn: oper_nop,         name: ")",  syntax: "<expr>)",            help: "End expression.",         },
@@ -9,7 +9,6 @@ pub static OPERS: [Oper<'static>; 25] = [
     Oper { kind: OperKind::Regular,    prec: 4,  params: 2, assoc: OperAssoc::Left,  evalfn: oper_add,         name: "+",  syntax: "<expr> + <expr>",    help: "Addition.",               },
     Oper { kind: OperKind::Regular,    prec: 4,  params: 2, assoc: OperAssoc::Left,  evalfn: oper_sub,         name: "-",  syntax: "<expr> - <expr>",    help: "Subtraction.",            },
     // Precedence 2
-    Oper { kind: OperKind::Regular,    prec: 2,  params: 1, assoc: OperAssoc::Right, evalfn: oper_nop,         name: "+",  syntax: "+<expr>",            help: "Unary plus.",             },
     Oper { kind: OperKind::Regular,    prec: 2,  params: 1, assoc: OperAssoc::Right, evalfn: oper_unary_minus, name: "-",  syntax: "-<expr>",            help: "Unary minus.",            },
     Oper { kind: OperKind::Regular,    prec: 2,  params: 1, assoc: OperAssoc::Right, evalfn: oper_logical_not, name: "!",  syntax: "!<expr>",            help: "Logical NOT.",            },
     Oper { kind: OperKind::Regular,    prec: 2,  params: 1, assoc: OperAssoc::Right, evalfn: oper_bit_not,     name: "~",  syntax: "~<expr>",            help: "Bitwise NOT.",            },
