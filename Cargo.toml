@@ -31,3 +31,11 @@ atty = "0.2"
 termcolor = "1.1"
 rustyline = "6.1"
 
+[profile.release]
+lto = "fat"
+codegen-units = 1
+
+[profile.bench]
+lto = "fat"
+codegen-units = 1
+
