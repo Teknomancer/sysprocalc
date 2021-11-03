@@ -89,7 +89,7 @@ impl PartialEq for Oper<'_> {
 // their precedence. This is so if we use 'starts_with' and find a match we can stop searching.
 impl Ord for Oper<'_> {
     fn cmp(&self, other: &Self) -> Ordering {
-        other.name.cmp(&self.name)
+        other.name.cmp(self.name)
     }
 }
 
