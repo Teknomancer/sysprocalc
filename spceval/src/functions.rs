@@ -56,8 +56,8 @@ fn func_avg(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, E
 }
 
 fn func_bit(func: &Func, idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
-    let shift = nums[0].integer as i64;
-    if (0..64).contains(&shift) {
+    let shift = nums[0].integer as u32;
+    if (0..u64::BITS).contains(&shift) {
         let integer = 1_u64.wrapping_shl(nums[0].integer as u32);
         let float = integer as f64;
         Ok(Number { integer, float })
@@ -69,9 +69,9 @@ fn func_bit(func: &Func, idx_expr: usize, nums: &[Number]) -> Result<Number, Exp
 }
 
 fn func_bits(func: &Func, idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
-    let min = std::cmp::min(nums[0].integer, nums[1].integer);
-    let max = std::cmp::max(nums[0].integer, nums[1].integer);
-    if (0..64).contains(&min) && (0..64).contains(&max) {
+    let min = std::cmp::min(nums[0].integer, nums[1].integer) as u32;
+    let max = std::cmp::max(nums[0].integer, nums[1].integer) as u32;
+    if (0..u64::BITS).contains(&min) && (0..u64::BITS).contains(&max) {
         let mut integer : u64 = 0;
         for n in min..max + 1  {
             integer |= 1_u64.wrapping_shl(n as u32);

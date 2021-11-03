@@ -14,7 +14,7 @@ keywords = ["x86","expression","evaluator","x86-registers"]
 license = "MIT OR Apache-2.0"
 categories = ["command-line-utilities"]
 exclude = ["/.github"]
-edition = "2018"
+edition = "2021"
 
 [[bin]]
 name = "spc"
