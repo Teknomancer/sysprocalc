@@ -235,7 +235,7 @@ fn test_valid_bit_group() {
         64, vec![],
         vec![
             BitSpan::new(
-                RangeInclusive { start: 0, end: 0 },
+                RangeInclusive::new(0, 0),
                 BitSpanKind::Normal,
                 false,
                 String::from("Gen 0"),
@@ -243,7 +243,7 @@ fn test_valid_bit_group() {
                 String::from("Generic Bit 0"),
             ),
             BitSpan::new(
-                RangeInclusive { start: 8, end: 8 },
+                RangeInclusive::new(8, 8),
                 BitSpanKind::Normal,
                 false,
                 String::from("Gen 1"),
@@ -270,7 +270,7 @@ fn test_invalid_bit_group() {
             vec![],
             vec![
                 BitSpan::new(
-                    RangeInclusive { start: 0, end: 0 },
+                    RangeInclusive::new(0, 0),
                     BitSpanKind::Normal,
                     false,
                     String::from("Gen 0"),
@@ -278,7 +278,7 @@ fn test_invalid_bit_group() {
                     String::from("Generic Bit 0"),
                 ),
                 BitSpan::new(
-                    RangeInclusive { start: 8, end: 8 },
+                    RangeInclusive::new(8, 8),
                     BitSpanKind::Normal,
                     false,
                     String::from("Gen 1"),
