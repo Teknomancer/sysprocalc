@@ -5,7 +5,7 @@ use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 use std::env;
 use std::io::Write;
-use std::ops::Range;
+use std::ops::RangeInclusive;
 
 #[cfg(debug_assertions)]
 mod logger;
@@ -128,7 +128,7 @@ fn evaluate_expr(stream: &mut StandardStream, str_expr: &str, app_mode: AppMode)
 fn test_bitgroup_desc(stream: &mut StandardStream) -> std::io::Result<()> {
     let efer_bit_span = vec![
         BitSpan::new(
-            Range { start: 0, end: 0 },
+            RangeInclusive::new(0, 0),
             BitSpanKind::Normal,
             false,
             String::from("SCE"),

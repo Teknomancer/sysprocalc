@@ -1,4 +1,4 @@
-﻿use std::ops::Range;
+﻿use std::ops::RangeInclusive;
 use std::collections::HashSet;
 use std::hash::Hash;
 use std::fmt;
@@ -14,7 +14,7 @@ pub enum ByteOrder {
 
 #[derive(Debug)]
 pub struct BitSpan {
-    spans: Range<u8>,
+    spans: RangeInclusive<u8>,
     kind: BitSpanKind,
     show_rsvd: bool,
     name: String,
@@ -23,7 +23,7 @@ pub struct BitSpan {
 }
 
 impl BitSpan {
-    pub fn new(spans: Range<u8>, kind: BitSpanKind, show_rsvd: bool, name: String, short: String, long: String) -> Self {
+    pub fn new(spans: RangeInclusive<u8>, kind: BitSpanKind, show_rsvd: bool, name: String, short: String, long: String) -> Self {
         BitSpan { spans, kind, show_rsvd, name, short, long }
     }
 }
@@ -80,6 +80,7 @@ pub enum BitGroupError {
     InvalidChunksLength,
     DuplicateChunkIndex,
     MissingDescription,
+    InvalidSpanIndex,
 }
 
 impl fmt::Display for BitGroupError {
@@ -94,6 +95,7 @@ impl fmt::Display for BitGroupError {
             BitGroupError::InvalidChunksLength => "invalid number of chunks",
             BitGroupError::DuplicateChunkIndex => "duplicate index in chunks",
             BitGroupError::MissingDescription => "missing description",
+            BitGroupError::InvalidSpanIndex => "invalid span index",
         };
         write!(f, "{}", str_errkind)
     }
@@ -106,6 +108,22 @@ where
 {
     let mut uniq = HashSet::new();
     iter.into_iter().all(move |x| uniq.insert(x))
+}
+
+fn validate_bit_desc(bits: &BitGroup) -> Result<(), BitGroupError> {
+    if bits.desc.len() > MAX_BITCOUNT as usize {
+        // The number of bit descriptions exceeds our limit.
+        Err(BitGroupError::InvalidBitCount)
+    } else {
+        for d in &bits.desc {
+            // Validate range
+            if d.spans.is_empty() || *d.spans.end() > bits.bit_count {
+                return Err(BitGroupError::InvalidSpanIndex);
+            }
+            // TODO: We need to validate that ranges don't overlap.. sigh.
+        }
+        Ok(())
+    }
 }
 
 fn validate_bit_group(bits: &BitGroup) -> Result<(), BitGroupError> {
@@ -122,7 +140,8 @@ fn validate_bit_group(bits: &BitGroup) -> Result<(), BitGroupError> {
        // None of the bits are described.
        Err(BitGroupError::MissingDescription)
     } else {
-        Ok(())
+        // Validate the bit descriptions
+        validate_bit_desc(bits)
     }
 }
 
@@ -203,7 +222,7 @@ pub fn get_binary_ruler_string(num_bits: u8) -> String {
 
 pub fn fmt_bit_group(bits: &BitGroup) -> Result<String, BitGroupError> {
     validate_bit_group(bits)?;
-    Ok("Testing_Impl".to_string())
+    Ok("Validates Okay".to_string())
 }
 
 #[test]
@@ -216,7 +235,7 @@ fn test_valid_bit_group() {
         64, vec![],
         vec![
             BitSpan::new(
-                Range { start: 0, end: 0 },
+                RangeInclusive { start: 0, end: 0 },
                 BitSpanKind::Normal,
                 false,
                 String::from("Gen 0"),
@@ -224,7 +243,7 @@ fn test_valid_bit_group() {
                 String::from("Generic Bit 0"),
             ),
             BitSpan::new(
-                Range { start: 8, end: 8 },
+                RangeInclusive { start: 8, end: 8 },
                 BitSpanKind::Normal,
                 false,
                 String::from("Gen 1"),
@@ -251,7 +270,7 @@ fn test_invalid_bit_group() {
             vec![],
             vec![
                 BitSpan::new(
-                    Range { start: 0, end: 0 },
+                    RangeInclusive { start: 0, end: 0 },
                     BitSpanKind::Normal,
                     false,
                     String::from("Gen 0"),
@@ -259,7 +278,7 @@ fn test_invalid_bit_group() {
                     String::from("Generic Bit 0"),
                 ),
                 BitSpan::new(
-                    Range { start: 8, end: 8 },
+                    RangeInclusive { start: 8, end: 8 },
                     BitSpanKind::Normal,
                     false,
                     String::from("Gen 1"),
