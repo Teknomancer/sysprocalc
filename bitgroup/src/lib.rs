@@ -4,7 +4,7 @@ use std::hash::Hash;
 use std::fmt;
 use std::convert::TryFrom;
 
-static MAX_BITCOUNT: u8 = 64;
+static MAX_BITCOUNT: usize = 64;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ByteOrder {
@@ -14,7 +14,7 @@ pub enum ByteOrder {
 
 #[derive(Debug)]
 pub struct BitSpan {
-    spans: RangeInclusive<u8>,
+    spans: RangeInclusive<usize>,
     kind: BitSpanKind,
     show_rsvd: bool,
     name: String,
@@ -23,7 +23,7 @@ pub struct BitSpan {
 }
 
 impl BitSpan {
-    pub fn new(spans: RangeInclusive<u8>, kind: BitSpanKind, show_rsvd: bool, name: String, short: String, long: String) -> Self {
+    pub fn new(spans: RangeInclusive<usize>, kind: BitSpanKind, show_rsvd: bool, name: String, short: String, long: String) -> Self {
         BitSpan { spans, kind, show_rsvd, name, short, long }
     }
 }
@@ -43,7 +43,7 @@ pub struct BitGroup {
     arch: String,
     device: String,
     byte_order: ByteOrder,
-    bit_count: u8,
+    bit_count: usize,
     chunks: Vec<u8>,
     desc: Vec<BitSpan>,
 }
@@ -54,7 +54,7 @@ impl BitGroup {
             arch: String,
             device: String,
             byte_order: ByteOrder,
-            bit_count: u8,
+            bit_count: usize,
             chunks: Vec<u8>,
             desc: Vec<BitSpan>) -> Self {
         BitGroup {
@@ -80,7 +80,10 @@ pub enum BitGroupError {
     InvalidChunksLength,
     DuplicateChunkIndex,
     MissingDescription,
-    InvalidSpanIndex,
+    InvalidBitRange,
+    OverlappingBitRange,
+    MissingBitName,
+    MissingBitDescription,
 }
 
 impl fmt::Display for BitGroupError {
@@ -95,7 +98,10 @@ impl fmt::Display for BitGroupError {
             BitGroupError::InvalidChunksLength => "invalid number of chunks",
             BitGroupError::DuplicateChunkIndex => "duplicate index in chunks",
             BitGroupError::MissingDescription => "missing description",
-            BitGroupError::InvalidSpanIndex => "invalid span index",
+            BitGroupError::InvalidBitRange => "invalid bit range",
+            BitGroupError::OverlappingBitRange => "overlapping bit range",
+            BitGroupError::MissingBitName => "empty bit name",
+            BitGroupError::MissingBitDescription => "missing bit description",
         };
         write!(f, "{}", str_errkind)
     }
@@ -110,17 +116,37 @@ where
     iter.into_iter().all(move |x| uniq.insert(x))
 }
 
-fn validate_bit_desc(bits: &BitGroup) -> Result<(), BitGroupError> {
+fn validate_bit_group_desc(bits: &BitGroup) -> Result<(), BitGroupError> {
     if bits.desc.len() > MAX_BITCOUNT as usize {
         // The number of bit descriptions exceeds our limit.
         Err(BitGroupError::InvalidBitCount)
     } else {
-        for d in &bits.desc {
-            // Validate range
-            if d.spans.is_empty() || *d.spans.end() > bits.bit_count {
-                return Err(BitGroupError::InvalidSpanIndex);
+        //let mut vec_range: Vec<u8>;
+        //vec_range = (0..MAX_BITCOUNT).collect::<Vec<u8>>();
+        let mut vec_range:Vec<usize> = (0..MAX_BITCOUNT).collect();
+        for desc in &bits.desc {
+            if desc.spans.is_empty() || *desc.spans.end() >= bits.bit_count {
+                // The bit range is invalid (end() is inclusive)
+                return Err(BitGroupError::InvalidBitRange);
+            } else if desc.name.is_empty() {
+               // The bit name is missing.
+               return Err(BitGroupError::MissingBitName);
+            } else if desc.short.is_empty() {
+               // The bit description is missing.
+               return Err(BitGroupError::MissingBitDescription);
+            } else {
+                // Validate that bit ranges don't overlap.
+                // For this, we replace items in a vector[0..=MAX_BITCOUNT] with poisoned values
+                // for each range in the description. If while replacing items, a poisoned value
+                // is found, it implies some previous range already exists causing an overlap.
+                // For e.g. If MAX_BITCOUNT is 64, the range is [0..63] and poison value is 64.
+                let range_remove = *desc.spans.start()..*desc.spans.end() + 1;
+                let vec_poison:Vec<_> = vec![MAX_BITCOUNT; desc.spans.end() - desc.spans.start() + 1];
+                let vec_removed:Vec<_> = vec_range.splice(range_remove, vec_poison).collect();
+                if vec_removed.iter().any(|&x| x == MAX_BITCOUNT) {
+                    return Err(BitGroupError::OverlappingBitRange);
+                }
             }
-            // TODO: We need to validate that ranges don't overlap.. sigh.
         }
         Ok(())
     }
@@ -141,7 +167,7 @@ fn validate_bit_group(bits: &BitGroup) -> Result<(), BitGroupError> {
        Err(BitGroupError::MissingDescription)
     } else {
         // Validate the bit descriptions
-        validate_bit_desc(bits)
+        validate_bit_group_desc(bits)
     }
 }
 
@@ -259,35 +285,181 @@ fn test_valid_bit_group() {
 fn test_invalid_bit_group() {
     let pair_invalid_bit_grps = [
         //
-        // Invalid bit count
+        // Invalid bit count (MAX_BITCOUNT+1)
         //
         (BitGroup::new(
             String::from("generic"),
             String::from("x86"),
             String::from("cpu"),
             ByteOrder::LittleEndian,
-            128,
+            MAX_BITCOUNT + 1,
             vec![],
             vec![
                 BitSpan::new(
                     RangeInclusive::new(0, 0),
                     BitSpanKind::Normal,
                     false,
-                    String::from("Gen 0"),
-                    String::from("Generic 0"),
-                    String::from("Generic Bit 0"),
-                ),
-                BitSpan::new(
-                    RangeInclusive::new(8, 8),
-                    BitSpanKind::Normal,
-                    false,
-                    String::from("Gen 1"),
-                    String::from("Generic 1"),
-                    String::from("Generic Bit 1"),
+                    String::from("Inv 0"),
+                    String::from("Inv 0"),
+                    String::from("Inv Bit 0"),
                 ),
             ],
         ),
         BitGroupError::InvalidBitCount),
+
+        //
+        // Overlapping bit ranges (0..5) and (5..7)
+        //
+        (BitGroup::new(
+            String::from("generic"),
+            String::from("x86"),
+            String::from("cpu"),
+            ByteOrder::LittleEndian,
+            MAX_BITCOUNT,
+            vec![],
+            vec![
+                BitSpan::new(
+                    RangeInclusive::new(0, 5),
+                    BitSpanKind::Normal,
+                    false,
+                    String::from("Inv 0"),
+                    String::from("Inv 0"),
+                    String::from("Inv Bit 0"),
+                ),
+                BitSpan::new(
+                    RangeInclusive::new(5, 7),
+                    BitSpanKind::Normal,
+                    false,
+                    String::from("Inv 1"),
+                    String::from("Inv 1"),
+                    String::from("Inv Bit 1"),
+                ),
+            ],
+        ),
+        BitGroupError::OverlappingBitRange),
+
+        //
+        // Overlapping bit ranges (63..63) and (32..63)
+        //
+        (BitGroup::new(
+            String::from("generic"),
+            String::from("x86"),
+            String::from("cpu"),
+            ByteOrder::LittleEndian,
+            MAX_BITCOUNT,
+            vec![],
+            vec![
+                BitSpan::new(
+                    RangeInclusive::new(63, 63),
+                    BitSpanKind::Normal,
+                    false,
+                    String::from("Inv 1"),
+                    String::from("Inv 1"),
+                    String::from("Inv Bit 1"),
+                ),
+                BitSpan::new(
+                    RangeInclusive::new(32, 63),
+                    BitSpanKind::Normal,
+                    false,
+                    String::from("Inv 0"),
+                    String::from("Inv 0"),
+                    String::from("Inv Bit 0"),
+                ),
+            ],
+        ),
+        BitGroupError::OverlappingBitRange),
+
+        //
+        // Invalid bit range (1..0)
+        //
+        (BitGroup::new(
+            String::from("generic"),
+            String::from("x86"),
+            String::from("cpu"),
+            ByteOrder::LittleEndian,
+            MAX_BITCOUNT,
+            vec![],
+            vec![
+                BitSpan::new(
+                    RangeInclusive::new(1, 0),
+                    BitSpanKind::Normal,
+                    false,
+                    String::from("Inv 0"),
+                    String::from("Inv 0"),
+                    String::from("Inv Bit 0"),
+                ),
+            ],
+        ),
+        BitGroupError::InvalidBitRange),
+
+        //
+        // Invalid bit range (0..MAX_BITCOUNT)
+        //
+        (BitGroup::new(
+            String::from("generic"),
+            String::from("x86"),
+            String::from("cpu"),
+            ByteOrder::LittleEndian,
+            MAX_BITCOUNT,
+            vec![],
+            vec![
+                BitSpan::new(
+                    RangeInclusive::new(0, MAX_BITCOUNT),
+                    BitSpanKind::Normal,
+                    false,
+                    String::from("Inv 0"),
+                    String::from("Inv 0"),
+                    String::from("Inv Bit 0"),
+                ),
+            ],
+        ),
+        BitGroupError::InvalidBitRange),
+
+        //
+        // Invalid bit range (bit_count+1..bit_count+1)
+        //
+        (BitGroup::new(
+            String::from("generic"),
+            String::from("x86"),
+            String::from("cpu"),
+            ByteOrder::LittleEndian,
+            32,
+            vec![],
+            vec![
+                BitSpan::new(
+                    RangeInclusive::new(33, 33),
+                    BitSpanKind::Normal,
+                    false,
+                    String::from("Inv 0"),
+                    String::from("Inv 0"),
+                    String::from("Inv Bit 0"),
+                ),
+            ],
+        ),
+        BitGroupError::InvalidBitRange),
+
+        //
+        // Invalid bit range (bit_count+1..0)
+        //
+        (BitGroup::new(
+            String::from("generic"),
+            String::from("x86"),
+            String::from("cpu"),
+            ByteOrder::LittleEndian,
+            32,
+            vec![],
+            vec![
+                BitSpan::new(
+                    RangeInclusive::new(33, 0),
+                    BitSpanKind::Normal,
+                    false,
+                    String::from("Inv 0"),
+                    String::from("Inv 0"),
+                    String::from("Inv Bit 0"),
+                ),
+            ],
+        ),
+        BitGroupError::InvalidBitRange),
 
         //
         // TODO: Invalid chunk index
