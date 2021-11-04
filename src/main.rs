@@ -135,6 +135,14 @@ fn test_bitgroup_desc(stream: &mut StandardStream) -> std::io::Result<()> {
             String::from("SysCall Ext."),
             String::from("System Call Extensions"),
         ),
+        BitSpan::new(
+            RangeInclusive::new(8, 8),
+            BitSpanKind::Normal,
+            false,
+            String::from("LME"),
+            String::from("Long Mode"),
+            String::from("Long Mode Enable"),
+        ),
     ];
     let efer_bits = BitGroup::new(
         String::from("EFER"),
