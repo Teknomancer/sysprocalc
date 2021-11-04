@@ -141,7 +141,7 @@ fn validate_bit_group_desc(bits: &BitGroup) -> Result<(), BitGroupError> {
                 // is found, it implies some previous range already exists causing an overlap.
                 // For e.g. If MAX_BITCOUNT is 64, the range is [0..63] and poison value is 64.
                 let range_remove = *desc.spans.start()..*desc.spans.end() + 1;
-                let vec_poison:Vec<_> = vec![MAX_BITCOUNT; desc.spans.end() - desc.spans.start() + 1];
+                let vec_poison = vec![MAX_BITCOUNT; desc.spans.end() - desc.spans.start() + 1];
                 let vec_removed:Vec<_> = vec_range.splice(range_remove, vec_poison).collect();
                 if vec_removed.iter().any(|&x| x == MAX_BITCOUNT) {
                     return Err(BitGroupError::OverlappingBitRange);
