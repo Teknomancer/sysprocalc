@@ -121,9 +121,7 @@ fn validate_bit_group_desc(bits: &BitGroup) -> Result<(), BitGroupError> {
         // The number of bit descriptions exceeds our limit.
         Err(BitGroupError::InvalidBitCount)
     } else {
-        //let mut vec_range: Vec<u8>;
-        //vec_range = (0..MAX_BITCOUNT).collect::<Vec<u8>>();
-        let mut vec_range:Vec<usize> = (0..MAX_BITCOUNT).collect();
+        let mut vec_bitpos:Vec<_> = (0..MAX_BITCOUNT).collect(); // Vector of valid bit positions to check overlap in bit ranges.
         for desc in &bits.desc {
             if desc.spans.is_empty() || *desc.spans.end() >= bits.bit_count {
                 // The bit range is invalid (end() is inclusive)
@@ -136,13 +134,14 @@ fn validate_bit_group_desc(bits: &BitGroup) -> Result<(), BitGroupError> {
                return Err(BitGroupError::MissingBitDescription);
             } else {
                 // Validate that bit ranges don't overlap.
-                // For this, we replace items in a vector[0..=MAX_BITCOUNT] with poisoned values
-                // for each range in the description. If while replacing items, a poisoned value
-                // is found, it implies some previous range already exists causing an overlap.
+                // We replace items in a vector[0..=MAX_BITCOUNT] with poisoned values for
+                // each range in the description. If the removed items contains a poisoned value
+                // it implies some previous range already existed causing an overlap.
                 // For e.g. If MAX_BITCOUNT is 64, the range is [0..63] and poison value is 64.
-                let range_remove = *desc.spans.start()..*desc.spans.end() + 1;
-                let vec_poison = vec![MAX_BITCOUNT; desc.spans.end() - desc.spans.start() + 1];
-                let vec_removed:Vec<_> = vec_range.splice(range_remove, vec_poison).collect();
+                let end = *desc.spans.end() + 1;    // exclusive bound
+                let start = *desc.spans.start();    // inclusive bound
+                let vec_poison = vec![MAX_BITCOUNT; end - start];
+                let vec_removed:Vec<_> = vec_bitpos.splice(start..end, vec_poison).collect();
                 if vec_removed.iter().any(|&x| x == MAX_BITCOUNT) {
                     return Err(BitGroupError::OverlappingBitRange);
                 }
