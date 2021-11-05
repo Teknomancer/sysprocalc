@@ -118,7 +118,7 @@ where
 
 fn validate_bit_group_desc(bits: &BitGroup) -> Result<(), BitGroupError> {
     if bits.desc.len() > MAX_BITCOUNT as usize {
-        // The number of bit descriptions exceeds our limit.
+        // The number of bit descriptions exceeds our maximum bit count.
         Err(BitGroupError::InvalidBitCount)
     } else {
         let mut bitpos:Vec<_> = (0..MAX_BITCOUNT).collect(); // Vector of valid bit positions to check overlap in bit ranges.
@@ -134,12 +134,12 @@ fn validate_bit_group_desc(bits: &BitGroup) -> Result<(), BitGroupError> {
                return Err(BitGroupError::MissingBitDescription);
             } else {
                 // Validate that bit ranges don't overlap.
-                // We replace items in a vector[0..=MAX_BITCOUNT] with poisoned values for
-                // each range in the description. If the removed items contains a poisoned value
-                // it implies some previous range already existed causing an overlap.
-                // For e.g. If MAX_BITCOUNT is 64, the range is [0..63] and poison value is 64.
-                let end = *desc.spans.end() + 1;    // exclusive bound
-                let start = *desc.spans.start();    // inclusive bound
+                // We replace items in a vector (0..MAX_BITCOUNT) with poisoned values for
+                // each range in the description. If the removed items contains a poisoned
+                // value it implies some previous range already existed causing an overlap.
+                // E.g. If MAX_BITCOUNT is 64, bitpos is (0..=63) and poison value is 64.
+                let end = *desc.spans.end() + 1;    // Exclusive bound.
+                let start = *desc.spans.start();    // Inclusive bound.
                 let poison = vec![MAX_BITCOUNT; end - start];
                 let removed:Vec<_> = bitpos.splice(start..end, poison).collect();
                 if removed.iter().any(|&x| x == MAX_BITCOUNT) {
