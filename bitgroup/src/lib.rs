@@ -154,7 +154,7 @@ fn validate_bit_group(bitgroup: &BitGroup) -> Result<(), BitGroupError> {
     }
 }
 
-fn get_max_len_for_name(bitspans: &[BitSpan]) -> usize {
+fn max_name_len(bitspans: &[BitSpan]) -> usize {
     let mut max_len = 0;
     for bitspan in bitspans {
         max_len = std::cmp::max(max_len, bitspan.name.len());
@@ -162,7 +162,7 @@ fn get_max_len_for_name(bitspans: &[BitSpan]) -> usize {
     max_len
 }
 
-fn get_max_len_for_short(bitspans: &[BitSpan]) -> usize {
+fn max_short_len(bitspans: &[BitSpan]) -> usize {
     let mut max_len = 0;
     for bitspan in bitspans {
         max_len = std::cmp::max(max_len, bitspan.short.len());
@@ -170,7 +170,7 @@ fn get_max_len_for_short(bitspans: &[BitSpan]) -> usize {
     max_len
 }
 
-fn get_max_len_for_bits(bitspans: &[BitSpan]) -> usize {
+fn max_bitspan_len(bitspans: &[BitSpan]) -> usize {
     let mut has_ranges = false;
     for bitspan in bitspans {
         let bits_in_range = bitspan.span.end() + 1 - bitspan.span.start();
@@ -267,9 +267,9 @@ pub fn fmt_bit_group(bitgroup: &BitGroup) -> Result<String, BitGroupError> {
 
     // Figure out column widths.
     static COL_SEP: &str = "  ";
-    let name_column_width = get_max_len_for_name(&bitgroup.bitspans);
-    let short_column_width = get_max_len_for_short(&bitgroup.bitspans);
-    let bit_column_width = get_max_len_for_bits(&bitgroup.bitspans);
+    let name_column_width = max_name_len(&bitgroup.bitspans);
+    let short_column_width = max_short_len(&bitgroup.bitspans);
+    let bit_column_width = max_bitspan_len(&bitgroup.bitspans);
 
     // Format the bit spans in the bit group.
     let mut out = String::from("");
