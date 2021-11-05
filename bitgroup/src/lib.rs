@@ -67,6 +67,10 @@ impl BitGroup {
         }
     }
 
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
     pub fn description(&self) -> &str {
         &self.desc
     }
@@ -105,47 +109,45 @@ impl fmt::Display for BitGroupError {
 }
 
 fn validate_bitspans(bitgroup: &BitGroup) -> Result<(), BitGroupError> {
-    if bitgroup.bitspans.len() > MAX_BITCOUNT as usize {
-        // The number of bit descriptions exceeds our maximum bit count.
-        Err(BitGroupError::InvalidBitCount)
-    } else {
-        let mut bitpos:Vec<_> = (0..MAX_BITCOUNT).collect(); // Vector of valid bit positions to check overlap in bit ranges.
-        for bitspan in &bitgroup.bitspans {
-            if bitspan.span.is_empty() || *bitspan.span.end() >= bitgroup.bit_count {
-                // The bit range is invalid (end() is inclusive)
-                return Err(BitGroupError::InvalidBitRange);
-            } else if bitspan.name.is_empty() {
-               // The bit name is missing.
-               return Err(BitGroupError::MissingBitName);
-            } else if bitspan.short.is_empty() {
-               // The bit description is missing.
-               return Err(BitGroupError::MissingBitSpanDescription);
-            } else {
-                // Validate that bit ranges don't overlap.
-                // We replace items in a vector (0..MAX_BITCOUNT) with poisoned values for
-                // each range in the description. If the removed items contains a poisoned
-                // value it implies some previous range already existed causing an overlap.
-                // E.g. If MAX_BITCOUNT is 64, bitpos is (0..=63) and poison value is 64.
-                let end = *bitspan.span.end() + 1;    // Exclusive bound.
-                let start = *bitspan.span.start();    // Inclusive bound.
-                let poison = vec![MAX_BITCOUNT; end - start];
-                let removed:Vec<_> = bitpos.splice(start..end, poison).collect();
-                if removed.iter().any(|&x| x == MAX_BITCOUNT) {
-                    return Err(BitGroupError::OverlappingBitRange);
-                }
+    let mut bitpos:Vec<_> = (0..MAX_BITCOUNT).collect(); // Vector of valid bit positions to check overlap in bit ranges.
+    for bitspan in &bitgroup.bitspans {
+        if bitspan.span.is_empty() || *bitspan.span.end() >= bitgroup.bit_count {
+            // The bit range is invalid (end() is inclusive)
+            return Err(BitGroupError::InvalidBitRange);
+        } else if bitspan.name.is_empty() {
+           // The bit name is missing.
+           return Err(BitGroupError::MissingBitName);
+        } else if bitspan.short.is_empty() {
+           // The bit description is missing.
+           return Err(BitGroupError::MissingBitSpanDescription);
+        } else {
+            // Validate that bit ranges don't overlap.
+            // We replace items in a vector (0..MAX_BITCOUNT) with poisoned values for
+            // each range in the description. If the removed items contains a poisoned
+            // value it implies some previous range already existed causing an overlap.
+            // E.g. If MAX_BITCOUNT is 64, bitpos is (0..=63) and poison value is 64.
+            let end = *bitspan.span.end() + 1;    // Exclusive bound.
+            let start = *bitspan.span.start();    // Inclusive bound.
+            let poison = vec![MAX_BITCOUNT; end - start];
+            let removed:Vec<_> = bitpos.splice(start..end, poison).collect();
+            if removed.iter().any(|&x| x == MAX_BITCOUNT) {
+                return Err(BitGroupError::OverlappingBitRange);
             }
         }
-        Ok(())
     }
+    Ok(())
 }
 
 fn validate_bit_group(bitgroup: &BitGroup) -> Result<(), BitGroupError> {
     if bitgroup.bit_count > MAX_BITCOUNT {
-        // The number of bits exceeds our limit.
+        // The number of bits exceeds our maximum supported limit.
         Err(BitGroupError::InvalidBitCount)
     } else if bitgroup.bitspans.is_empty() {
        // None of the bits are described.
        Err(BitGroupError::MissingBitSpans)
+    } else if bitgroup.bitspans.len() > MAX_BITCOUNT {
+       // The number of bit descriptions exceeds our maximum bit count.
+       Err(BitGroupError::InvalidBitCount)
     } else {
         // Validate the bit descriptions
         validate_bitspans(bitgroup)
@@ -261,14 +263,15 @@ pub fn get_binary_ruler_string(num_bits: u8) -> String {
 }
 
 pub fn fmt_bit_group(bitgroup: &BitGroup) -> Result<String, BitGroupError> {
-    // Validate the bit group first.
     validate_bit_group(bitgroup)?;
 
-    // Format the bit group.
+    // Figure out column widths.
     static COL_SEP: &str = "  ";
     let name_column_width = get_max_len_for_name(&bitgroup.bitspans);
     let short_column_width = get_max_len_for_short(&bitgroup.bitspans);
     let bit_column_width = get_max_len_for_bits(&bitgroup.bitspans);
+
+    // Format the bit spans in the bit group.
     let mut out = String::from("");
     for bitspan in bitgroup.bitspans.iter().rev() {
         let end = bitspan.span.end();
@@ -276,18 +279,20 @@ pub fn fmt_bit_group(bitgroup: &BitGroup) -> Result<String, BitGroupError> {
         let bitpos = if end == start {
             format!("{}", start)
         } else {
-            format!("{end}{sep}{start}", end=end, sep=BIT_RANGE_SEP, start=start)
+            format!("{end}{sep}{start}", end = end, sep = BIT_RANGE_SEP, start = start)
         };
-        out = format!("{}{bit:>bit_width$}{sep0}{name:>name_width$}{sep1}{short:<short_width$}{sep2}{long}\n",
-                      out,
-                      bit=bitpos,
-                      bit_width = bit_column_width,
-                      sep0=COL_SEP,
-                      name=bitspan.name, name_width = name_column_width,
-                      sep1=COL_SEP,
-                      short=bitspan.short, short_width = short_column_width,
-                      sep2=COL_SEP,
-                      long=bitspan.long);
+        out = format!(
+            "{}{bit:>bit_width$}{sep0}{name:>name_width$}{sep1}{short:<short_width$}{sep2}{long}\n",
+            out,
+            bit = bitpos,
+            bit_width = bit_column_width,
+            sep0 = COL_SEP,
+            name = bitspan.name, name_width = name_column_width,
+            sep1 = COL_SEP,
+            short = bitspan.short, short_width = short_column_width,
+            sep2 = COL_SEP,
+            long = bitspan.long
+            );
     }
     Ok(out)
 }

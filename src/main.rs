@@ -193,7 +193,7 @@ fn test_bitgroup_desc(stream: &mut StandardStream) -> std::io::Result<()> {
         64,
         efer_bitspans
     );
-    write_color(stream, "EFER", Color::Cyan, true)?;
+    write_color(stream, efer.name(), Color::Cyan, true)?;
     writeln!(stream, " ({})", efer.description())?;
     let res_fmt = bitgroup::fmt_bit_group(&efer);
     match res_fmt {
