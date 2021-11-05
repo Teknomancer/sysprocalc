@@ -121,7 +121,7 @@ fn validate_bit_group_desc(bits: &BitGroup) -> Result<(), BitGroupError> {
         // The number of bit descriptions exceeds our limit.
         Err(BitGroupError::InvalidBitCount)
     } else {
-        let mut vec_bitpos:Vec<_> = (0..MAX_BITCOUNT).collect(); // Vector of valid bit positions to check overlap in bit ranges.
+        let mut bitpos:Vec<_> = (0..MAX_BITCOUNT).collect(); // Vector of valid bit positions to check overlap in bit ranges.
         for desc in &bits.desc {
             if desc.spans.is_empty() || *desc.spans.end() >= bits.bit_count {
                 // The bit range is invalid (end() is inclusive)
@@ -140,9 +140,9 @@ fn validate_bit_group_desc(bits: &BitGroup) -> Result<(), BitGroupError> {
                 // For e.g. If MAX_BITCOUNT is 64, the range is [0..63] and poison value is 64.
                 let end = *desc.spans.end() + 1;    // exclusive bound
                 let start = *desc.spans.start();    // inclusive bound
-                let vec_poison = vec![MAX_BITCOUNT; end - start];
-                let vec_removed:Vec<_> = vec_bitpos.splice(start..end, vec_poison).collect();
-                if vec_removed.iter().any(|&x| x == MAX_BITCOUNT) {
+                let poison = vec![MAX_BITCOUNT; end - start];
+                let removed:Vec<_> = bitpos.splice(start..end, poison).collect();
+                if removed.iter().any(|&x| x == MAX_BITCOUNT) {
                     return Err(BitGroupError::OverlappingBitRange);
                 }
             }
