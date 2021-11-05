@@ -1,10 +1,9 @@
 ﻿use std::ops::RangeInclusive;
-use std::collections::HashSet;
-use std::hash::Hash;
 use std::fmt;
 use std::convert::TryFrom;
 
 static MAX_BITCOUNT: usize = 64;
+static BIT_RANGE_SEP: &str = ":";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ByteOrder {
@@ -14,7 +13,7 @@ pub enum ByteOrder {
 
 #[derive(Debug)]
 pub struct BitSpan {
-    spans: RangeInclusive<usize>,
+    span: RangeInclusive<usize>,
     kind: BitSpanKind,
     show_rsvd: bool,
     name: String,
@@ -23,8 +22,8 @@ pub struct BitSpan {
 }
 
 impl BitSpan {
-    pub fn new(spans: RangeInclusive<usize>, kind: BitSpanKind, show_rsvd: bool, name: String, short: String, long: String) -> Self {
-        BitSpan { spans, kind, show_rsvd, name, short, long }
+    pub fn new(span: RangeInclusive<usize>, kind: BitSpanKind, show_rsvd: bool, name: String, short: String, long: String) -> Self {
+        BitSpan { span, kind, show_rsvd, name, short, long }
     }
 }
 
@@ -42,10 +41,10 @@ pub struct BitGroup {
     name: String,
     arch: String,
     device: String,
+    desc: String,
     byte_order: ByteOrder,
     bit_count: usize,
-    chunks: Vec<u8>,
-    desc: Vec<BitSpan>,
+    bitspans: Vec<BitSpan>,
 }
 
 impl BitGroup {
@@ -53,19 +52,23 @@ impl BitGroup {
             name: String,
             arch: String,
             device: String,
+            desc: String,
             byte_order: ByteOrder,
             bit_count: usize,
-            chunks: Vec<u8>,
-            desc: Vec<BitSpan>) -> Self {
+            bitspans: Vec<BitSpan>) -> Self {
         BitGroup {
             name,
             arch,
             device,
+            desc,
             byte_order,
             bit_count,
-            chunks,
-            desc,
+            bitspans,
         }
+    }
+
+    pub fn description(&self) -> &str {
+        &self.desc
     }
 }
 
@@ -76,14 +79,11 @@ pub enum BitGroupError {
     MissingDevice,
     UnknownArch,
     InvalidBitCount,
-    InvalidChunkIndex,
-    InvalidChunksLength,
-    DuplicateChunkIndex,
-    MissingDescription,
+    MissingBitSpans,
     InvalidBitRange,
     OverlappingBitRange,
     MissingBitName,
-    MissingBitDescription,
+    MissingBitSpanDescription,
 }
 
 impl fmt::Display for BitGroupError {
@@ -94,52 +94,40 @@ impl fmt::Display for BitGroupError {
             BitGroupError::MissingDevice => "missing device",
             BitGroupError::UnknownArch => "unknown architecture",
             BitGroupError::InvalidBitCount => "invalid number of bits",
-            BitGroupError::InvalidChunkIndex => "invalid index in chunks'",
-            BitGroupError::InvalidChunksLength => "invalid number of chunks",
-            BitGroupError::DuplicateChunkIndex => "duplicate index in chunks",
-            BitGroupError::MissingDescription => "missing description",
+            BitGroupError::MissingBitSpans => "missing bit spans",
             BitGroupError::InvalidBitRange => "invalid bit range",
             BitGroupError::OverlappingBitRange => "overlapping bit range",
             BitGroupError::MissingBitName => "empty bit name",
-            BitGroupError::MissingBitDescription => "missing bit description",
+            BitGroupError::MissingBitSpanDescription => "missing bit description",
         };
         write!(f, "{}", str_errkind)
     }
 }
 
-fn has_unique_elements<T>(iter: T) -> bool
-where
-    T: IntoIterator,
-    T::Item: Eq + Hash,
-{
-    let mut uniq = HashSet::new();
-    iter.into_iter().all(move |x| uniq.insert(x))
-}
-
-fn validate_bit_group_desc(bits: &BitGroup) -> Result<(), BitGroupError> {
-    if bits.desc.len() > MAX_BITCOUNT as usize {
+fn validate_bitspans(bitgroup: &BitGroup) -> Result<(), BitGroupError> {
+    if bitgroup.bitspans.len() > MAX_BITCOUNT as usize {
         // The number of bit descriptions exceeds our maximum bit count.
         Err(BitGroupError::InvalidBitCount)
     } else {
         let mut bitpos:Vec<_> = (0..MAX_BITCOUNT).collect(); // Vector of valid bit positions to check overlap in bit ranges.
-        for desc in &bits.desc {
-            if desc.spans.is_empty() || *desc.spans.end() >= bits.bit_count {
+        for bitspan in &bitgroup.bitspans {
+            if bitspan.span.is_empty() || *bitspan.span.end() >= bitgroup.bit_count {
                 // The bit range is invalid (end() is inclusive)
                 return Err(BitGroupError::InvalidBitRange);
-            } else if desc.name.is_empty() {
+            } else if bitspan.name.is_empty() {
                // The bit name is missing.
                return Err(BitGroupError::MissingBitName);
-            } else if desc.short.is_empty() {
+            } else if bitspan.short.is_empty() {
                // The bit description is missing.
-               return Err(BitGroupError::MissingBitDescription);
+               return Err(BitGroupError::MissingBitSpanDescription);
             } else {
                 // Validate that bit ranges don't overlap.
                 // We replace items in a vector (0..MAX_BITCOUNT) with poisoned values for
                 // each range in the description. If the removed items contains a poisoned
                 // value it implies some previous range already existed causing an overlap.
                 // E.g. If MAX_BITCOUNT is 64, bitpos is (0..=63) and poison value is 64.
-                let end = *desc.spans.end() + 1;    // Exclusive bound.
-                let start = *desc.spans.start();    // Inclusive bound.
+                let end = *bitspan.span.end() + 1;    // Exclusive bound.
+                let start = *bitspan.span.start();    // Inclusive bound.
                 let poison = vec![MAX_BITCOUNT; end - start];
                 let removed:Vec<_> = bitpos.splice(start..end, poison).collect();
                 if removed.iter().any(|&x| x == MAX_BITCOUNT) {
@@ -151,22 +139,49 @@ fn validate_bit_group_desc(bits: &BitGroup) -> Result<(), BitGroupError> {
     }
 }
 
-fn validate_bit_group(bits: &BitGroup) -> Result<(), BitGroupError> {
-    if bits.bit_count > MAX_BITCOUNT {
+fn validate_bit_group(bitgroup: &BitGroup) -> Result<(), BitGroupError> {
+    if bitgroup.bit_count > MAX_BITCOUNT {
         // The number of bits exceeds our limit.
         Err(BitGroupError::InvalidBitCount)
-    } else if bits.chunks.len() >= MAX_BITCOUNT as usize {
-        // The chunks index array size exceeds the total number of bits.
-        Err(BitGroupError::InvalidChunksLength)
-    } else if !has_unique_elements(&bits.chunks) {
-        // The chunks index array contains duplicate indices.
-        Err(BitGroupError::DuplicateChunkIndex)
-    } else if bits.desc.is_empty() {
+    } else if bitgroup.bitspans.is_empty() {
        // None of the bits are described.
-       Err(BitGroupError::MissingDescription)
+       Err(BitGroupError::MissingBitSpans)
     } else {
         // Validate the bit descriptions
-        validate_bit_group_desc(bits)
+        validate_bitspans(bitgroup)
+    }
+}
+
+fn get_max_len_for_name(bitspans: &[BitSpan]) -> usize {
+    let mut max_len = 0;
+    for bitspan in bitspans {
+        max_len = std::cmp::max(max_len, bitspan.name.len());
+    }
+    max_len
+}
+
+fn get_max_len_for_short(bitspans: &[BitSpan]) -> usize {
+    let mut max_len = 0;
+    for bitspan in bitspans {
+        max_len = std::cmp::max(max_len, bitspan.short.len());
+    }
+    max_len
+}
+
+fn get_max_len_for_bits(bitspans: &[BitSpan]) -> usize {
+    let mut has_ranges = false;
+    for bitspan in bitspans {
+        let bits_in_range = bitspan.span.end() + 1 - bitspan.span.start();
+        debug_assert!(bits_in_range >= 1);
+        if bits_in_range > 1 {
+            has_ranges = true;
+            break;
+        }
+    }
+    if has_ranges {
+        format!("{end}{sep}{start}", end=MAX_BITCOUNT, sep=BIT_RANGE_SEP, start=MAX_BITCOUNT).len()
+    } else {
+        MAX_BITCOUNT.to_string().len()
     }
 }
 
@@ -245,9 +260,36 @@ pub fn get_binary_ruler_string(num_bits: u8) -> String {
     }
 }
 
-pub fn fmt_bit_group(bits: &BitGroup) -> Result<String, BitGroupError> {
-    validate_bit_group(bits)?;
-    Ok("Validates Okay".to_string())
+pub fn fmt_bit_group(bitgroup: &BitGroup) -> Result<String, BitGroupError> {
+    // Validate the bit group first.
+    validate_bit_group(bitgroup)?;
+
+    // Format the bit group.
+    static COL_SEP: &str = "  ";
+    let name_column_width = get_max_len_for_name(&bitgroup.bitspans);
+    let short_column_width = get_max_len_for_short(&bitgroup.bitspans);
+    let bit_column_width = get_max_len_for_bits(&bitgroup.bitspans);
+    let mut out = String::from("");
+    for bitspan in bitgroup.bitspans.iter().rev() {
+        let end = bitspan.span.end();
+        let start = bitspan.span.start();
+        let bitpos = if end == start {
+            format!("{}", start)
+        } else {
+            format!("{end}{sep}{start}", end=end, sep=BIT_RANGE_SEP, start=start)
+        };
+        out = format!("{}{bit:>bit_width$}{sep0}{name:>name_width$}{sep1}{short:<short_width$}{sep2}{long}\n",
+                      out,
+                      bit=bitpos,
+                      bit_width = bit_column_width,
+                      sep0=COL_SEP,
+                      name=bitspan.name, name_width = name_column_width,
+                      sep1=COL_SEP,
+                      short=bitspan.short, short_width = short_column_width,
+                      sep2=COL_SEP,
+                      long=bitspan.long);
+    }
+    Ok(out)
 }
 
 
