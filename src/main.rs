@@ -126,7 +126,7 @@ fn evaluate_expr(stream: &mut StandardStream, str_expr: &str, app_mode: AppMode)
 }
 
 fn test_bitgroup_desc(stream: &mut StandardStream) -> std::io::Result<()> {
-    let efer_bit_span = vec![
+    let efer_bitspans = vec![
         BitSpan::new(
             RangeInclusive::new(0, 0),
             BitSpanKind::Normal,
@@ -136,24 +136,66 @@ fn test_bitgroup_desc(stream: &mut StandardStream) -> std::io::Result<()> {
             String::from("System Call Extensions"),
         ),
         BitSpan::new(
-            RangeInclusive::new(8, 8),
+            RangeInclusive::new(1, 1),
             BitSpanKind::Normal,
             false,
             String::from("LME"),
-            String::from("Long Mode"),
-            String::from("Long Mode Enable"),
+            String::from("Long mode enable"),
+            String::from("Long mode enable"),
+        ),
+        BitSpan::new(
+            RangeInclusive::new(10, 10),
+            BitSpanKind::Normal,
+            false,
+            String::from("LMA"),
+            String::from("Long mode active"),
+            String::from("Long mode active"),
+        ),
+        BitSpan::new(
+            RangeInclusive::new(11, 11),
+            BitSpanKind::Normal,
+            false,
+            String::from("NXE"),
+            String::from("No-execute enable"),
+            String::from("No-execute enable"),
+        ),
+        BitSpan::new(
+            RangeInclusive::new(12, 12),
+            BitSpanKind::Normal,
+            false,
+            String::from("SVME"),
+            String::from("SVM enable"),
+            String::from("Secure virtual machine enable (AMD)"),
+        ),
+        BitSpan::new(
+            RangeInclusive::new(13, 13),
+            BitSpanKind::Normal,
+            false,
+            String::from("LMSL"),
+            String::from("LMSL enable"),
+            String::from("Long mode segment limit enable (AMD)"),
+        ),
+        BitSpan::new(
+            RangeInclusive::new(14, 14),
+            BitSpanKind::Normal,
+            false,
+            String::from("FFXSR"),
+            String::from("Fast FXSAVE/FXRSTOR"),
+            String::from("Fast FXSAVE/FXRSTOR"),
         ),
     ];
-    let efer_bits = BitGroup::new(
+    let efer = BitGroup::new(
         String::from("EFER"),
         String::from("x86"),
         String::from("cpu"),
+        String::from("Extended Feature Register"),
         ByteOrder::LittleEndian,
         64,
-        vec![],
-        efer_bit_span
+        efer_bitspans
     );
-    let res_fmt = bitgroup::fmt_bit_group(&efer_bits);
+    write_color(stream, "EFER", Color::Cyan, true)?;
+    writeln!(stream, " ({})", efer.description())?;
+    let res_fmt = bitgroup::fmt_bit_group(&efer);
     match res_fmt {
         Ok(v) => writeln!(stream, "{}", v)?,
         Err(e) => writeln!(stream, "Error: {}", e)?,
