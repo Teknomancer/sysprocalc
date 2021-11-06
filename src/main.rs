@@ -1,4 +1,4 @@
-use bitgroup::{BitGroup, BitSpan, BitSpanKind, ByteOrder };
+use bitgroup::{BitGroup, BitSpan, BitSpanKind, ByteOrder};
 use rustyline::Editor;
 use spceval::{Number, ExprError};
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
