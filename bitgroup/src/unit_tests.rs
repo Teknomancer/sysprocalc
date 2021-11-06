@@ -1,5 +1,5 @@
 use std::ops::RangeInclusive;
-use super::{MAX_BITCOUNT, validate_bit_group, BitSpan, BitSpanKind, BitGroup, BitGroupError, ByteOrder};
+use super::{MAX_BITCOUNT, BitSpan, BitSpanKind, BitGroup, BitGroupError, ByteOrder};
 
 #[test]
 fn test_valid_bit_group() {
@@ -28,7 +28,7 @@ fn test_valid_bit_group() {
                 String::from("Generic Bit 1"),
             ),
         ]);
-    let res_fmt = validate_bit_group(&gen_bits);
+    let res_fmt = gen_bits._validate();
     assert!(res_fmt.is_ok());
 }
 
@@ -214,7 +214,7 @@ fn test_invalid_bit_group() {
     ];
 
     for bs in &pair_invalid_bit_grps {
-        let res_fmt = validate_bit_group(&bs.0);
+        let res_fmt = bs.0._validate();
         assert!(res_fmt.is_err(), "{:?}", bs.0);
         assert_eq!(res_fmt.err().unwrap(), bs.1);
     }
