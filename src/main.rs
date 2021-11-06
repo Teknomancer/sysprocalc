@@ -234,11 +234,12 @@ fn main() -> std::io::Result<()> {
         loop {
             let res_line = editor.readline(USER_PROMPT);
             if let Ok(str_input) = res_line {
-                let str_expr = str_input.as_str();
-                editor.add_history_entry(str_expr);
+                let input_expr = str_input.as_str();
+                editor.add_history_entry(input_expr);
 
-                if !str_expr.is_empty() {
-                    match str_expr {
+                let input_expr_trimmed = input_expr.trim();
+                if !input_expr_trimmed.is_empty() {
+                    match input_expr_trimmed {
                         "q" | "quit" | "exit" => break,
                         "efer" => {
                             test_bitgroup_desc(&mut stdout)?;
@@ -246,7 +247,9 @@ fn main() -> std::io::Result<()> {
                         }
                         _ => (),
                     }
-                    evaluate_expr(&mut stdout, str_expr, AppMode::Interactive)?;
+                    // Use the original input expression given by the user rather
+                    // than the trimmed expression as it would mess up the error caret.
+                    evaluate_expr(&mut stdout, input_expr, AppMode::Interactive)?;
                 }
             } else {
                 let mut stderr = StandardStream::stderr(color_choice);
