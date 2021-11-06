@@ -1,6 +1,6 @@
 use bitgroup::{BitGroup, BitSpan, BitSpanKind, ByteOrder};
-use rustyline::Editor;
 use spceval::{Number, ExprError};
+use rustyline::Editor;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 use std::env;
