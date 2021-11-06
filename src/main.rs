@@ -196,12 +196,6 @@ fn test_bitgroup_desc(stream: &mut StandardStream) -> std::io::Result<()> {
     write_color(stream, efer.get_name(), Color::Cyan, true)?;
     writeln!(stream, " ({})", efer.get_description())?;
     writeln!(stream, "{}", efer)?;
-    //let res_fmt = bitgroup::fmt_bit_group(&efer);
-    //match res_fmt {
-    //    Ok(v) => writeln!(stream, "{}", v)?,
-    //    Err(e) => writeln!(stream, "Error: {}", e)?,
-    //};
-
     Ok(())
 }
 
