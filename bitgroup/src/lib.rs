@@ -1,6 +1,5 @@
 ﻿use std::ops::RangeInclusive;
 use std::fmt;
-use std::convert::TryFrom;
 
 static MAX_BITCOUNT: usize = 64;
 static BIT_RANGE_SEP: &str = ":";
@@ -161,7 +160,7 @@ impl BitGroup {
     }
 }
 
-impl std::fmt::Display for BitGroup {
+impl fmt::Display for BitGroup {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Figure out column widths.
         static COL_SEP: &str = "  ";
