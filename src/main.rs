@@ -184,13 +184,13 @@ fn test_bitgroup_desc(stream: &mut StandardStream) -> std::io::Result<()> {
             String::from("Fast FXSAVE/FXRSTOR"),
         ),
     ];
-    let efer = BitGroup::new(
+    let efer: BitGroup<u64> = BitGroup::new(
         String::from("EFER"),
         String::from("x86"),
         String::from("cpu"),
         String::from("Extended Feature Register"),
         ByteOrder::LittleEndian,
-        64,
+        None,
         efer_bitspans
     );
     write_color(stream, efer.get_name(), Color::Cyan, true)?;

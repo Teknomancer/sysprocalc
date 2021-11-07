@@ -1,7 +1,8 @@
 ﻿use std::ops::RangeInclusive;
 use std::fmt;
+use num_traits::PrimInt;
 
-static MAX_BITCOUNT: usize = 64;
+static MAX_BITCOUNT: usize = u64::BITS as usize;
 static BIT_RANGE_SEP: &str = ":";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -28,7 +29,7 @@ impl BitSpan {
             name: String,
             short: String,
             long: String) -> Self {
-        BitSpan { span, kind, show_rsvd, name, short, long }
+        Self { span, kind, show_rsvd, name, short, long }
     }
 }
 
@@ -42,34 +43,26 @@ pub enum BitSpanKind {
 }
 
 #[derive(Debug)]
-pub struct BitGroup {
+pub struct BitGroup<T: PrimInt> {
     name: String,
     arch: String,
     device: String,
     desc: String,
     byte_order: ByteOrder,
-    bit_count: usize,
+    value: Option<T>,
     bitspans: Vec<BitSpan>,
 }
 
-impl BitGroup {
+impl<T: PrimInt> BitGroup<T> {
     pub fn new(
             name: String,
             arch: String,
             device: String,
             desc: String,
             byte_order: ByteOrder,
-            bit_count: usize,
+            value: Option<T>,
             bitspans: Vec<BitSpan>) -> Self {
-        BitGroup {
-            name,
-            arch,
-            device,
-            desc,
-            byte_order,
-            bit_count,
-            bitspans,
-        }
+        Self { name, arch, device, desc, byte_order, value, bitspans }
     }
 
     pub fn get_name(&self) -> &str {
@@ -80,10 +73,20 @@ impl BitGroup {
         &self.desc
     }
 
-    fn _validate_bitspans(&self) -> Result<(), BitGroupError> {
-        let mut bitpos:Vec<_> = (0..MAX_BITCOUNT).collect(); // Vector of valid bit positions to check overlap in bit ranges.
+    pub fn set_value(&mut self, value: Option<T>) {
+        self.value = value;
+    }
+
+    #[inline(always)]
+    fn get_total_bits(&self) -> usize {
+        std::mem::size_of::<T>() * 8
+    }
+
+    fn validate_bitspans(&self) -> Result<(), BitGroupError> {
+        let total_bits = self.get_total_bits();
+        let mut bitpos:Vec<_> = (0..total_bits).collect(); // Vector of valid bit positions to check overlap in bit ranges.
         for bitspan in &self.bitspans {
-            if bitspan.span.is_empty() || *bitspan.span.end() >= self.bit_count {
+            if bitspan.span.is_empty() || *bitspan.span.end() >= total_bits {
                 // The bit range is invalid (end() is inclusive)
                 return Err(BitGroupError::InvalidBitRange);
             } else if bitspan.name.is_empty() {
@@ -110,8 +113,8 @@ impl BitGroup {
         Ok(())
     }
 
-    fn _validate(&self) -> Result<(), BitGroupError> {
-        if self.bit_count > MAX_BITCOUNT {
+    fn validate(&self) -> Result<(), BitGroupError> {
+        if self.get_total_bits() > MAX_BITCOUNT {
             // The number of bits exceeds our maximum supported limit.
             Err(BitGroupError::InvalidBitCount)
         } else if self.bitspans.is_empty() {
@@ -122,7 +125,7 @@ impl BitGroup {
            Err(BitGroupError::InvalidBitCount)
         } else {
             // Validate the bit descriptions
-            self._validate_bitspans()
+            self.validate_bitspans()
         }
     }
 
@@ -160,7 +163,7 @@ impl BitGroup {
     }
 }
 
-impl fmt::Display for BitGroup {
+impl<T: PrimInt> fmt::Display for BitGroup<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Figure out column widths.
         static COL_SEP: &str = "  ";
@@ -168,34 +171,41 @@ impl fmt::Display for BitGroup {
         let short_column_width = self.get_short_column_width();
         let bit_column_width = self.get_bits_column_width();
 
-        // Format the bit spans in the bit group.
         let mut out = String::from("");
-        for bitspan in self.bitspans.iter().rev() {
-            let end = bitspan.span.end();
-            let start = bitspan.span.start();
-            let bitpos = if end == start {
-                format!("{}", start)
-            } else {
-                format!("{end}{sep}{start}", end = end, sep = BIT_RANGE_SEP, start = start)
-            };
-            out = format!(
-                "{}{bit:>bit_width$}{sep0}{name:>name_width$}{sep1}{short:<short_width$}{sep2}{long}\n",
-                out,
-                bit = bitpos,
-                bit_width = bit_column_width,
-                sep0 = COL_SEP,
-                name = bitspan.name, name_width = name_column_width,
-                sep1 = COL_SEP,
-                short = bitspan.short, short_width = short_column_width,
-                sep2 = COL_SEP,
-                long = bitspan.long
-                );
+        match self.value {
+            Some(_) => {
+                todo!();
+            }
+
+            _ => {
+                for bitspan in self.bitspans.iter().rev() {
+                    let end = bitspan.span.end();
+                    let start = bitspan.span.start();
+                    let bitpos = if end == start {
+                        format!("{}", start)
+                    } else {
+                        format!("{end}{sep}{start}", end = end, sep = BIT_RANGE_SEP, start = start)
+                    };
+                    out = format!(
+                        "{}{bit:>bit_width$}{sep0}{name:>name_width$}{sep1}{short:<short_width$}{sep2}{long}\n",
+                        out,
+                        bit = bitpos,
+                        bit_width = bit_column_width,
+                        sep0 = COL_SEP,
+                        name = bitspan.name, name_width = name_column_width,
+                        sep1 = COL_SEP,
+                        short = bitspan.short, short_width = short_column_width,
+                        sep2 = COL_SEP,
+                        long = bitspan.long,
+                        );
+                }
+            }
         }
         write!(f, "{}", out)
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum BitGroupError {
     MissingName,
     MissingArch,

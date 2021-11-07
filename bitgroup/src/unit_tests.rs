@@ -3,13 +3,13 @@ use super::{MAX_BITCOUNT, BitSpan, BitSpanKind, BitGroup, BitGroupError, ByteOrd
 
 #[test]
 fn test_valid_bit_group() {
-    let gen_bits = BitGroup::new(
+    let gen_bits: BitGroup<u64> = BitGroup::new(
         String::from("generic"),
         String::from("x86"),
         String::from("cpu"),
         String::from("description"),
         ByteOrder::LittleEndian,
-        MAX_BITCOUNT,
+        None,
         vec![
             BitSpan::new(
                 RangeInclusive::new(0, 0),
@@ -28,46 +28,23 @@ fn test_valid_bit_group() {
                 String::from("Generic Bit 1"),
             ),
         ]);
-    let res_fmt = gen_bits._validate();
+    let res_fmt = gen_bits.validate();
     assert!(res_fmt.is_ok());
 }
 
 #[test]
 fn test_invalid_bit_group() {
-    let pair_invalid_bit_grps = [
-        //
-        // Invalid bit count (MAX_BITCOUNT+1)
-        //
-        (BitGroup::new(
-            String::from("generic"),
-            String::from("x86"),
-            String::from("cpu"),
-            String::from("description"),
-            ByteOrder::LittleEndian,
-            MAX_BITCOUNT + 1,
-            vec![
-                BitSpan::new(
-                    RangeInclusive::new(0, 0),
-                    BitSpanKind::Normal,
-                    false,
-                    String::from("Inv 0"),
-                    String::from("Inv 0"),
-                    String::from("Inv Bit 0"),
-                ),
-            ],
-        ),
-        BitGroupError::InvalidBitCount),
-
+    let pair_invalid_64 = [
         //
         // Overlapping bit ranges (0..5) and (5..7)
         //
-        (BitGroup::new(
+        (BitGroup::<u64>::new(
             String::from("generic"),
             String::from("x86"),
             String::from("cpu"),
             String::from("description"),
             ByteOrder::LittleEndian,
-            MAX_BITCOUNT,
+            None,
             vec![
                 BitSpan::new(
                     RangeInclusive::new(0, 5),
@@ -92,13 +69,13 @@ fn test_invalid_bit_group() {
         //
         // Overlapping bit ranges (63..63) and (32..63)
         //
-        (BitGroup::new(
+        (BitGroup::<u64>::new(
             String::from("generic"),
             String::from("x86"),
             String::from("cpu"),
             String::from("description"),
             ByteOrder::LittleEndian,
-            MAX_BITCOUNT,
+            None,
             vec![
                 BitSpan::new(
                     RangeInclusive::new(63, 63),
@@ -123,13 +100,13 @@ fn test_invalid_bit_group() {
         //
         // Invalid bit range (1..0)
         //
-        (BitGroup::new(
+        (BitGroup::<u64>::new(
             String::from("generic"),
             String::from("x86"),
             String::from("cpu"),
             String::from("description"),
             ByteOrder::LittleEndian,
-            MAX_BITCOUNT,
+            None,
             vec![
                 BitSpan::new(
                     RangeInclusive::new(1, 0),
@@ -146,13 +123,13 @@ fn test_invalid_bit_group() {
         //
         // Invalid bit range (0..MAX_BITCOUNT)
         //
-        (BitGroup::new(
+        (BitGroup::<u64>::new(
             String::from("generic"),
             String::from("x86"),
             String::from("cpu"),
             String::from("description"),
             ByteOrder::LittleEndian,
-            MAX_BITCOUNT,
+            None,
             vec![
                 BitSpan::new(
                     RangeInclusive::new(0, MAX_BITCOUNT),
@@ -167,18 +144,18 @@ fn test_invalid_bit_group() {
         BitGroupError::InvalidBitRange),
 
         //
-        // Invalid bit range (bit_count+1..bit_count+1)
+        // Invalid bit range (bit_count+1..bit_count+2)
         //
-        (BitGroup::new(
+        (BitGroup::<u64>::new(
             String::from("generic"),
             String::from("x86"),
             String::from("cpu"),
             String::from("description"),
             ByteOrder::LittleEndian,
-            32,
+            None,
             vec![
                 BitSpan::new(
-                    RangeInclusive::new(33, 33),
+                    RangeInclusive::new(64, 65),
                     BitSpanKind::Normal,
                     false,
                     String::from("Inv 0"),
@@ -192,16 +169,16 @@ fn test_invalid_bit_group() {
         //
         // Invalid bit range (bit_count+1..0)
         //
-        (BitGroup::new(
+        (BitGroup::<u64>::new(
             String::from("generic"),
             String::from("x86"),
             String::from("cpu"),
             String::from("description"),
             ByteOrder::LittleEndian,
-            32,
+            None,
             vec![
                 BitSpan::new(
-                    RangeInclusive::new(32, 0),
+                    RangeInclusive::new(64, 0),
                     BitSpanKind::Normal,
                     false,
                     String::from("Inv 0"),
@@ -213,10 +190,10 @@ fn test_invalid_bit_group() {
         BitGroupError::InvalidBitRange),
     ];
 
-    for bs in &pair_invalid_bit_grps {
-        let res_fmt = bs.0._validate();
-        assert!(res_fmt.is_err(), "{:?}", bs.0);
-        assert_eq!(res_fmt.err().unwrap(), bs.1);
+    for bg in &pair_invalid_64 {
+        let res_fmt = bg.0.validate();
+        assert!(res_fmt.is_err(), "{:?}", bg.0);
+        assert_eq!(res_fmt.err().unwrap(), bg.1);
     }
 }
 
