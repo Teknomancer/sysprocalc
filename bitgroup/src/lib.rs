@@ -269,7 +269,7 @@ pub fn get_binary_ruler_string(num_bits: u8) -> String {
     debug_assert!(num_bits <= 64);
 
     if num_bits >= 8 {
-        let mut str_bin_ruler = String::with_capacity(98);
+        let mut ruler_out = String::with_capacity(98);
         static BIN_RULER: [&str; 8] = [
             "|  7:0  |",
             "| 15:8  | ",
@@ -289,18 +289,18 @@ pub fn get_binary_ruler_string(num_bits: u8) -> String {
         // TODO: I'm sure this can be optimized, but no time now.
         let num_pad_bits = num_bits % 8;
         for idx in 0..num_pad_bits {
-            str_bin_ruler.push(' ');
+            ruler_out.push(' ');
             if idx % 4 == 0 {
-                str_bin_ruler.push(' ');
+                ruler_out.push(' ');
             }
         }
 
         // Iterate over chunks of 8-bits and make the ruler
         for idx in (num_pad_bits..num_bits).rev().step_by(8) {
-            str_bin_ruler.push_str(BIN_RULER[((idx + 1) >> 3) - 1]);
+            ruler_out.push_str(BIN_RULER[((idx + 1) >> 3) - 1]);
         }
 
-        str_bin_ruler
+        ruler_out
     } else {
         "".to_string()
     }
