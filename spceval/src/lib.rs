@@ -68,7 +68,7 @@ pub struct Number {
 
 impl fmt::Display for ExprError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let str_errkind = match self.kind {
+        let err_kind = match self.kind {
             ExprErrorKind::EmptyExpr => "expression empty",
             ExprErrorKind::ExceededMaxSubExpr => "exceeded maximum sub-expression count",
             ExprErrorKind::FailedEvaluation => "evaluation failed",
@@ -82,7 +82,7 @@ impl fmt::Display for ExprError {
             ExprErrorKind::MissingOperatorOrFunction => "operator or function missing",
             ExprErrorKind::MissingParenthesis => "parenthesis missing",
         };
-        write!(f, "{} {}", str_errkind, self.message)
+        write!(f, "{} {}", err_kind, self.message)
     }
 }
 
