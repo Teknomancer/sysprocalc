@@ -232,26 +232,26 @@ impl std::fmt::Display for BitGroupError {
 // Figure out a better place to put this static function
 pub fn get_binary_string(val: u64) -> String {
     // Formats the number as binary digits with a space (from the right) for every 4 binary digits.
-    let mut vec_bin: Vec<char> = Vec::with_capacity(82);
-    let mut val = val;
     static BIN_DIGITS: [char; 2] = ['0', '1'];
+    let mut bin_out: Vec<char> = Vec::with_capacity(88);
+    let mut val = val;
     let num_digits = u64::MAX.count_ones() - val.leading_zeros();
 
     // Push first bit (to avoid extra branch in the loop for not pushing ' ' on 0th iteration).
-    vec_bin.push(BIN_DIGITS[val.wrapping_rem(2) as usize]);
+    bin_out.push(BIN_DIGITS[val.wrapping_rem(2) as usize]);
     val >>= 1;
 
     // Push remaining bits.
     for idx in 1..num_digits {
         if idx % 4 == 0 {
-            vec_bin.push(' ');
+            bin_out.push(' ');
         }
-        vec_bin.push(BIN_DIGITS[val.wrapping_rem(2) as usize]);
+        bin_out.push(BIN_DIGITS[val.wrapping_rem(2) as usize]);
         val >>= 1;
     }
 
     // Return the vector of binary-digit characters (after reversing for reading LTR) as string.
-    vec_bin.iter().rev().collect::<String>()
+    bin_out.iter().rev().collect::<String>()
 }
 
 // Figure out a better place to put this static function
