@@ -196,7 +196,6 @@ impl fmt::Display for BitGroup {
     }
 }
 
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum BitGroupError {
     MissingName,
