@@ -212,15 +212,15 @@ pub enum BitGroupError {
 impl fmt::Display for BitGroupError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let err = match *self {
-            BitGroupError::MissingName               => "missing name",
-            BitGroupError::MissingArch               => "missing architecture",
-            BitGroupError::MissingDevice             => "missing device",
-            BitGroupError::UnknownArch               => "unknown architecture",
-            BitGroupError::InvalidBitCount           => "invalid number of bits",
-            BitGroupError::MissingBitSpans           => "missing bit spans",
-            BitGroupError::InvalidBitRange           => "invalid bit range",
-            BitGroupError::OverlappingBitRange       => "overlapping bit range",
-            BitGroupError::MissingBitName            => "empty bit name",
+            BitGroupError::MissingName => "missing name",
+            BitGroupError::MissingArch => "missing architecture",
+            BitGroupError::MissingDevice => "missing device",
+            BitGroupError::UnknownArch => "unknown architecture",
+            BitGroupError::InvalidBitCount => "invalid number of bits",
+            BitGroupError::MissingBitSpans => "missing bit spans",
+            BitGroupError::InvalidBitRange => "invalid bit range",
+            BitGroupError::OverlappingBitRange => "overlapping bit range",
+            BitGroupError::MissingBitName => "empty bit name",
             BitGroupError::MissingBitSpanDescription => "missing bit description",
         };
         write!(f, "{}", err)
