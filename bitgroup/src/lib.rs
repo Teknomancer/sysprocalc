@@ -1,6 +1,5 @@
 ﻿use std::ops::RangeInclusive;
 use std::fmt;
-use std::error;
 
 static MAX_BITCOUNT: usize = 64;
 static BIT_RANGE_SEP: &str = ":";
@@ -213,24 +212,6 @@ pub enum BitGroupError {
 impl fmt::Display for BitGroupError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let err = match *self {
-            BitGroupError::MissingName               => "MissingName",
-            BitGroupError::MissingArch               => "MissingArch",
-            BitGroupError::MissingDevice             => "MissingDevice",
-            BitGroupError::UnknownArch               => "UnknownArch",
-            BitGroupError::InvalidBitCount           => "InvalidBitCount",
-            BitGroupError::MissingBitSpans           => "MissingBitSpans",
-            BitGroupError::InvalidBitRange           => "InvalidBitRange",
-            BitGroupError::OverlappingBitRange       => "OverlappingBitRange",
-            BitGroupError::MissingBitName            => "MissingBitName",
-            BitGroupError::MissingBitSpanDescription => "MissingBitSpanDescription",
-        };
-        write!(f, "{}", err)
-    }
-}
-
-impl error::Error for BitGroupError {
-    fn description(&self) -> &str {
-        match *self {
             BitGroupError::MissingName               => "missing name",
             BitGroupError::MissingArch               => "missing architecture",
             BitGroupError::MissingDevice             => "missing device",
@@ -241,7 +222,8 @@ impl error::Error for BitGroupError {
             BitGroupError::OverlappingBitRange       => "overlapping bit range",
             BitGroupError::MissingBitName            => "empty bit name",
             BitGroupError::MissingBitSpanDescription => "missing bit description",
-        }
+        };
+        write!(f, "{}", err)
     }
 }
 
