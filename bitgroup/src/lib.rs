@@ -1,5 +1,6 @@
 ﻿use std::ops::RangeInclusive;
 use std::fmt;
+use std::error;
 
 static MAX_BITCOUNT: usize = 64;
 static BIT_RANGE_SEP: &str = ":";
@@ -210,24 +211,40 @@ pub enum BitGroupError {
     MissingBitSpanDescription,
 }
 
-impl std::fmt::Display for BitGroupError {
+impl fmt::Display for BitGroupError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let str_errkind = match self {
-            BitGroupError::MissingName => "missing name",
-            BitGroupError::MissingArch => "missing architecture",
-            BitGroupError::MissingDevice => "missing device",
-            BitGroupError::UnknownArch => "unknown architecture",
-            BitGroupError::InvalidBitCount => "invalid number of bits",
-            BitGroupError::MissingBitSpans => "missing bit spans",
-            BitGroupError::InvalidBitRange => "invalid bit range",
-            BitGroupError::OverlappingBitRange => "overlapping bit range",
-            BitGroupError::MissingBitName => "empty bit name",
-            BitGroupError::MissingBitSpanDescription => "missing bit description",
+        let err = match *self {
+            BitGroupError::MissingName               => "MissingName",
+            BitGroupError::MissingArch               => "MissingArch",
+            BitGroupError::MissingDevice             => "MissingDevice",
+            BitGroupError::UnknownArch               => "UnknownArch",
+            BitGroupError::InvalidBitCount           => "InvalidBitCount",
+            BitGroupError::MissingBitSpans           => "MissingBitSpans",
+            BitGroupError::InvalidBitRange           => "InvalidBitRange",
+            BitGroupError::OverlappingBitRange       => "OverlappingBitRange",
+            BitGroupError::MissingBitName            => "MissingBitName",
+            BitGroupError::MissingBitSpanDescription => "MissingBitSpanDescription",
         };
-        write!(f, "{}", str_errkind)
+        write!(f, "{}", err)
     }
 }
 
+impl error::Error for BitGroupError {
+    fn description(&self) -> &str {
+        match *self {
+            BitGroupError::MissingName               => "missing name",
+            BitGroupError::MissingArch               => "missing architecture",
+            BitGroupError::MissingDevice             => "missing device",
+            BitGroupError::UnknownArch               => "unknown architecture",
+            BitGroupError::InvalidBitCount           => "invalid number of bits",
+            BitGroupError::MissingBitSpans           => "missing bit spans",
+            BitGroupError::InvalidBitRange           => "invalid bit range",
+            BitGroupError::OverlappingBitRange       => "overlapping bit range",
+            BitGroupError::MissingBitName            => "empty bit name",
+            BitGroupError::MissingBitSpanDescription => "missing bit description",
+        }
+    }
+}
 
 // Figure out a better place to put this static function
 pub fn get_binary_string(val: u64) -> String {
