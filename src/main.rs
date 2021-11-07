@@ -7,6 +7,8 @@ use std::env;
 use std::io::Write;
 use std::ops::RangeInclusive;
 
+mod registers;
+
 #[cfg(debug_assertions)]
 mod logger;
 
