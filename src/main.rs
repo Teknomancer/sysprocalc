@@ -194,8 +194,8 @@ fn test_bitgroup_desc(stream: &mut StandardStream) -> std::io::Result<()> {
         ByteOrder::LittleEndian,
         efer_bitspans
     );
-    write_color(stream, efer.get_name(), Color::Cyan, true)?;
-    writeln!(stream, " ({})", efer.get_description())?;
+    write_color(stream, efer.name(), Color::Cyan, true)?;
+    writeln!(stream, " ({})", efer.description())?;
     writeln!(stream, "{}", efer)?;
     Ok(())
 }
