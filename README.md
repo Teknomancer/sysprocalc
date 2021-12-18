@@ -5,7 +5,7 @@
 # sysprocalc
 sysprocalc (system programmer's calculator) is an interactive, command-line expression evaluator for Windows, macOS, Linux. sysprocalc is written entirely in Rust and is the successor to my old C project [nopf](https://github.com/Teknomancer/nopf).
 
-> :warning: **Warning** This is my first Rust project and I'm still learning idiomatic Rust. Inefficient or atypical Rust code is to be expected.
+> :warning: This is my first Rust project and I'm still learning idiomatic Rust. Inefficient or atypical Rust code is to be expected.
 
 Basic expression parsing and evaluation works. There's also decent test coverage using GitHub continuous integration for Windows, macOS and Linux. This helps identify regressions while modifying core functionality.
 
