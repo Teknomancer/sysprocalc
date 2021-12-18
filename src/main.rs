@@ -2,7 +2,6 @@ use bitgroup::{BitGroup, BitSpan, BitSpanKind, ByteOrder};
 use spceval::{Number, ExprError};
 use rustyline::Editor;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
-
 use std::env;
 use std::io::Write;
 use std::ops::RangeInclusive;
