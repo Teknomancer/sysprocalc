@@ -25,13 +25,15 @@ pub struct BitSpan {
 }
 
 impl BitSpan {
+    // Formatting taken from: https://github.com/rust-lang/rust/blob/22f8bde876f2fa9c5c4e95be1bce29cc271f2b51/compiler/rustc_infer/src/traits/mod.rs#L145
     pub fn new(
-            span: RangeInclusive<usize>,
-            kind: BitSpanKind,
-            show_rsvd: bool,
-            name: String,
-            short: String,
-            long: String) -> Self {
+        span: RangeInclusive<usize>,
+        kind: BitSpanKind,
+        show_rsvd: bool,
+        name: String,
+        short: String,
+        long: String
+    ) -> Self {
         Self { span, kind, show_rsvd, name, short, long }
     }
 }
@@ -67,12 +69,13 @@ enum BitSpanElement {
 
 impl<T: Unsigned + BitMemory> BitGroup<T> {
     pub fn new(
-            name: String,
-            arch: String,
-            device: String,
-            desc: String,
-            byte_order: ByteOrder,
-            bitspans: Vec<BitSpan>) -> Self {
+        name: String,
+        arch: String,
+        device: String,
+        desc: String,
+        byte_order: ByteOrder,
+        bitspans: Vec<BitSpan>
+    ) -> Self {
         Self { name, arch, device, desc, byte_order, value: BitVec::new(), bitspans, phantom: PhantomData }
     }
 
@@ -135,6 +138,7 @@ impl<T: Unsigned + BitMemory> BitGroup<T> {
     }
 
     fn validate(&self) -> Result<(), BitGroupError> {
+        // TODO: Why isn't name, architecture and device checked for is_empty()?
         if self.bit_capacity() > MAX_BITCOUNT {
             // The number of bits exceeds our maximum supported limit.
             Err(BitGroupError::InvalidBitCount)
