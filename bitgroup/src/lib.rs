@@ -57,6 +57,7 @@ pub struct BitGroup<T: Unsigned + BitMemory> {
     phantom: PhantomData<T>,
 }
 
+#[derive(Debug)]
 enum BitSpanElement {
     Bits,
     Name,
