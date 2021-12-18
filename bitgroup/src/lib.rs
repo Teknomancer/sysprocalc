@@ -149,7 +149,7 @@ impl<T: Unsigned + BitMemory> BitGroup<T> {
         }
     }
 
-    fn get_column_width(&self, element: BitSpanElement) -> usize {
+    fn column_width(&self, element: BitSpanElement) -> usize {
         let mut col_len = 0;
         match element {
             BitSpanElement::Bits => {
@@ -195,9 +195,9 @@ impl<T: Unsigned + BitMemory> fmt::Display for BitGroup<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Figure out column widths.
         static COL_SEP: &str = "  ";
-        let name_column_width = self.get_column_width(BitSpanElement::Name);
-        let short_column_width = self.get_column_width(BitSpanElement::Short);
-        let bit_column_width = self.get_column_width(BitSpanElement::Bits);
+        let name_column_width = self.column_width(BitSpanElement::Name);
+        let short_column_width = self.column_width(BitSpanElement::Short);
+        let bit_column_width = self.column_width(BitSpanElement::Bits);
 
         let mut out = String::from("");
         if self.value.is_empty() {
