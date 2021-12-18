@@ -9,7 +9,6 @@ fn test_valid_bit_group() {
         String::from("cpu"),
         String::from("description"),
         ByteOrder::LittleEndian,
-        None,
         vec![
             BitSpan::new(
                 RangeInclusive::new(0, 0),
@@ -44,7 +43,6 @@ fn test_invalid_bit_group() {
             String::from("cpu"),
             String::from("description"),
             ByteOrder::LittleEndian,
-            None,
             vec![
                 BitSpan::new(
                     RangeInclusive::new(0, 5),
@@ -75,7 +73,6 @@ fn test_invalid_bit_group() {
             String::from("cpu"),
             String::from("description"),
             ByteOrder::LittleEndian,
-            None,
             vec![
                 BitSpan::new(
                     RangeInclusive::new(63, 63),
@@ -106,7 +103,6 @@ fn test_invalid_bit_group() {
             String::from("cpu"),
             String::from("description"),
             ByteOrder::LittleEndian,
-            None,
             vec![
                 BitSpan::new(
                     RangeInclusive::new(1, 0),
@@ -129,7 +125,6 @@ fn test_invalid_bit_group() {
             String::from("cpu"),
             String::from("description"),
             ByteOrder::LittleEndian,
-            None,
             vec![
                 BitSpan::new(
                     RangeInclusive::new(0, MAX_BITCOUNT),
@@ -152,7 +147,6 @@ fn test_invalid_bit_group() {
             String::from("cpu"),
             String::from("description"),
             ByteOrder::LittleEndian,
-            None,
             vec![
                 BitSpan::new(
                     RangeInclusive::new(64, 65),
@@ -175,7 +169,6 @@ fn test_invalid_bit_group() {
             String::from("cpu"),
             String::from("description"),
             ByteOrder::LittleEndian,
-            None,
             vec![
                 BitSpan::new(
                     RangeInclusive::new(64, 0),

@@ -1,6 +1,9 @@
 ﻿use std::ops::RangeInclusive;
 use std::fmt;
-use num_traits::PrimInt;
+use std::marker::PhantomData;
+use funty::Unsigned;
+use bitvec::prelude::*;
+use bitvec::mem::BitMemory;
 
 static MAX_BITCOUNT: usize = u64::BITS as usize;
 static BIT_RANGE_SEP: &str = ":";
@@ -43,26 +46,33 @@ pub enum BitSpanKind {
 }
 
 #[derive(Debug)]
-pub struct BitGroup<T: PrimInt> {
+pub struct BitGroup<T: Unsigned + BitMemory> {
     name: String,
     arch: String,
     device: String,
     desc: String,
     byte_order: ByteOrder,
-    value: Option<T>,
+    value: BitVec,
     bitspans: Vec<BitSpan>,
+    phantom: PhantomData<T>,
 }
 
-impl<T: PrimInt> BitGroup<T> {
+enum BitSpanElement {
+    Bits,
+    Name,
+    Short,
+    Long,
+}
+
+impl<T: Unsigned + BitMemory> BitGroup<T> {
     pub fn new(
             name: String,
             arch: String,
             device: String,
             desc: String,
             byte_order: ByteOrder,
-            value: Option<T>,
             bitspans: Vec<BitSpan>) -> Self {
-        Self { name, arch, device, desc, byte_order, value, bitspans }
+        Self { name, arch, device, desc, byte_order, value: BitVec::new(), bitspans, phantom: PhantomData }
     }
 
     pub fn get_name(&self) -> &str {
@@ -73,12 +83,22 @@ impl<T: PrimInt> BitGroup<T> {
         &self.desc
     }
 
-    pub fn set_value(&mut self, value: Option<T>) {
-        self.value = value;
+    pub fn set_value(&mut self, value: T) {
+        self.value.store(value);
     }
 
     #[inline(always)]
     fn get_total_bits(&self) -> usize {
+        // Cannot use T::BITS due to multiple definitions caused by
+        // funty 2.0.0 vs funty 1.2.0 (latter required by bitvec 0.22.x).
+        // I don't want to include funty 1.2.0 as it also has other changes
+        // to names such as using the older "IsUnsigned" vs the newer "Unsigned".
+        // I prefer to use the latest version where possible despite bitvec
+        // internally still using funty 1.2.0. Since "BITS" is the only conflict
+        // for now, this is manageable.
+        // See https://github.com/myrrlyn/funty/issues/3
+
+        // T::BITS as usize
         std::mem::size_of::<T>() * 8
     }
 
@@ -129,77 +149,83 @@ impl<T: PrimInt> BitGroup<T> {
         }
     }
 
-    fn get_name_column_width(&self) -> usize {
-        let mut max_len = 0;
-        for bitspan in &self.bitspans {
-            max_len = std::cmp::max(max_len, bitspan.name.len());
-        }
-        max_len
-    }
+    fn get_column_width(&self, element: BitSpanElement) -> usize {
+        let mut col_len = 0;
+        match element {
+            BitSpanElement::Bits => {
+                let mut has_ranges = false;
+                for bitspan in &self.bitspans {
+                    let bits_in_range = bitspan.span.end() + 1 - bitspan.span.start();
+                    debug_assert!(bits_in_range >= 1);
+                    if bits_in_range > 1 {
+                        has_ranges = true;
+                        break;
+                    }
+                }
+                if has_ranges {
+                    col_len = format!("{end}{sep}{start}", end=MAX_BITCOUNT, sep=BIT_RANGE_SEP, start=MAX_BITCOUNT).len();
+                } else {
+                    col_len = MAX_BITCOUNT.to_string().len();
+                }
+            }
 
-    fn get_short_column_width(&self) -> usize {
-        let mut max_len = 0;
-        for bitspan in &self.bitspans {
-            max_len = std::cmp::max(max_len, bitspan.short.len());
-        }
-        max_len
-    }
+            BitSpanElement::Name => {
+                for bitspan in &self.bitspans {
+                    col_len = std::cmp::max(col_len, bitspan.name.len());
+                }
+            }
 
-    fn get_bits_column_width(&self) -> usize {
-        let mut has_ranges = false;
-        for bitspan in &self.bitspans {
-            let bits_in_range = bitspan.span.end() + 1 - bitspan.span.start();
-            debug_assert!(bits_in_range >= 1);
-            if bits_in_range > 1 {
-                has_ranges = true;
-                break;
+            BitSpanElement::Short => {
+                for bitspan in &self.bitspans {
+                    col_len = std::cmp::max(col_len, bitspan.short.len());
+                }
+            }
+
+            BitSpanElement::Long => {
+                for bitspan in &self.bitspans {
+                    col_len = std::cmp::max(col_len, bitspan.long.len());
+                }
             }
         }
-        if has_ranges {
-            format!("{end}{sep}{start}", end=MAX_BITCOUNT, sep=BIT_RANGE_SEP, start=MAX_BITCOUNT).len()
-        } else {
-            MAX_BITCOUNT.to_string().len()
-        }
+        col_len
     }
 }
 
-impl<T: PrimInt> fmt::Display for BitGroup<T> {
+impl<T: Unsigned + BitMemory> fmt::Display for BitGroup<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Figure out column widths.
         static COL_SEP: &str = "  ";
-        let name_column_width = self.get_name_column_width();
-        let short_column_width = self.get_short_column_width();
-        let bit_column_width = self.get_bits_column_width();
+        let name_column_width = self.get_column_width(BitSpanElement::Name);
+        let short_column_width = self.get_column_width(BitSpanElement::Short);
+        let bit_column_width = self.get_column_width(BitSpanElement::Bits);
 
         let mut out = String::from("");
-        match self.value {
-            Some(_) => {
-                todo!();
+        if self.value.is_empty() {
+            for bitspan in self.bitspans.iter().rev() {
+                let end = bitspan.span.end();
+                let start = bitspan.span.start();
+                let bitpos = if end == start {
+                    format!("{}", start)
+                } else {
+                    format!("{end}{sep}{start}", end = end, sep = BIT_RANGE_SEP, start = start)
+                };
+                out = format!(
+                    "{}{bit:>bit_width$}{sep0}{name:>name_width$}{sep1}{short:<short_width$}{sep2}{long}\n",
+                    out,
+                    bit = bitpos,
+                    bit_width = bit_column_width,
+                    sep0 = COL_SEP,
+                    name = bitspan.name, name_width = name_column_width,
+                    sep1 = COL_SEP,
+                    short = bitspan.short, short_width = short_column_width,
+                    sep2 = COL_SEP,
+                    long = bitspan.long,
+                    );
             }
-
-            _ => {
-                for bitspan in self.bitspans.iter().rev() {
-                    let end = bitspan.span.end();
-                    let start = bitspan.span.start();
-                    let bitpos = if end == start {
-                        format!("{}", start)
-                    } else {
-                        format!("{end}{sep}{start}", end = end, sep = BIT_RANGE_SEP, start = start)
-                    };
-                    out = format!(
-                        "{}{bit:>bit_width$}{sep0}{name:>name_width$}{sep1}{short:<short_width$}{sep2}{long}\n",
-                        out,
-                        bit = bitpos,
-                        bit_width = bit_column_width,
-                        sep0 = COL_SEP,
-                        name = bitspan.name, name_width = name_column_width,
-                        sep1 = COL_SEP,
-                        short = bitspan.short, short_width = short_column_width,
-                        sep2 = COL_SEP,
-                        long = bitspan.long,
-                        );
-                }
-            }
+        } else {
+            // See https://docs.rs/crate/bitvec/latest for access patterns.
+            // We ideally want to index a group of bits.
+            todo!();
         }
         write!(f, "{}", out)
     }

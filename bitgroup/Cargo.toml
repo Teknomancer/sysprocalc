@@ -12,5 +12,6 @@ edition = "2021"
 
 [dependencies]
 log = "0.4"
-num-traits = "0.2"
+bitvec = "0.22.3"
+funty = "2.0.0"
 
