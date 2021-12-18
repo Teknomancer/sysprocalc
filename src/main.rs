@@ -192,7 +192,6 @@ fn test_bitgroup_desc(stream: &mut StandardStream) -> std::io::Result<()> {
         String::from("cpu"),
         String::from("Extended Feature Register"),
         ByteOrder::LittleEndian,
-        None,
         efer_bitspans
     );
     write_color(stream, efer.get_name(), Color::Cyan, true)?;
