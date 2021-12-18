@@ -75,11 +75,11 @@ impl<T: Unsigned + BitMemory> BitGroup<T> {
         Self { name, arch, device, desc, byte_order, value: BitVec::new(), bitspans, phantom: PhantomData }
     }
 
-    pub fn get_name(&self) -> &str {
+    pub fn name(&self) -> &str {
         &self.name
     }
 
-    pub fn get_description(&self) -> &str {
+    pub fn description(&self) -> &str {
         &self.desc
     }
 
@@ -88,7 +88,7 @@ impl<T: Unsigned + BitMemory> BitGroup<T> {
     }
 
     #[inline(always)]
-    fn get_total_bits(&self) -> usize {
+    fn bit_capacity(&self) -> usize {
         // Cannot use T::BITS due to multiple definitions caused by
         // funty 2.0.0 vs funty 1.2.0 (latter required by bitvec 0.22.x).
         // I don't want to include funty 1.2.0 as it also has other changes
@@ -103,7 +103,7 @@ impl<T: Unsigned + BitMemory> BitGroup<T> {
     }
 
     fn validate_bitspans(&self) -> Result<(), BitGroupError> {
-        let total_bits = self.get_total_bits();
+        let total_bits = self.bit_capacity();
         let mut bitpos:Vec<_> = (0..total_bits).collect(); // Vector of valid bit positions to check overlap in bit ranges.
         for bitspan in &self.bitspans {
             if bitspan.span.is_empty() || *bitspan.span.end() >= total_bits {
@@ -134,7 +134,7 @@ impl<T: Unsigned + BitMemory> BitGroup<T> {
     }
 
     fn validate(&self) -> Result<(), BitGroupError> {
-        if self.get_total_bits() > MAX_BITCOUNT {
+        if self.bit_capacity() > MAX_BITCOUNT {
             // The number of bits exceeds our maximum supported limit.
             Err(BitGroupError::InvalidBitCount)
         } else if self.bitspans.is_empty() {
