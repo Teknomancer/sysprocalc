@@ -200,9 +200,9 @@ impl<T: Unsigned + BitMemory> fmt::Display for BitGroup<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Figure out column widths.
         static COL_SEP: &str = "  ";
-        let name_column_width = self.column_width(BitSpanElement::Name);
-        let short_column_width = self.column_width(BitSpanElement::Short);
-        let bit_column_width = self.column_width(BitSpanElement::Bits);
+        let name_width = self.column_width(BitSpanElement::Name);
+        let short_width = self.column_width(BitSpanElement::Short);
+        let bits_width = self.column_width(BitSpanElement::Bits);
 
         let mut out = String::from("");
         if self.value.is_empty() {
@@ -215,17 +215,17 @@ impl<T: Unsigned + BitMemory> fmt::Display for BitGroup<T> {
                     format!("{end}{sep}{start}", end = end, sep = BIT_RANGE_SEP, start = start)
                 };
                 out = format!(
-                    "{}{bit:>bit_width$}{sep0}{name:>name_width$}{sep1}{short:<short_width$}{sep2}{long}\n",
+                    "{}{bit:>bits_w$}{sep0}{name:>name_w$}{sep1}{short:<short_w$}{sep2}{long}\n",
                     out,
                     bit = bitpos,
-                    bit_width = bit_column_width,
+                    bits_w = bits_width,
                     sep0 = COL_SEP,
-                    name = bitspan.name, name_width = name_column_width,
+                    name = bitspan.name, name_w = name_width,
                     sep1 = COL_SEP,
-                    short = bitspan.short, short_width = short_column_width,
+                    short = bitspan.short, short_w = short_width,
                     sep2 = COL_SEP,
-                    long = bitspan.long,
-                    );
+                    long = bitspan.long
+                );
             }
         } else {
             // See https://docs.rs/crate/bitvec/latest for access patterns.
