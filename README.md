@@ -3,21 +3,19 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/licenses/MIT)
   
 # sysprocalc
-sysprocalc (system programmer's calculator) is an interactive, command-line expression evaluator for Windows, macOS, Linux (or any platform with a Rust compiler and required dependencies).
+sysprocalc (system programmer's calculator) is an interactive, command-line expression evaluator for Windows, macOS, Linux. sysprocalc is written entirely in Rust and is the successor to my old C project [nopf](https://github.com/Teknomancer/nopf).
 
-sysprocalc is the successor to my old C project [nopf](https://github.com/Teknomancer/nopf). sysprocalc is written from scratch using Rust. 
+> :warning: **Warning** This is my first Rust project and I'm still learning idiomatic Rust. Inefficient or atypical Rust code is to be expected.
 
-> :warning: **Warning** This is my first Rust project and I'm still learning idiomatic Rust. Hence, inefficient code and non-typical patterns are to be expected.
+Basic expression parsing and evaluation works. There's also decent test coverage using GitHub continuous integration for Windows, macOS and Linux. This helps identify regressions while modifying core functionality.
 
-Basic expression parsing and evaluation already works. There's also decent test coverage with GitHub continuous integration (build and testing) for Windows, Linux and macOS which helps greatly while modifying core code.
-
-Variables/constants and common x86-register descriptions aren't supported yet but will be implemented in the near future.
+Variables/constants and x86-register descriptions aren't supported yet but are planned to be implemented in the future.
 
 ### Executable and Library
 
-The project is split into a main executable `sysprocalc` and the core parser/evaluator library (`spceval`). While I don't have any plans of publishing the library as a crate, the library and executable are not tightly coupled. The library exists in its own workspace, making publishing it as a crate easier in the future.
+The project is split into a main executable `sysprocalc` and the core parser/evaluator library (`spceval`). While I don't have any plans of publishing the library as a crate, the library and executable are not tightly coupled. The library exists in its own workspace, to make it easy to publish as a crate in the future.
 
-There are no binary downloads available, so you'll have to build the sources for now.
+When the project reaches a mature state, binary downloads may be made available. Currently, to use sysprocalc, you will have to build it from source.
 
 ### Building from source
 
