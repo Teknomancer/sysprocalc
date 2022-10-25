@@ -87,6 +87,14 @@ impl<T: Unsigned + BitMemory> BitGroup<T> {
         &self.desc
     }
 
+    pub fn device(&self) -> &str {
+        &self.device
+    }
+
+    pub fn arch(&self) -> &str {
+        &self.arch
+    }
+
     pub fn set_value(&mut self, value: T) {
         self.value.store(value);
     }
