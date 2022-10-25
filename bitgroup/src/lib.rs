@@ -14,31 +14,31 @@ pub enum ByteOrder {
     BigEndian,
 }
 
-#[derive(Debug)]
-pub struct BitSpan {
+#[derive(Debug, Clone)]
+pub struct BitSpan<'a> {
     span: RangeInclusive<usize>,
     kind: BitSpanKind,
     show_rsvd: bool,
-    name: String,
-    short: String,
-    long: String,
+    name: &'a str,
+    short: &'a str,
+    long: &'a str,
 }
 
-impl BitSpan {
+impl<'a> BitSpan<'a> {
     // Formatting taken from: https://github.com/rust-lang/rust/blob/22f8bde876f2fa9c5c4e95be1bce29cc271f2b51/compiler/rustc_infer/src/traits/mod.rs#L145
     pub fn new(
         span: RangeInclusive<usize>,
         kind: BitSpanKind,
         show_rsvd: bool,
-        name: String,
-        short: String,
-        long: String
+        name: &'a str,
+        short: &'a str,
+        long: &'a str
     ) -> Self {
         Self { span, kind, show_rsvd, name, short, long }
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum BitSpanKind {
     Normal,
     ReservedMustBeZero,
@@ -48,14 +48,14 @@ pub enum BitSpanKind {
 }
 
 #[derive(Debug)]
-pub struct BitGroup<T: Unsigned + BitMemory> {
-    name: String,
-    arch: String,
-    device: String,
-    desc: String,
+pub struct BitGroup<'a, T: Unsigned + BitMemory> {
+    arch: &'a str,
+    device: &'a str,
+    name: &'a str,
+    desc: &'a str,
     byte_order: ByteOrder,
     value: BitVec,
-    bitspans: Vec<BitSpan>,
+    bitspans: Vec<BitSpan<'a>>,
     phantom: PhantomData<T>,
 }
 
@@ -67,14 +67,14 @@ enum BitSpanElement {
     Long,
 }
 
-impl<T: Unsigned + BitMemory> BitGroup<T> {
+impl<'a, T: Unsigned + BitMemory> BitGroup<'a, T> {
     pub fn new(
-        name: String,
-        arch: String,
-        device: String,
-        desc: String,
+        arch: &'a str,
+        device: &'a str,
+        name: &'a str,
+        desc: &'a str,
         byte_order: ByteOrder,
-        bitspans: Vec<BitSpan>
+        bitspans: Vec<BitSpan<'a>>
     ) -> Self {
         Self { name, arch, device, desc, byte_order, value: BitVec::new(), bitspans, phantom: PhantomData }
     }
@@ -204,7 +204,7 @@ impl<T: Unsigned + BitMemory> BitGroup<T> {
     }
 }
 
-impl<T: Unsigned + BitMemory> fmt::Display for BitGroup<T> {
+impl<T: Unsigned + BitMemory> fmt::Display for BitGroup<'_, T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Figure out column widths.
         static COL_SEP: &str = "  ";
@@ -352,6 +352,8 @@ pub fn get_binary_ruler_string(bit_count: u8) -> String {
         "".to_string()
     }
 }
+
+mod cpu_x86_registers;
 
 #[cfg(test)]
 mod unit_tests;
