@@ -24,7 +24,7 @@ static BIT_SINGULAR: &str = "bit";
 
 enum AppMode {
     Interactive,
-    NonInteractive,
+    CommandLine,
 }
 
 fn write_color(stream: &mut StandardStream, message: &str, col: Color, is_intense: bool) -> std::io::Result<()> {
@@ -108,20 +108,26 @@ fn print_error(stream: &mut StandardStream, str_expr: &str, err: ExprError, app_
     Ok(())
 }
 
-fn evaluate_expr(stream: &mut StandardStream, str_expr: &str, app_mode: AppMode) -> std::io::Result<()> {
+fn evaluate_expr(str_expr: &str) -> Result<Number, ExprError>
+{
     // Enable trace level logging while parsing and evaluating using spceval.
     #[cfg(debug_assertions)]
     log::set_max_level(log::LevelFilter::Trace);
 
-    match spceval::evaluate(str_expr) {
-        Ok(number) => print_result(stream, &number)?,
-        Err(e) => print_error(stream, str_expr, e, app_mode)?,
-    }
+    let res = spceval::evaluate(str_expr);
 
     // Disable logging.
     #[cfg(debug_assertions)]
     log::set_max_level(log::LevelFilter::Off);
 
+    res
+}
+
+fn evaluate_expr_and_print_result(stream: &mut StandardStream, str_expr: &str, app_mode: AppMode) -> std::io::Result<()> {
+    match evaluate_expr(str_expr) {
+        Ok(number) => print_result(stream, &number)?,
+        Err(e) => print_error(stream, str_expr, e, app_mode)?,
+    }
     Ok(())
 }
 
@@ -132,7 +138,7 @@ fn test_bitgroup_desc(stream: &mut StandardStream) -> std::io::Result<()> {
             BitSpanKind::Normal,
             false,
             String::from("SCE"),
-            String::from("SysCall Ext."),
+            String::from("SysCall"),
             String::from("System Call Extensions"),
         ),
         BitSpan::new(
@@ -221,7 +227,7 @@ fn main() -> std::io::Result<()> {
 
     if args.len() > 1 {
         // Command-line mode.
-        evaluate_expr(&mut stdout, args.get(1).unwrap(), AppMode::NonInteractive)?;
+        evaluate_expr_and_print_result(&mut stdout, args.get(1).unwrap(), AppMode::CommandLine)?;
     } else {
         // Interactive mode.
         let mut editor = Editor::<()>::new();
@@ -231,20 +237,21 @@ fn main() -> std::io::Result<()> {
                 let input_expr = str_input.as_str();
                 editor.add_history_entry(input_expr);
 
-                let input_expr_trimmed = input_expr.trim();
-                if !input_expr_trimmed.is_empty() {
-                    match input_expr_trimmed {
-                        "q" | "quit" | "exit" => break,
-                        "efer" => {
-                            test_bitgroup_desc(&mut stdout)?;
-                            continue;
-                        }
-                        _ => (),
+                let mut tokens = input_expr.trim().split(' ').fuse();
+                let first = tokens.next();
+                let second = tokens.next();
+                match first {
+                    Some("q") | Some("quit") | Some("exit") => break,
+                    Some("efer") => {
+                        test_bitgroup_desc(&mut stdout)?;
+                        continue;
                     }
-                    // Use the original input expression given by the user rather
-                    // than the trimmed expression as it would mess up the error caret.
-                    evaluate_expr(&mut stdout, input_expr, AppMode::Interactive)?;
+                    _ => (),
                 }
+
+                // Use the original input expression given by the user rather
+                // than the trimmed expression as it would mess up the error caret.
+                evaluate_expr_and_print_result(&mut stdout, input_expr, AppMode::Interactive)?;
             } else {
                 let mut stderr = StandardStream::stderr(color_choice);
                 write_color(&mut stderr, EXITING_APP, Color::Red, true)?;
