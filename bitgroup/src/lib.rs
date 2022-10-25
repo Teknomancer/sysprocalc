@@ -353,8 +353,6 @@ pub fn get_binary_ruler_string(bit_count: u8) -> String {
     }
 }
 
-mod cpu_x86_registers;
-
 #[cfg(test)]
 mod unit_tests;
 
