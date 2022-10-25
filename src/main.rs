@@ -246,7 +246,7 @@ fn interactive_mode(spcio: &mut SpcIo) -> std::io::Result<()> {
         }
         Ok(())
     } else {
-        Err(std::io::Error::new(std::io::ErrorKind::Other, "Failed to create readline history"))
+        Err(std::io::Error::new(std::io::ErrorKind::Other, "failed to create readline editor object"))
     }
 }
 
