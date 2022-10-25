@@ -294,7 +294,7 @@ pub fn get_binary_string(val: u64) -> String {
 }
 
 // Figure out a better place to put this static function
-pub fn get_binary_ruler_string(num_bits: u8) -> String {
+pub fn get_binary_ruler_string(bit_count: u8) -> String {
     // Makes a binary ruler (for every 8 bits) to ease visual counting of bits.
     // There might be a more efficient way to do this with Rust's string/vector
     // manipulation. But I can't be bothered now, just get something working.
@@ -302,12 +302,12 @@ pub fn get_binary_ruler_string(num_bits: u8) -> String {
     // First convert the u32 to usize since we need a usize to index into an array.
     // This is will panic if the conversion fails (on architectures where usize
     // is insufficient to hold 32 bits). Panic is better than failing in weird ways.
-    let num_bits = usize::try_from(num_bits).unwrap();
+    let bit_count = usize::try_from(bit_count).unwrap();
 
     // Ensure if we ever add 128-bit support this code will at least assert.
-    debug_assert!(num_bits <= 64);
+    debug_assert!(bit_count <= 64);
 
-    if num_bits >= 8 {
+    if bit_count >= 8 {
         let mut ruler_out = String::with_capacity(98);
         static BIN_RULER: [&str; 8] = [
             "|  7:0  |",
@@ -326,7 +326,7 @@ pub fn get_binary_ruler_string(num_bits: u8) -> String {
         // from the left. We iterate below until we no longer need to pad with spaces
         // prior to the start of the ruler.
         // TODO: I'm sure this can be optimized, but no time now.
-        let num_pad_bits = num_bits % 8;
+        let num_pad_bits = bit_count % 8;
         for idx in 0..num_pad_bits {
             ruler_out.push(' ');
             if idx % 4 == 0 {
@@ -335,7 +335,7 @@ pub fn get_binary_ruler_string(num_bits: u8) -> String {
         }
 
         // Iterate over chunks of 8-bits and make the ruler
-        for idx in (num_pad_bits..num_bits).rev().step_by(8) {
+        for idx in (num_pad_bits..bit_count).rev().step_by(8) {
             ruler_out.push_str(BIN_RULER[((idx + 1) >> 3) - 1]);
         }
 
