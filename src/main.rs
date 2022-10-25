@@ -41,6 +41,18 @@ fn write_color(stream: &mut StandardStream, message: &str, col: Color, is_intens
     Ok(())
 }
 
+// Get a character index given a byte index in a string.
+// This ensures the character index is always at a UTF-8 boundary.
+fn byte_index_to_char_index(str_expr: &str, idx_byte: usize) -> usize {
+    let mut idx_char = 0;
+    for i in 0..idx_byte {
+        if str_expr.is_char_boundary(i) {
+            idx_char += 1;
+        }
+    }
+    idx_char
+}
+
 fn print_result(spcio: &mut SpcIo, number: &Number) -> std::io::Result<()> {
     // Format as hex
     let str_hex_zfill = format!("{:#018x}", number.integer);
@@ -84,20 +96,8 @@ fn print_result(spcio: &mut SpcIo, number: &Number) -> std::io::Result<()> {
     Ok(())
 }
 
-// Get a character index given a byte index in a string.
-// This ensures the character index is always at a UTF-8 boundary.
-fn byte_index_to_char_index(str_expr: &str, idx_byte: usize) -> usize {
-    let mut idx_char = 0;
-    for i in 0..idx_byte {
-        if str_expr.is_char_boundary(i) {
-            idx_char += 1;
-        }
-    }
-    idx_char
-}
-
 fn print_error(spcio: &mut SpcIo, str_expr: &str, err: ExprError, app_mode: AppMode) -> std::io::Result<()> {
-    // Print the caret indicating where in the expression the error occurs in interactive mode.
+    // Display the caret indicating where in the expression the error occurs in interactive mode.
     if let AppMode::Interactive = app_mode {
         let idx_char = byte_index_to_char_index(str_expr, err.index());
         write!(spcio.stream, "{:width$}", " ", width = idx_char + USER_PROMPT.len())?;
@@ -107,11 +107,13 @@ fn print_error(spcio: &mut SpcIo, str_expr: &str, err: ExprError, app_mode: AppM
         // Passing width as 0 still produces 1 space, so do the padding here.
         write!(spcio.stream, "{:width$}", " ", width = USER_PROMPT.len())?;
     }
-    // Print the error.
+
+    // Display the error.
     write_color(&mut spcio.stream, "Error:", Color::Red, true)?;
     writeln!(spcio.stream, " {}", err)?;
-    writeln!(spcio.stream)?;
 
+    // Display a blank line
+    writeln!(spcio.stream)?;
     Ok(())
 }
 
