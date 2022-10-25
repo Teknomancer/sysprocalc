@@ -32,10 +32,10 @@ struct SpcIo {
     color: ColorChoice,
 }
 
-fn write_color(stream: &mut StandardStream, message: &str, col: Color, is_intense: bool) -> std::io::Result<()> {
+fn write_color(stream: &mut StandardStream, message: &str, col: Color, is_bold: bool) -> std::io::Result<()> {
     stream.set_color(ColorSpec::new()
           .set_fg(Some(col))
-          .set_intense(is_intense))?;
+          .set_bold(is_bold))?;
     write!(stream, "{}", message)?;
     stream.reset()?;
     Ok(())
@@ -53,7 +53,7 @@ fn byte_index_to_char_index(str_expr: &str, idx_byte: usize) -> usize {
     idx_char
 }
 
-fn print_result(spcio: &mut SpcIo, number: &Number) -> std::io::Result<()> {
+fn write_result(spcio: &mut SpcIo, number: &Number) -> std::io::Result<()> {
     // Format as hex
     let str_hex_zfill = format!("{:#018x}", number.integer);
     let str_hex = format!("{:#x}", number.integer);
@@ -65,7 +65,7 @@ fn print_result(spcio: &mut SpcIo, number: &Number) -> std::io::Result<()> {
     // Format as binary
     let str_bin_sfill = bitgroup::get_binary_string(number.integer);
 
-    // Compute number of bits to make a binary ruler as well for displaying the number of bits.
+    // Compute number of bits to make a binary ruler as well for writing the number of bits.
     let mut bit_count = u64::MAX.count_ones() - number.integer.leading_zeros();
     let str_bit_count;
     if bit_count < 2 {
@@ -75,7 +75,7 @@ fn print_result(spcio: &mut SpcIo, number: &Number) -> std::io::Result<()> {
         str_bit_count = BITS_PLURAL;
     };
 
-    // Display the formatted values
+    // Write the formatted values
     write_color(&mut spcio.stream, DEC_RADIX, Color::Cyan, true)?;
     writeln!(spcio.stream, " {:>24} (u64)  {:>26} (f)", number.integer, number.float)?;
     write_color(&mut spcio.stream, HEX_RADIX, Color::Cyan, true)?;
@@ -85,19 +85,19 @@ fn print_result(spcio: &mut SpcIo, number: &Number) -> std::io::Result<()> {
     write_color(&mut spcio.stream, BIN_RADIX, Color::Cyan, true)?;
     writeln!(spcio.stream, " {} ({} {})", str_bin_sfill, bit_count, str_bit_count)?;
 
-    // Display the binary ruler if we have 8 or more bits.
+    // Write the binary ruler if we have 8 or more bits.
     if bit_count >= 8 {
         let str_bin_ruler = bitgroup::get_binary_ruler_string(bit_count as u8);
         writeln!(spcio.stream, "     {}", str_bin_ruler)?;
     }
 
-    // Display a blank line
+    // Write a blank line
     writeln!(spcio.stream)?;
     Ok(())
 }
 
-fn print_error(spcio: &mut SpcIo, str_expr: &str, err: ExprError, app_mode: AppMode) -> std::io::Result<()> {
-    // Display the caret indicating where in the expression the error occurs in interactive mode.
+fn write_error(spcio: &mut SpcIo, str_expr: &str, err: ExprError, app_mode: AppMode) -> std::io::Result<()> {
+    // Write the caret indicating where in the expression the error occurs in interactive mode.
     if let AppMode::Interactive = app_mode {
         let idx_char = byte_index_to_char_index(str_expr, err.index());
         write!(spcio.stream, "{:width$}", " ", width = idx_char + USER_PROMPT.len())?;
@@ -108,11 +108,11 @@ fn print_error(spcio: &mut SpcIo, str_expr: &str, err: ExprError, app_mode: AppM
         write!(spcio.stream, "{:width$}", " ", width = USER_PROMPT.len())?;
     }
 
-    // Display the error.
+    // Write the error.
     write_color(&mut spcio.stream, "Error:", Color::Red, true)?;
     writeln!(spcio.stream, " {}", err)?;
 
-    // Display a blank line
+    // Write a blank line
     writeln!(spcio.stream)?;
     Ok(())
 }
@@ -132,10 +132,10 @@ fn evaluate_expr(str_expr: &str) -> Result<Number, ExprError>
     res
 }
 
-fn evaluate_expr_and_print_result(spcio: &mut SpcIo, str_expr: &str, app_mode: AppMode) -> std::io::Result<()> {
+fn evaluate_expr_and_write_result(spcio: &mut SpcIo, str_expr: &str, app_mode: AppMode) -> std::io::Result<()> {
     match evaluate_expr(str_expr) {
-        Ok(number) => print_result(spcio, &number)?,
-        Err(e) => print_error(spcio, str_expr, e, app_mode)?,
+        Ok(number) => write_result(spcio, &number)?,
+        Err(e) => write_error(spcio, str_expr, e, app_mode)?,
     }
     Ok(())
 }
@@ -207,7 +207,8 @@ fn test_bitgroup_desc(spcio: &mut SpcIo) -> std::io::Result<()> {
         ByteOrder::LittleEndian,
         efer_bitspans
     );
-    write_color(&mut spcio.stream, efer.name(), Color::Cyan, true)?;
+    write!(spcio.stream, "{}::{} ", efer.device(), efer.arch())?;
+    write_color(&mut spcio.stream, efer.name(), Color::Green, true)?;
     writeln!(spcio.stream, " ({})", efer.description())?;
     writeln!(spcio.stream, "{}", efer)?;
     Ok(())
@@ -224,19 +225,16 @@ fn interactive_mode(spcio: &mut SpcIo) -> std::io::Result<()> {
 
                 let mut tokens = input_expr.trim().split(' ').fuse();
                 let first = tokens.next();
-                let second = tokens.next();
+                let _second = tokens.next();
                 match first {
                     Some("q") | Some("quit") | Some("exit") => break,
-                    Some("efer") => {
-                        test_bitgroup_desc(spcio)?;
-                        continue;
-                    }
-                    _ => (),
-                }
+                    Some("efer") => test_bitgroup_desc(spcio)?,
+                    Some(x) if x.is_empty() => (),
 
-                // Use the original input expression given by the user rather
-                // than the trimmed expression as it would mess up the error caret.
-                evaluate_expr_and_print_result(spcio, input_expr, AppMode::Interactive)?;
+                    // Use the original input expression given by the user rather
+                    // than the trimmed expression as it would mess up the error caret position.
+                    _ => evaluate_expr_and_write_result(spcio, input_expr, AppMode::Interactive)?,
+                }
             } else {
                 let mut stderr = SpcIo { stream: StandardStream::stderr(spcio.color), color: spcio.color };
                 write_color(&mut stderr.stream, EXITING_APP, Color::Red, true)?;
@@ -272,7 +270,7 @@ fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
 
     if args.len() > 1 {
-        evaluate_expr_and_print_result(&mut stdout, args.get(1).unwrap(), AppMode::CommandLine)
+        evaluate_expr_and_write_result(&mut stdout, args.get(1).unwrap(), AppMode::CommandLine)
     } else {
         interactive_mode(&mut stdout)
     }
