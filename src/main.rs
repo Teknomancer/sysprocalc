@@ -27,16 +27,21 @@ enum AppMode {
     CommandLine,
 }
 
+struct SpcIo {
+    stream: StandardStream,
+    color: ColorChoice,
+}
+
 fn write_color(stream: &mut StandardStream, message: &str, col: Color, is_intense: bool) -> std::io::Result<()> {
     stream.set_color(ColorSpec::new()
-                     .set_fg(Some(col))
-                     .set_intense(is_intense))?;
+          .set_fg(Some(col))
+          .set_intense(is_intense))?;
     write!(stream, "{}", message)?;
     stream.reset()?;
     Ok(())
 }
 
-fn print_result(stream: &mut StandardStream, number: &Number) -> std::io::Result<()> {
+fn print_result(spcio: &mut SpcIo, number: &Number) -> std::io::Result<()> {
     // Format as hex
     let str_hex_zfill = format!("{:#018x}", number.integer);
     let str_hex = format!("{:#x}", number.integer);
@@ -47,33 +52,35 @@ fn print_result(stream: &mut StandardStream, number: &Number) -> std::io::Result
 
     // Format as binary
     let str_bin_sfill = bitgroup::get_binary_string(number.integer);
-    // Compute number of bits (to make a binary ruler as well as display the number of bits).
-    let mut bin_digits = u64::MAX.count_ones() - number.integer.leading_zeros();
-    let str_bin_digits;
-    if bin_digits < 2 {
-        bin_digits = 1; // Required because bin_digits gets computed as 0 when number.integer is 0.
-        str_bin_digits = BIT_SINGULAR;
+
+    // Compute number of bits to make a binary ruler as well for displaying the number of bits.
+    let mut bit_count = u64::MAX.count_ones() - number.integer.leading_zeros();
+    let str_bit_count;
+    if bit_count < 2 {
+        bit_count = 1; // Required because bin_digits gets computed as 0 when number.integer is 0.
+        str_bit_count = BIT_SINGULAR;
     } else {
-        str_bin_digits = BITS_PLURAL;
+        str_bit_count = BITS_PLURAL;
     };
 
     // Display the formatted values
-    write_color(stream, DEC_RADIX, Color::Cyan, true)?;
-    writeln!(stream, " {:>24} (u64)  {:>26} (f)", number.integer, number.float)?;
-    write_color(stream, HEX_RADIX, Color::Cyan, true)?;
-    writeln!(stream, " {:>24} (u64)  {:>26} (n)", str_hex_zfill, str_hex)?;
-    write_color(stream, OCT_RADIX, Color::Cyan, true)?;
-    writeln!(stream, " {:>24} (u64)  {:>26} (n)", str_oct_zfill, str_oct)?;
-    write_color(stream, BIN_RADIX, Color::Cyan, true)?;
-    writeln!(stream, " {} ({} {})", str_bin_sfill, bin_digits, str_bin_digits)?;
+    write_color(&mut spcio.stream, DEC_RADIX, Color::Cyan, true)?;
+    writeln!(spcio.stream, " {:>24} (u64)  {:>26} (f)", number.integer, number.float)?;
+    write_color(&mut spcio.stream, HEX_RADIX, Color::Cyan, true)?;
+    writeln!(spcio.stream, " {:>24} (u64)  {:>26} (n)", str_hex_zfill, str_hex)?;
+    write_color(&mut spcio.stream, OCT_RADIX, Color::Cyan, true)?;
+    writeln!(spcio.stream, " {:>24} (u64)  {:>26} (n)", str_oct_zfill, str_oct)?;
+    write_color(&mut spcio.stream, BIN_RADIX, Color::Cyan, true)?;
+    writeln!(spcio.stream, " {} ({} {})", str_bin_sfill, bit_count, str_bit_count)?;
 
-    // Display the binary ruler if we have more than 8 bits.
-    if bin_digits >= 8 {
-        let str_bin_ruler = bitgroup::get_binary_ruler_string(bin_digits as u8);
-        writeln!(stream, "     {}", str_bin_ruler)?;
+    // Display the binary ruler if we have 8 or more bits.
+    if bit_count >= 8 {
+        let str_bin_ruler = bitgroup::get_binary_ruler_string(bit_count as u8);
+        writeln!(spcio.stream, "     {}", str_bin_ruler)?;
     }
 
-    writeln!(stream)?;
+    // Display a blank line
+    writeln!(spcio.stream)?;
     Ok(())
 }
 
@@ -89,21 +96,21 @@ fn byte_index_to_char_index(str_expr: &str, idx_byte: usize) -> usize {
     idx_char
 }
 
-fn print_error(stream: &mut StandardStream, str_expr: &str, err: ExprError, app_mode: AppMode) -> std::io::Result<()> {
+fn print_error(spcio: &mut SpcIo, str_expr: &str, err: ExprError, app_mode: AppMode) -> std::io::Result<()> {
     // Print the caret indicating where in the expression the error occurs in interactive mode.
     if let AppMode::Interactive = app_mode {
         let idx_char = byte_index_to_char_index(str_expr, err.index());
-        write!(stream, "{:width$}", " ", width = idx_char + USER_PROMPT.len())?;
-        write_color(stream, "^", Color::Red, true)?;
-        writeln!(stream)?;
+        write!(spcio.stream, "{:width$}", " ", width = idx_char + USER_PROMPT.len())?;
+        write_color(&mut spcio.stream, "^", Color::Red, true)?;
+        writeln!(spcio.stream)?;
 
         // Passing width as 0 still produces 1 space, so do the padding here.
-        write!(stream, "{:width$}", " ", width = USER_PROMPT.len())?;
+        write!(spcio.stream, "{:width$}", " ", width = USER_PROMPT.len())?;
     }
     // Print the error.
-    write_color(stream, "Error:", Color::Red, true)?;
-    writeln!(stream, " {}", err)?;
-    writeln!(stream)?;
+    write_color(&mut spcio.stream, "Error:", Color::Red, true)?;
+    writeln!(spcio.stream, " {}", err)?;
+    writeln!(spcio.stream)?;
 
     Ok(())
 }
@@ -123,15 +130,15 @@ fn evaluate_expr(str_expr: &str) -> Result<Number, ExprError>
     res
 }
 
-fn evaluate_expr_and_print_result(stream: &mut StandardStream, str_expr: &str, app_mode: AppMode) -> std::io::Result<()> {
+fn evaluate_expr_and_print_result(spcio: &mut SpcIo, str_expr: &str, app_mode: AppMode) -> std::io::Result<()> {
     match evaluate_expr(str_expr) {
-        Ok(number) => print_result(stream, &number)?,
-        Err(e) => print_error(stream, str_expr, e, app_mode)?,
+        Ok(number) => print_result(spcio, &number)?,
+        Err(e) => print_error(spcio, str_expr, e, app_mode)?,
     }
     Ok(())
 }
 
-fn test_bitgroup_desc(stream: &mut StandardStream) -> std::io::Result<()> {
+fn test_bitgroup_desc(spcio: &mut SpcIo) -> std::io::Result<()> {
     let efer_bitspans = vec![
         BitSpan::new(
             RangeInclusive::new(0, 0),
@@ -198,13 +205,13 @@ fn test_bitgroup_desc(stream: &mut StandardStream) -> std::io::Result<()> {
         ByteOrder::LittleEndian,
         efer_bitspans
     );
-    write_color(stream, efer.name(), Color::Cyan, true)?;
-    writeln!(stream, " ({})", efer.description())?;
-    writeln!(stream, "{}", efer)?;
+    write_color(&mut spcio.stream, efer.name(), Color::Cyan, true)?;
+    writeln!(spcio.stream, " ({})", efer.description())?;
+    writeln!(spcio.stream, "{}", efer)?;
     Ok(())
 }
 
-fn interactive_mode(stream: &mut StandardStream, color_choice: ColorChoice) -> std::io::Result<()> {
+fn interactive_mode(spcio: &mut SpcIo) -> std::io::Result<()> {
     let editor_result = Editor::<()>::new();
     if let Ok(mut editor) = editor_result {
         loop {
@@ -219,7 +226,7 @@ fn interactive_mode(stream: &mut StandardStream, color_choice: ColorChoice) -> s
                 match first {
                     Some("q") | Some("quit") | Some("exit") => break,
                     Some("efer") => {
-                        test_bitgroup_desc(stream)?;
+                        test_bitgroup_desc(spcio)?;
                         continue;
                     }
                     _ => (),
@@ -227,11 +234,11 @@ fn interactive_mode(stream: &mut StandardStream, color_choice: ColorChoice) -> s
 
                 // Use the original input expression given by the user rather
                 // than the trimmed expression as it would mess up the error caret.
-                evaluate_expr_and_print_result(stream, input_expr, AppMode::Interactive)?;
+                evaluate_expr_and_print_result(spcio, input_expr, AppMode::Interactive)?;
             } else {
-                let mut stderr = StandardStream::stderr(color_choice);
-                write_color(&mut stderr, EXITING_APP, Color::Red, true)?;
-                writeln!(&mut stderr, " {:?}", readline_result.err().unwrap())?;
+                let mut stderr = SpcIo { stream: StandardStream::stderr(spcio.color), color: spcio.color };
+                write_color(&mut stderr.stream, EXITING_APP, Color::Red, true)?;
+                writeln!(stderr.stream, " {:?}", readline_result.err().unwrap())?;
                 break;
             }
         }
@@ -253,19 +260,19 @@ fn main() -> std::io::Result<()> {
 
     // Detect presence of a terminal to determine use of color output.
     // Later allow forcing a color choice via command-line arguments.
-    let color_choice = if atty::is(atty::Stream::Stdout) {
+    let color = if atty::is(atty::Stream::Stdout) {
         ColorChoice::Auto
     } else {
         ColorChoice::Never
     };
 
-    let mut stdout = StandardStream::stdout(color_choice);
+    let mut stdout = SpcIo { stream: StandardStream::stdout(color), color };
     let args: Vec<String> = env::args().collect();
 
     if args.len() > 1 {
         evaluate_expr_and_print_result(&mut stdout, args.get(1).unwrap(), AppMode::CommandLine)
     } else {
-        interactive_mode(&mut stdout, color_choice)
+        interactive_mode(&mut stdout)
     }
 }
 
