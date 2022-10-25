@@ -204,6 +204,43 @@ fn test_bitgroup_desc(stream: &mut StandardStream) -> std::io::Result<()> {
     Ok(())
 }
 
+fn interactive_mode(stream: &mut StandardStream, color_choice: ColorChoice) -> std::io::Result<()> {
+    let editor_result = Editor::<()>::new();
+    if let Ok(mut editor) = editor_result {
+        loop {
+            let readline_result = editor.readline(USER_PROMPT);
+            if let Ok(str_input) = readline_result {
+                let input_expr = str_input.as_str();
+                editor.add_history_entry(input_expr);
+
+                let mut tokens = input_expr.trim().split(' ').fuse();
+                let first = tokens.next();
+                let second = tokens.next();
+                match first {
+                    Some("q") | Some("quit") | Some("exit") => break,
+                    Some("efer") => {
+                        test_bitgroup_desc(stream)?;
+                        continue;
+                    }
+                    _ => (),
+                }
+
+                // Use the original input expression given by the user rather
+                // than the trimmed expression as it would mess up the error caret.
+                evaluate_expr_and_print_result(stream, input_expr, AppMode::Interactive)?;
+            } else {
+                let mut stderr = StandardStream::stderr(color_choice);
+                write_color(&mut stderr, EXITING_APP, Color::Red, true)?;
+                writeln!(&mut stderr, " {:?}", readline_result.err().unwrap())?;
+                break;
+            }
+        }
+        Ok(())
+    } else {
+        Err(std::io::Error::new(std::io::ErrorKind::Other, "Failed to create readline history"))
+    }
+}
+
 fn main() -> std::io::Result<()> {
     // Create a logger but keep logging disabled to shut up rustyline's logging.
     // Need to find a way to disable rustyline's logger at compile time...
@@ -226,41 +263,9 @@ fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
 
     if args.len() > 1 {
-        // Command-line mode.
-        evaluate_expr_and_print_result(&mut stdout, args.get(1).unwrap(), AppMode::CommandLine)?;
+        evaluate_expr_and_print_result(&mut stdout, args.get(1).unwrap(), AppMode::CommandLine)
     } else {
-        // Interactive mode.
-        let mut editor = Editor::<()>::new();
-        loop {
-            let res_line = editor.readline(USER_PROMPT);
-            if let Ok(str_input) = res_line {
-                let input_expr = str_input.as_str();
-                editor.add_history_entry(input_expr);
-
-                let mut tokens = input_expr.trim().split(' ').fuse();
-                let first = tokens.next();
-                let second = tokens.next();
-                match first {
-                    Some("q") | Some("quit") | Some("exit") => break,
-                    Some("efer") => {
-                        test_bitgroup_desc(&mut stdout)?;
-                        continue;
-                    }
-                    _ => (),
-                }
-
-                // Use the original input expression given by the user rather
-                // than the trimmed expression as it would mess up the error caret.
-                evaluate_expr_and_print_result(&mut stdout, input_expr, AppMode::Interactive)?;
-            } else {
-                let mut stderr = StandardStream::stderr(color_choice);
-                write_color(&mut stderr, EXITING_APP, Color::Red, true)?;
-                writeln!(&mut stderr, " {:?}", res_line.err().unwrap())?;
-                break;
-            }
-        }
+        interactive_mode(&mut stdout, color_choice)
     }
-
-    Ok(())
 }
 
