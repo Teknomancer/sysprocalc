@@ -6,7 +6,6 @@ use std::env;
 use std::io::Write;
 use std::ops::RangeInclusive;
 
-mod registers;
 #[cfg(debug_assertions)]
 mod logger;
 
@@ -145,7 +144,7 @@ fn test_bitgroup_desc(spcio: &mut SpcIo) -> std::io::Result<()> {
         BitSpan::new(
             RangeInclusive::new(0, 0),
             BitSpanKind::Normal,
-            false,
+            true,
             "SCE",
             "SysCall",
             "System Call Extensions",
@@ -153,7 +152,7 @@ fn test_bitgroup_desc(spcio: &mut SpcIo) -> std::io::Result<()> {
         BitSpan::new(
             RangeInclusive::new(1, 1),
             BitSpanKind::Normal,
-            false,
+            true,
             "LME",
             "Long mode enable",
             "Long mode enable",
@@ -161,7 +160,7 @@ fn test_bitgroup_desc(spcio: &mut SpcIo) -> std::io::Result<()> {
         BitSpan::new(
             RangeInclusive::new(10, 10),
             BitSpanKind::Normal,
-            false,
+            true,
             "LMA",
             "Long mode active",
             "Long mode active",
@@ -169,7 +168,7 @@ fn test_bitgroup_desc(spcio: &mut SpcIo) -> std::io::Result<()> {
         BitSpan::new(
             RangeInclusive::new(11, 11),
             BitSpanKind::Normal,
-            false,
+            true,
             "NXE",
             "No-execute enable",
             "No-execute enable",
@@ -177,7 +176,7 @@ fn test_bitgroup_desc(spcio: &mut SpcIo) -> std::io::Result<()> {
         BitSpan::new(
             RangeInclusive::new(12, 12),
             BitSpanKind::Normal,
-            false,
+            true,
             "SVME",
             "SVM enable",
             "Secure virtual machine enable (AMD)",
@@ -185,7 +184,7 @@ fn test_bitgroup_desc(spcio: &mut SpcIo) -> std::io::Result<()> {
         BitSpan::new(
             RangeInclusive::new(13, 13),
             BitSpanKind::Normal,
-            false,
+            true,
             "LMSL",
             "LMSL enable",
             "Long mode segment limit enable (AMD)",
@@ -193,7 +192,7 @@ fn test_bitgroup_desc(spcio: &mut SpcIo) -> std::io::Result<()> {
         BitSpan::new(
             RangeInclusive::new(14, 14),
             BitSpanKind::Normal,
-            false,
+            true,
             "FFXSR",
             "Fast FXSAVE/FXRSTOR",
             "Fast FXSAVE/FXRSTOR",

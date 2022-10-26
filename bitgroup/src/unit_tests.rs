@@ -13,7 +13,7 @@ fn test_valid_bit_group() {
             BitSpan::new(
                 RangeInclusive::new(0, 0),
                 BitSpanKind::Normal,
-                false,
+                true,
                 "Gen 0",
                 "Generic 0",
                 "Generic Bit 0",
@@ -21,7 +21,7 @@ fn test_valid_bit_group() {
             BitSpan::new(
                 RangeInclusive::new(8, 8),
                 BitSpanKind::Normal,
-                false,
+                true,
                 "Gen 1",
                 "Generic 1",
                 "Generic Bit 1",
@@ -47,7 +47,7 @@ fn test_invalid_bit_group() {
                 BitSpan::new(
                     RangeInclusive::new(0, 5),
                     BitSpanKind::Normal,
-                    false,
+                    true,
                     "Inv 0",
                     "Inv 0",
                     "Inv Bit 0",
@@ -55,7 +55,7 @@ fn test_invalid_bit_group() {
                 BitSpan::new(
                     RangeInclusive::new(5, 7),
                     BitSpanKind::Normal,
-                    false,
+                    true,
                     "Inv 1",
                     "Inv 1",
                     "Inv Bit 1",
@@ -77,7 +77,7 @@ fn test_invalid_bit_group() {
                 BitSpan::new(
                     RangeInclusive::new(63, 63),
                     BitSpanKind::Normal,
-                    false,
+                    true,
                     "Inv 1",
                     "Inv 1",
                     "Inv Bit 1",
@@ -85,7 +85,7 @@ fn test_invalid_bit_group() {
                 BitSpan::new(
                     RangeInclusive::new(32, 63),
                     BitSpanKind::Normal,
-                    false,
+                    true,
                     "Inv 0",
                     "Inv 0",
                     "Inv Bit 0",
@@ -107,7 +107,7 @@ fn test_invalid_bit_group() {
                 BitSpan::new(
                     RangeInclusive::new(1, 0),
                     BitSpanKind::Normal,
-                    false,
+                    true,
                     "Inv 0",
                     "Inv 0",
                     "Inv Bit 0",
@@ -129,7 +129,7 @@ fn test_invalid_bit_group() {
                 BitSpan::new(
                     RangeInclusive::new(0, MAX_BITCOUNT),
                     BitSpanKind::Normal,
-                    false,
+                    true,
                     "Inv 0",
                     "Inv 0",
                     "Inv Bit 0",
@@ -151,7 +151,7 @@ fn test_invalid_bit_group() {
                 BitSpan::new(
                     RangeInclusive::new(64, 65),
                     BitSpanKind::Normal,
-                    false,
+                    true,
                     "Inv 0",
                     "Inv 0",
                     "Inv Bit 0",
@@ -173,7 +173,7 @@ fn test_invalid_bit_group() {
                 BitSpan::new(
                     RangeInclusive::new(64, 0),
                     BitSpanKind::Normal,
-                    false,
+                    true,
                     "Inv 0",
                     "Inv 0",
                     "Inv Bit 0",
