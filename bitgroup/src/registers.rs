@@ -1,6 +1,8 @@
-use bitgroup::{BitGroup, BitSpan, BitSpanKind, ByteOrder};
+use crate::BitGroup;
 use std::collections::BTreeMap;
 use std::ops::RangeInclusive;
+
+mod cpu_x86_registers;
 
 enum BitRegister<'a> {
     Reg64(BitGroup<'a, u64>),
@@ -16,6 +18,10 @@ impl<'a> Registers<'a> {
         Self {
             registers: BTreeMap::new()
         }
+    }
+
+    pub fn load_builtin() {
+
     }
 }
 

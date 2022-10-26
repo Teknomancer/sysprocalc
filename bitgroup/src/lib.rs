@@ -18,7 +18,7 @@ pub enum ByteOrder {
 pub struct BitSpan<'a> {
     span: RangeInclusive<usize>,
     kind: BitSpanKind,
-    show_rsvd: bool,
+    show: bool,
     name: &'a str,
     short: &'a str,
     long: &'a str,
@@ -29,12 +29,12 @@ impl<'a> BitSpan<'a> {
     pub fn new(
         span: RangeInclusive<usize>,
         kind: BitSpanKind,
-        show_rsvd: bool,
+        show: bool,
         name: &'a str,
         short: &'a str,
         long: &'a str
     ) -> Self {
-        Self { span, kind, show_rsvd, name, short, long }
+        Self { span, kind, show, name, short, long }
     }
 }
 
@@ -54,9 +54,8 @@ pub struct BitGroup<'a, T: Unsigned + BitMemory> {
     name: &'a str,
     desc: &'a str,
     byte_order: ByteOrder,
-    value: BitVec,
+    value: Option<T>,
     bitspans: Vec<BitSpan<'a>>,
-    phantom: PhantomData<T>,
 }
 
 #[derive(Debug)]
@@ -76,7 +75,7 @@ impl<'a, T: Unsigned + BitMemory> BitGroup<'a, T> {
         byte_order: ByteOrder,
         bitspans: Vec<BitSpan<'a>>
     ) -> Self {
-        Self { name, arch, device, desc, byte_order, value: BitVec::new(), bitspans, phantom: PhantomData }
+        Self { name, arch, device, desc, byte_order, value: None, bitspans }
     }
 
     pub fn name(&self) -> &str {
@@ -96,7 +95,11 @@ impl<'a, T: Unsigned + BitMemory> BitGroup<'a, T> {
     }
 
     pub fn set_value(&mut self, value: T) {
-        self.value.store(value);
+        self.value = Some(value);
+    }
+
+    pub fn clear_value(&mut self) {
+        self.value = None;
     }
 
     #[inline(always)]
@@ -213,7 +216,7 @@ impl<T: Unsigned + BitMemory> fmt::Display for BitGroup<'_, T> {
         let bits_width = self.column_width(BitSpanElement::Bits);
 
         let mut out = String::from("");
-        if self.value.is_empty() {
+        if self.value.is_none() {
             for bitspan in self.bitspans.iter().rev() {
                 let end = bitspan.span.end();
                 let start = bitspan.span.start();
@@ -352,6 +355,8 @@ pub fn get_binary_ruler_string(bit_count: u8) -> String {
         "".to_string()
     }
 }
+
+mod registers;
 
 #[cfg(test)]
 mod unit_tests;

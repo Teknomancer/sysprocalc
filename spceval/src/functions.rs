@@ -3,25 +3,34 @@ use std::ops::Range;
 
 pub const MAX_FN_PARAMS: u8 = u8::max_value();
 pub static FUNCS: [Func<'static>; 4] = [
-    Func { name: "avg",
-           params: Range { start: 2, end: MAX_FN_PARAMS },
-           syntax: "<n1>,<n2>[,<n3>...<nX>]",
-           help: "Average",
-           evalfn: func_avg, },
-    Func { name: "bit", params: Range { start: 1, end: 2 },
-           syntax: "<n>",
-           help: "Set nth bit (n is [0..63])",
-           evalfn: func_bit, },
-    Func { name: "bits",
-           params: Range { start: 2, end: 3 },
-           syntax: "<n1>,<n2>",
-           help: "Set set of bits from [n1..n2]",
-           evalfn: func_bits, },
-    Func { name: "sum",
-           params: Range { start: 2, end: MAX_FN_PARAMS },
-           syntax: "<n1>,<n2>[,<n3>..<nX>]",
-           help: "Sum",
-           evalfn: func_sum, },
+    Func {
+        name:   "avg",
+        params: Range { start: 2, end: MAX_FN_PARAMS },
+        syntax: "<n1>,<n2>[,<n3>...<nX>]",
+        help:   "Average",
+        evalfn: func_avg,
+    },
+    Func {
+        name:   "bit",
+        params: Range { start: 1, end: 2 },
+        syntax: "<n>",
+        help:   "Set nth bit (n is [0..63])",
+        evalfn: func_bit,
+    },
+    Func {
+        name:   "bits",
+        params: Range { start: 2, end: 3 },
+        syntax: "<n1>,<n2>",
+        help:   "Set set of bits from [n1..n2]",
+        evalfn: func_bits,
+    },
+    Func {
+        name:   "sum",
+        params: Range { start: 2, end: MAX_FN_PARAMS },
+        syntax: "<n1>,<n2>[,<n3>..<nX>]",
+        help:   "Sum",
+        evalfn: func_sum,
+    },
 ];
 
 type PfnFunc = fn(func: &Func, idx_expr: usize, &[Number]) -> Result<Number, ExprError>;

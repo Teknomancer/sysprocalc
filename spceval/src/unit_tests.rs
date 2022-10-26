@@ -5,34 +5,35 @@ use super::functions::{FUNCS, MAX_FN_PARAMS};
 #[test]
 fn parse_invalid_nums() {
     // Number prefixes and improper decimals shouldn't be parsed as valid numbers.
-    let mut vec_nums = vec!["",
-                        "x" ,
-                        "X" ,
-                        "o" ,
-                        "O" ,
-                        "n" ,
-                        "N" ,
-                        "." ,
-                        "0.",
-                        "1.",
-                        "2.",
-                        "3.",
-                        "4.",
-                        "5.",
-                        "0..",
-                        "0x",
-                        "0xgff",
-                        "0b",
-                        "0b210110",
-                        "0o",
-                        "0o888",
-                        "..5",
-                        "2.5ee4",
-                        "2.5e++4",
-                        "2.5ee++4",
-                        "2.5e--5",
-                        "2..5",
-                        "0b11111111111111111111111111111111111111111111111111111111111111111",  // tests 1 more than 64 1's.
+    let mut vec_nums = vec![
+        "",
+        "x" ,
+        "X" ,
+        "o" ,
+        "O" ,
+        "n" ,
+        "N" ,
+        "." ,
+        "0.",
+        "1.",
+        "2.",
+        "3.",
+        "4.",
+        "5.",
+        "0..",
+        "0x",
+        "0xgff",
+        "0b",
+        "0b210110",
+        "0o",
+        "0o888",
+        "..5",
+        "2.5ee4",
+        "2.5e++4",
+        "2.5ee++4",
+        "2.5e--5",
+        "2..5",
+        "0b11111111111111111111111111111111111111111111111111111111111111111",  // tests 1 more than 64 1's.
     ];
     // Make sure we never parse operators as valid numbers.
     for i in 0..OPERS.len() {
@@ -208,12 +209,12 @@ fn is_oper_table_valid() {
         match oper.kind {
             OperKind::OpenParen => {
                 assert_eq!(oper.assoc, OperAssoc::Nil,
-                        "Open parenthesis operator '{}' at {} must have no associativity.", oper.name, idx);
+                           "Open parenthesis operator '{}' at {} must have no associativity.", oper.name, idx);
                 open_paren_count += 1;
             }
             OperKind::CloseParen => {
                 assert_eq!(oper.assoc, OperAssoc::Nil,
-                        "Close parenthesis operator '{}' at {} must have no associativity.", oper.name, idx);
+                           "Close parenthesis operator '{}' at {} must have no associativity.", oper.name, idx);
                 close_paren_count += 1;
             }
             OperKind::ParamSep => param_sep_count += 1,
