@@ -170,7 +170,7 @@ impl TryFrom<Token> for FuncToken {
 
 impl ExprCtx {
     fn new() -> Self {
-        ExprCtx {
+        Self {
             queue_output: VecDeque::with_capacity(PRE_ALLOC_TOKENS),
             stack_op: Vec::with_capacity(PRE_ALLOC_TOKENS),
             sub_exprs: 0,
