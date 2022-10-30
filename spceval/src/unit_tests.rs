@@ -1,6 +1,6 @@
-use super::{parse_num, parse_expr, evaluate_expr, ExprErrorKind};
-use super::operators::{OPERS, OperKind, OperAssoc};
-use super::functions::{FUNCS, MAX_FN_PARAMS};
+use crate::{parse_num, parse_expr, evaluate_expr, ExprErrorKind};
+use crate::operators::{OPERS, OperKind, OperAssoc};
+use crate::functions::{FUNCS, MAX_FN_PARAMS};
 
 #[test]
 fn parse_invalid_nums() {
@@ -267,7 +267,7 @@ fn is_func_table_valid() {
                 func.name, idx);
 
         assert_eq!(func.name.is_empty(), false,
-                "Function at {} invalid. Name cannot be 0 length.", idx);
+                   "Function at {} invalid. Name cannot be 0 length.", idx);
         assert_eq!(func.name.chars().nth(0).unwrap().is_digit(10), false,
                    "Function '{}' invalid. Name cannot start with digits.", func.name);
         assert_ne!(func.name.chars().nth(0).unwrap(), '_',
