@@ -10,7 +10,7 @@ pub struct Register<T: Unsigned + BitMemory> {
 
 impl<T: Unsigned + BitMemory> Register<T> {
     pub fn new(descriptor: RegisterDescriptor) -> Result<Self, RegisterError> {
-        if Register::<T>::bit_capacity() < descriptor.bit_count {
+        if Register::<T>::bit_capacity() < descriptor.bit_count() {
             Err(RegisterError::InvalidBitCount)
         } else {
             Ok(Self { value: None, descriptor })

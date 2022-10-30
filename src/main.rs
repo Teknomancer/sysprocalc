@@ -199,15 +199,15 @@ fn test_bitgroup_desc(spcio: &mut SpcIo) -> std::io::Result<()> {
             String::from("Fast FXSAVE/FXRSTOR"),
         ),
     ];
-    let efer: RegisterDescriptor = RegisterDescriptor {
-        arch:       String::from("x86"),
-        device:     String::from("cpu"),
-        name:       String::from("EFER"),
-        desc:       String::from("Extended Feature Register"),
-        bit_count:  u64::BITS as usize,
-        byte_order: ByteOrder::LittleEndian,
-        bit_ranges: efer_bitranges
-    };
+    let efer = RegisterDescriptor::new(
+        String::from("x86"),
+        String::from("cpu"),
+        String::from("EFER"),
+        String::from("Extended Feature Register"),
+        u64::BITS as usize,
+        ByteOrder::LittleEndian,
+        efer_bitranges
+    );
     write!(spcio.stream, "{}.{}.", efer.device(), efer.arch())?;
     write_color(&mut spcio.stream, efer.name(), Color::Green, true)?;
     writeln!(spcio.stream, " ({})", efer.description())?;
