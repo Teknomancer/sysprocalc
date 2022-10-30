@@ -36,9 +36,7 @@ fn test_valid_bit_group() {
 #[test]
 fn test_invalid_bit_group() {
     let pair_invalid_64 = [
-        //
         // Overlapping bit ranges (0..5) and (5..7)
-        //
         (RegisterDescriptor::new(
             String::from("x86"),
             String::from("cpu"),
@@ -67,9 +65,7 @@ fn test_invalid_bit_group() {
         ),
         RegisterDescriptorError::OverlappingBitRange),
 
-        //
         // Overlapping bit ranges (63..63) and (32..63)
-        //
         (RegisterDescriptor::new(
             String::from("x86"),
             String::from("cpu"),
@@ -98,9 +94,7 @@ fn test_invalid_bit_group() {
         ),
         RegisterDescriptorError::OverlappingBitRange),
 
-        //
         // Invalid bit range (1..0)
-        //
         (RegisterDescriptor::new(
             String::from("x86"),
             String::from("cpu"),
@@ -121,9 +115,7 @@ fn test_invalid_bit_group() {
         ),
         RegisterDescriptorError::InvalidBitRange),
 
-        //
         // Invalid bit range (0..MAX_BIT_COUNT)
-        //
         (RegisterDescriptor::new(
             String::from("x86"),
             String::from("cpu"),
@@ -144,9 +136,7 @@ fn test_invalid_bit_group() {
         ),
         RegisterDescriptorError::InvalidBitRange),
 
-        //
         // Invalid bit range (bit_count+1..bit_count+2)
-        //
         (RegisterDescriptor::new(
             String::from("x86"),
             String::from("cpu"),
@@ -167,9 +157,7 @@ fn test_invalid_bit_group() {
         ),
         RegisterDescriptorError::InvalidBitRange),
 
-        //
         // Invalid bit range (bit_count+1..0)
-        //
         (RegisterDescriptor::new(
             String::from("x86"),
             String::from("cpu"),
