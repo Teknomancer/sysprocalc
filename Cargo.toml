@@ -25,7 +25,7 @@ bench = false
 
 [dependencies]
 spceval = { path = "spceval" }
-bitgroup = { path = "bitgroup" }
+spcregs = { path = "spcregs" }
 log = "0.4"
 atty = "0.2"
 termcolor = "1.1"

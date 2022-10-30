@@ -1,8 +1,9 @@
-use bitgroup::{BitRange, BitRangeKind, ByteOrder, RegisterDescriptor};
-
+use spcregs::{BitRange, BitRangeKind, ByteOrder, RegisterDescriptor};
 use spceval::{Number, ExprError};
+
 use rustyline::Editor;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
+
 use std::env;
 use std::io::Write;
 use std::ops::RangeInclusive;
@@ -63,7 +64,7 @@ fn write_result(spcio: &mut SpcIo, number: &Number) -> std::io::Result<()> {
     let str_oct = format!("{:#o}", number.integer);
 
     // Format as binary
-    let str_bin_sfill = bitgroup::utils::get_binary_string(number.integer);
+    let str_bin_sfill = spcregs::utils::get_binary_string(number.integer);
 
     // Compute number of bits to make a binary ruler as well for writing the number of bits.
     let mut bit_count = u64::MAX.count_ones() - number.integer.leading_zeros();
@@ -87,7 +88,7 @@ fn write_result(spcio: &mut SpcIo, number: &Number) -> std::io::Result<()> {
 
     // Write the binary ruler if we have 8 or more bits.
     if bit_count >= 8 {
-        let str_bin_ruler = bitgroup::utils::get_binary_ruler_string(bit_count as u8);
+        let str_bin_ruler = spcregs::utils::get_binary_ruler_string(bit_count as u8);
         writeln!(spcio.stream, "     {}", str_bin_ruler)?;
     }
 
@@ -140,7 +141,7 @@ fn evaluate_expr_and_write_result(spcio: &mut SpcIo, str_expr: &str, app_mode: A
     Ok(())
 }
 
-fn test_bitgroup_desc(spcio: &mut SpcIo) -> std::io::Result<()> {
+fn test_register_descriptor(spcio: &mut SpcIo) -> std::io::Result<()> {
     let efer = RegisterDescriptor::new(
         String::from("x86"),
         String::from("cpu"),
@@ -228,7 +229,7 @@ fn interactive_mode(spcio: &mut SpcIo) -> std::io::Result<()> {
                 let _second = tokens.next();
                 match first {
                     Some("q") | Some("quit") | Some("exit") => break,
-                    Some("efer") => test_bitgroup_desc(spcio)?,
+                    Some("efer") => test_register_descriptor(spcio)?,
                     Some(x) if x.is_empty() => (),
 
                     // Use the original input expression given by the user rather
