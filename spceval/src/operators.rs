@@ -167,7 +167,7 @@ fn oper_div(idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
         Ok(Number { integer, float })
     } else {
         let message = format!("due to division by 0 for operator at {}", idx_expr);
-        Err(ExprError { idx_expr, kind: ExprErrorKind::FailedEvaluation, message })
+        Err(ExprError::new(idx_expr, ExprErrorKind::FailedEvaluation, message))
     }
 }
 

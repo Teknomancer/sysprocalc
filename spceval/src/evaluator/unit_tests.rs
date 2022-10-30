@@ -1,4 +1,4 @@
-use crate::{parse_num, parse_expr, evaluate_expr, ExprErrorKind};
+use crate::evaluator::{parse_num, parse_expr, evaluate_expr, ExprErrorKind};
 use crate::operators::{OPERS, OperKind, OperAssoc};
 use crate::functions::{FUNCS, MAX_FN_PARAMS};
 
