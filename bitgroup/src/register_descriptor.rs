@@ -178,7 +178,7 @@ impl fmt::Display for RegisterDescriptor {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum RegisterDescriptorError {
     InvalidBitCount,
     InvalidBitRange,

@@ -208,7 +208,7 @@ fn test_bitgroup_desc(spcio: &mut SpcIo) -> std::io::Result<()> {
         byte_order: ByteOrder::LittleEndian,
         bit_ranges: efer_bitranges
     };
-    write!(spcio.stream, "{}::{} ", efer.device(), efer.arch())?;
+    write!(spcio.stream, "{}.{}.", efer.device(), efer.arch())?;
     write_color(&mut spcio.stream, efer.name(), Color::Green, true)?;
     writeln!(spcio.stream, " ({})", efer.description())?;
     writeln!(spcio.stream, "{}", efer)?;
