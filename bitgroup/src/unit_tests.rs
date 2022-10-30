@@ -2,7 +2,7 @@ use crate::{BitRange, BitRangeKind, RegisterDescriptor, RegisterDescriptorError,
 use std::ops::RangeInclusive;
 
 #[test]
-fn test_valid_bit_group() {
+fn test_valid_register_descriptor() {
     let gen_bits = RegisterDescriptor::new(
         String::from("x86"),
         String::from("cpu"),
@@ -34,7 +34,7 @@ fn test_valid_bit_group() {
 }
 
 #[test]
-fn test_invalid_bit_group() {
+fn test_invalid_register_descriptor() {
     let pair_invalid_64 = [
         // Overlapping bit ranges (0..5) and (5..7)
         (RegisterDescriptor::new(
