@@ -99,32 +99,33 @@ impl RegisterDescriptor {
     }
 
     pub fn validate(&self) -> Result<(), RegisterDescriptorError> {
+        // Check that the bit ranges isn't empty.
         if self.bit_ranges.is_empty() {
-           // None of the bits are described.
            return Err(RegisterDescriptorError::MissingBitRanges)
         }
 
+        // Check if the number of bits in the register is within supported limits.
         let bit_count = self.bit_count;
         if bit_count > MAX_BIT_COUNT {
-            // Number of bits in this register exceeds the maximum supported value.
             return Err(RegisterDescriptorError::InvalidBitCount);
         }
 
         let mut bitpos:Vec<_> = (0..bit_count).collect(); // Vector of valid bit positions to check overlap in bit ranges.
         for bit_range in &self.bit_ranges {
-            if bit_range.span.is_empty() || *bit_range.span.end() >= bit_count {
-                // The bit range is invalid (end() is inclusive)
-                return Err(RegisterDescriptorError::InvalidBitRange);
-            }
             if bit_range.name.is_empty() {
-               // The bit name is missing.
                return Err(RegisterDescriptorError::MissingBitName);
             }
+
             if bit_range.short.is_empty() {
-               // The bit description is missing.
                return Err(RegisterDescriptorError::MissingBitRangeDescription);
             }
-            // Validate that bit ranges don't overlap.
+
+            // Check if the bit range is within supported limits (note: end() is inclusive bound)
+            if bit_range.span.is_empty() || *bit_range.span.end() >= bit_count {
+                return Err(RegisterDescriptorError::InvalidBitRange);
+            }
+
+            // Check that bit ranges don't overlap.
             // We replace items in a vector (0..MAX_BIT_COUNT) with poisoned values for
             // each range in the description. If the removed items contains a poisoned
             // value it implies some previous range already existed causing an overlap.
@@ -137,6 +138,7 @@ impl RegisterDescriptor {
                 return Err(RegisterDescriptorError::OverlappingBitRange);
             }
         }
+
         Ok(())
     }
 }
@@ -149,6 +151,7 @@ impl fmt::Display for RegisterDescriptor {
         let short_width = self.column_width(BitRangeElement::Short);
         let bits_width = self.column_width(BitRangeElement::Bits);
 
+        // Format the bit ranges
         let mut out = String::from("");
         for bit_range in self.bit_ranges.iter().rev() {
             let end = bit_range.span.end();
