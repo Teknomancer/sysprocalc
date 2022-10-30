@@ -7,13 +7,13 @@ static BIT_RANGE_SEP: &str = ":";
 
 #[derive(Debug)]
 pub struct RegisterDescriptor {
-    pub arch: String,
-    pub device: String,
-    pub name: String,
-    pub desc: String,
-    pub bit_count: usize,
-    pub byte_order: ByteOrder,
-    pub bit_ranges: Vec<BitRange>,
+    arch: String,
+    device: String,
+    name: String,
+    desc: String,
+    bit_count: usize,
+    byte_order: ByteOrder,
+    bit_ranges: Vec<BitRange>,
 }
 
 #[derive(Debug)]
