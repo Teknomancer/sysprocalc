@@ -1,5 +1,5 @@
 use crate::register_descriptor::RegisterDescriptor;
-use funty::Unsigned;
+use funty::{Integral, Unsigned};
 use bitvec::mem::BitMemory;
 use std::fmt;
 
@@ -23,21 +23,20 @@ impl<T: Unsigned + BitMemory> Register<T> {
 
     #[inline(always)]
     fn bit_capacity() -> usize {
-        // Cannot use T::BITS due to multiple definitions caused by
-        // funty 2.0.0 vs funty 1.2.0 (latter required by bitvec 0.22.x).
-        // I don't want to include funty 1.2.0 as it also has other changes
-        // to names such as using the older "IsUnsigned" vs the newer "Unsigned".
-        // I prefer to use the latest version where possible despite bitvec
-        // internally still using funty 1.2.0. Since "BITS" is the only conflict
-        // for now, this is manageable.
-        // See https://github.com/myrrlyn/funty/issues/3
+        // T::BITS is ambiguous because of multiple definitions caused by using
+        // funty 2.0.x and funty 1.2.0. The latter is used by bitvec 0.22.x,
+        // see https://github.com/myrrlyn/funty/issues/3
 
-        // T::BITS as usize
-        std::mem::size_of::<T>() * 8
+        // I strongly prefer using the latest version of crates whenever possible.
+        // I don't want to include an older funty version as it also means using
+        // older names such as "IsUnsigned" vs the newer "Unsigned" etc.
+        // To resolve this problem, we must fully qualify the type to its trait
+        // ("Integral") which only exists in the newer funty 2.0.x version.
+        <T as Integral>::BITS as usize
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum RegisterError {
     InvalidBitCount,
 }
