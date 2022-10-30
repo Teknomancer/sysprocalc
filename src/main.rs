@@ -141,64 +141,6 @@ fn evaluate_expr_and_write_result(spcio: &mut SpcIo, str_expr: &str, app_mode: A
 }
 
 fn test_bitgroup_desc(spcio: &mut SpcIo) -> std::io::Result<()> {
-    let efer_bitranges = vec![
-        BitRange::new(
-            RangeInclusive::new(0, 0),
-            BitRangeKind::Normal,
-            true,
-            String::from("SCE"),
-            String::from("SysCall"),
-            String::from("System Call Extensions"),
-        ),
-        BitRange::new(
-            RangeInclusive::new(1, 1),
-            BitRangeKind::Normal,
-            true,
-            String::from("LME"),
-            String::from("Long mode enable"),
-            String::from("Long mode enable"),
-        ),
-        BitRange::new(
-            RangeInclusive::new(10, 10),
-            BitRangeKind::Normal,
-            true,
-            String::from("LMA"),
-            String::from("Long mode active"),
-            String::from("Long mode active"),
-        ),
-        BitRange::new(
-            RangeInclusive::new(11, 11),
-            BitRangeKind::Normal,
-            true,
-            String::from("NXE"),
-            String::from("No-execute enable"),
-            String::from("No-execute enable"),
-        ),
-        BitRange::new(
-            RangeInclusive::new(12, 12),
-            BitRangeKind::Normal,
-            true,
-            String::from("SVME"),
-            String::from("SVM enable"),
-            String::from("Secure virtual machine enable (AMD)"),
-        ),
-        BitRange::new(
-            RangeInclusive::new(13, 13),
-            BitRangeKind::Normal,
-            true,
-            String::from("LMSL"),
-            String::from("LMSL enable"),
-            String::from("Long mode segment limit enable (AMD)"),
-        ),
-        BitRange::new(
-            RangeInclusive::new(14, 14),
-            BitRangeKind::Normal,
-            true,
-            String::from("FFXSR"),
-            String::from("Fast FXSAVE/FXRSTOR"),
-            String::from("Fast FXSAVE/FXRSTOR"),
-        ),
-    ];
     let efer = RegisterDescriptor::new(
         String::from("x86"),
         String::from("cpu"),
@@ -206,7 +148,64 @@ fn test_bitgroup_desc(spcio: &mut SpcIo) -> std::io::Result<()> {
         String::from("Extended Feature Register"),
         u64::BITS as usize,
         ByteOrder::LittleEndian,
-        efer_bitranges
+        vec![
+            BitRange::new(
+                RangeInclusive::new(0, 0),
+                BitRangeKind::Normal,
+                true,
+                String::from("SCE"),
+                String::from("SysCall"),
+                String::from("System Call Extensions"),
+            ),
+            BitRange::new(
+                RangeInclusive::new(1, 1),
+                BitRangeKind::Normal,
+                true,
+                String::from("LME"),
+                String::from("Long mode enable"),
+                String::from("Long mode enable"),
+            ),
+            BitRange::new(
+                RangeInclusive::new(10, 10),
+                BitRangeKind::Normal,
+                true,
+                String::from("LMA"),
+                String::from("Long mode active"),
+                String::from("Long mode active"),
+            ),
+            BitRange::new(
+                RangeInclusive::new(11, 11),
+                BitRangeKind::Normal,
+                true,
+                String::from("NXE"),
+                String::from("No-execute enable"),
+                String::from("No-execute enable"),
+            ),
+            BitRange::new(
+                RangeInclusive::new(12, 12),
+                BitRangeKind::Normal,
+                true,
+                String::from("SVME"),
+                String::from("SVM enable"),
+                String::from("Secure virtual machine enable (AMD)"),
+            ),
+            BitRange::new(
+                RangeInclusive::new(13, 13),
+                BitRangeKind::Normal,
+                true,
+                String::from("LMSL"),
+                String::from("LMSL enable"),
+                String::from("Long mode segment limit enable (AMD)"),
+            ),
+            BitRange::new(
+                RangeInclusive::new(14, 14),
+                BitRangeKind::Normal,
+                true,
+                String::from("FFXSR"),
+                String::from("Fast FXSAVE/FXRSTOR"),
+                String::from("Fast FXSAVE/FXRSTOR"),
+            ),
+        ]
     );
     write!(spcio.stream, "{}.{}.", efer.device(), efer.arch())?;
     write_color(&mut spcio.stream, efer.name(), Color::Green, true)?;
