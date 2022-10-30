@@ -6,7 +6,7 @@ description = "System Programmer's Calculator's library for describing hardware 
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/Teknomancer/sysprocalc"
 
-keywords = ["x86","x86-register","x86-register-descriptions","bit-group"]
+keywords = ["x86","x86-register","x86-register-descriptions","hardware-register"]
 
 edition = "2021"
 
