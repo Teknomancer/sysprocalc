@@ -20,8 +20,13 @@ impl<'a> Registers<'a> {
         }
     }
 
-    pub fn load_builtin() {
-
+    pub fn set_value(&mut self, value: T) {
+        self.value = Some(value);
     }
+
+    pub fn clear_value(&mut self) {
+        self.value = None;
+    }
+
 }
 
