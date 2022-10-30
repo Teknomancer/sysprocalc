@@ -306,9 +306,7 @@ fn valid_exprs_eval_fail() {
         ("2/0", ExprErrorKind::FailedEvaluation),
         ("0xffffffffffffffff/0", ExprErrorKind::FailedEvaluation),
 
-        //
         // Functions
-        //
         // bit
         ("bit(-1)", ExprErrorKind::FailedEvaluation),
         ("bit(64)", ExprErrorKind::FailedEvaluation),
