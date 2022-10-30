@@ -26,15 +26,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
 
 [[package]]
-name = "bitgroup"
-version = "0.0.1"
-dependencies = [
- "bitvec",
- "funty 2.0.0",
- "log",
-]
-
-[[package]]
 name = "bitvec"
 version = "0.22.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -336,6 +327,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "spcregs"
+version = "0.0.1"
+dependencies = [
+ "bitvec",
+ "funty 2.0.0",
+ "log",
+]
+
+[[package]]
 name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -363,10 +363,10 @@ name = "sysprocalc"
 version = "0.0.1"
 dependencies = [
  "atty",
- "bitgroup",
  "log",
  "rustyline",
  "spceval",
+ "spcregs",
  "termcolor",
 ]
 
