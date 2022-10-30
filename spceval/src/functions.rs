@@ -1,4 +1,4 @@
-use super::{Number, ExprError, ExprErrorKind};
+use crate::{Number, ExprError, ExprErrorKind};
 use std::ops::Range;
 
 pub const MAX_FN_PARAMS: u8 = u8::max_value();
@@ -73,7 +73,7 @@ fn func_bit(func: &Func, idx_expr: usize, nums: &[Number]) -> Result<Number, Exp
     } else {
         let message = format!("for function '{}' at {} due to invalid shift {} (must be 0..63)",
                               func.name, idx_expr, nums[0].integer as i64);
-        Err(ExprError { idx_expr, kind: ExprErrorKind::FailedEvaluation, message })
+        Err(ExprError::new(idx_expr, ExprErrorKind::FailedEvaluation, message))
     }
 }
 
@@ -90,7 +90,7 @@ fn func_bits(func: &Func, idx_expr: usize, nums: &[Number]) -> Result<Number, Ex
     } else {
         let message = format!("for function '{}' at {} due to invalid bit range ({}, {}) (must be 0..63)",
                               func.name, idx_expr, nums[0].integer as i64, nums[1].integer as i64);
-        Err(ExprError { idx_expr, kind: ExprErrorKind::FailedEvaluation, message })
+        Err(ExprError::new(idx_expr, ExprErrorKind::FailedEvaluation, message))
     }
 }
 
