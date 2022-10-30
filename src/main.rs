@@ -1,4 +1,5 @@
-use bitgroup::{BitGroup, BitSpan, BitSpanKind, ByteOrder};
+use bitgroup::{BitRange, BitRangeKind, ByteOrder, RegisterDescriptor};
+
 use spceval::{Number, ExprError};
 use rustyline::Editor;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
@@ -62,7 +63,7 @@ fn write_result(spcio: &mut SpcIo, number: &Number) -> std::io::Result<()> {
     let str_oct = format!("{:#o}", number.integer);
 
     // Format as binary
-    let str_bin_sfill = bitgroup::get_binary_string(number.integer);
+    let str_bin_sfill = bitgroup::utils::get_binary_string(number.integer);
 
     // Compute number of bits to make a binary ruler as well for writing the number of bits.
     let mut bit_count = u64::MAX.count_ones() - number.integer.leading_zeros();
@@ -86,7 +87,7 @@ fn write_result(spcio: &mut SpcIo, number: &Number) -> std::io::Result<()> {
 
     // Write the binary ruler if we have 8 or more bits.
     if bit_count >= 8 {
-        let str_bin_ruler = bitgroup::get_binary_ruler_string(bit_count as u8);
+        let str_bin_ruler = bitgroup::utils::get_binary_ruler_string(bit_count as u8);
         writeln!(spcio.stream, "     {}", str_bin_ruler)?;
     }
 
@@ -140,72 +141,73 @@ fn evaluate_expr_and_write_result(spcio: &mut SpcIo, str_expr: &str, app_mode: A
 }
 
 fn test_bitgroup_desc(spcio: &mut SpcIo) -> std::io::Result<()> {
-    let efer_bitspans = vec![
-        BitSpan::new(
+    let efer_bitranges = vec![
+        BitRange::new(
             RangeInclusive::new(0, 0),
-            BitSpanKind::Normal,
+            BitRangeKind::Normal,
             true,
-            "SCE",
-            "SysCall",
-            "System Call Extensions",
+            String::from("SCE"),
+            String::from("SysCall"),
+            String::from("System Call Extensions"),
         ),
-        BitSpan::new(
+        BitRange::new(
             RangeInclusive::new(1, 1),
-            BitSpanKind::Normal,
+            BitRangeKind::Normal,
             true,
-            "LME",
-            "Long mode enable",
-            "Long mode enable",
+            String::from("LME"),
+            String::from("Long mode enable"),
+            String::from("Long mode enable"),
         ),
-        BitSpan::new(
+        BitRange::new(
             RangeInclusive::new(10, 10),
-            BitSpanKind::Normal,
+            BitRangeKind::Normal,
             true,
-            "LMA",
-            "Long mode active",
-            "Long mode active",
+            String::from("LMA"),
+            String::from("Long mode active"),
+            String::from("Long mode active"),
         ),
-        BitSpan::new(
+        BitRange::new(
             RangeInclusive::new(11, 11),
-            BitSpanKind::Normal,
+            BitRangeKind::Normal,
             true,
-            "NXE",
-            "No-execute enable",
-            "No-execute enable",
+            String::from("NXE"),
+            String::from("No-execute enable"),
+            String::from("No-execute enable"),
         ),
-        BitSpan::new(
+        BitRange::new(
             RangeInclusive::new(12, 12),
-            BitSpanKind::Normal,
+            BitRangeKind::Normal,
             true,
-            "SVME",
-            "SVM enable",
-            "Secure virtual machine enable (AMD)",
+            String::from("SVME"),
+            String::from("SVM enable"),
+            String::from("Secure virtual machine enable (AMD)"),
         ),
-        BitSpan::new(
+        BitRange::new(
             RangeInclusive::new(13, 13),
-            BitSpanKind::Normal,
+            BitRangeKind::Normal,
             true,
-            "LMSL",
-            "LMSL enable",
-            "Long mode segment limit enable (AMD)",
+            String::from("LMSL"),
+            String::from("LMSL enable"),
+            String::from("Long mode segment limit enable (AMD)"),
         ),
-        BitSpan::new(
+        BitRange::new(
             RangeInclusive::new(14, 14),
-            BitSpanKind::Normal,
+            BitRangeKind::Normal,
             true,
-            "FFXSR",
-            "Fast FXSAVE/FXRSTOR",
-            "Fast FXSAVE/FXRSTOR",
+            String::from("FFXSR"),
+            String::from("Fast FXSAVE/FXRSTOR"),
+            String::from("Fast FXSAVE/FXRSTOR"),
         ),
     ];
-    let efer: BitGroup<u64> = BitGroup::new(
-        "x86",
-        "cpu",
-        "EFER",
-        "Extended Feature Register",
-        ByteOrder::LittleEndian,
-        efer_bitspans
-    );
+    let efer: RegisterDescriptor = RegisterDescriptor {
+        arch:       String::from("x86"),
+        device:     String::from("cpu"),
+        name:       String::from("EFER"),
+        desc:       String::from("Extended Feature Register"),
+        bit_count:  u64::BITS as usize,
+        byte_order: ByteOrder::LittleEndian,
+        bit_ranges: efer_bitranges
+    };
     write!(spcio.stream, "{}::{} ", efer.device(), efer.arch())?;
     write_color(&mut spcio.stream, efer.name(), Color::Green, true)?;
     writeln!(spcio.stream, " ({})", efer.description())?;
