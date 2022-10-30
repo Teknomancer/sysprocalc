@@ -2,7 +2,7 @@
 name = "spcregs"
 version = "0.0.1"
 authors = ["Ramshankar <v.ramshankar@gmail.com>"]
-description = "System Programmer's Calculator's Registers Library for describing bits of hardware registers."
+description = "System Programmer's Calculator's library for describing hardware registers."
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/Teknomancer/sysprocalc"
 

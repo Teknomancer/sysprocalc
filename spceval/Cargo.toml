@@ -2,7 +2,7 @@
 name = "spceval"
 version = "0.0.1"
 authors = ["Ramshankar <v.ramshankar@gmail.com>"]
-description = "System Programmer's Calculator's Evaluation Library"
+description = "System Programmer's Calculator's library for evaluating expressions."
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/Teknomancer/sysprocalc"
 
@@ -14,3 +14,4 @@ edition = "2018"
 log = "0.4"
 arrayvec = "0.5.2"
 static_assertions = "1.1.0"
+
