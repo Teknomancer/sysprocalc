@@ -44,7 +44,7 @@ pub enum RegisterError {
 impl fmt::Display for RegisterError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let err = match *self {
-            RegisterError::InvalidBitCount => "invalid bit count"
+            RegisterError::InvalidBitCount => "register size insufficient to describe all its bits"
         };
         write!(f, "{}", err)
     }
