@@ -724,9 +724,15 @@ fn parse_expr(str_expr: &str) -> Result<ExprCtx, ExprError> {
     let mut opt_prev_token: Option<Token> = None;
     let mut iter_str = str_expr.char_indices();
 
+    let mut last_idx = 0;
     while let Some((idx, chr)) = iter_str.next() {
         // Make sure we are not in the middle of a UTF-8 sequence.
         debug_assert!(str_expr.is_char_boundary(idx));
+
+        // Record the current token index so we can produce accurate error carets for sequence "   ()".
+        last_idx = idx;
+
+        // Skip whitespaces.
         if chr.is_whitespace() {
             continue;
         }
@@ -782,7 +788,7 @@ fn parse_expr(str_expr: &str) -> Result<ExprCtx, ExprError> {
     if expr_ctx.stack_op.is_empty() && expr_ctx.queue_output.is_empty() {
         trace!("'{:?}", ExprErrorKind::EmptyExpr);
         Err(ExprError {
-            idx_expr: 0,
+            idx_expr: last_idx,
             kind: ExprErrorKind::EmptyExpr,
             message: "".to_string()
         })
