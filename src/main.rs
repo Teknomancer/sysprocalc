@@ -1,4 +1,4 @@
-use spcregs::{BitRange, BitRangeKind, ByteOrder, RegisterDescriptor};
+use spcregs::{BitRange, BitRangeKind, ByteOrder, Register, RegisterDescriptor};
 use spceval::{Number, ExprError};
 
 use rustyline::Editor;
@@ -141,8 +141,8 @@ fn evaluate_expr_and_write_result(spcio: &mut SpcIo, str_expr: &str, app_mode: A
     Ok(())
 }
 
-fn test_register_descriptor(spcio: &mut SpcIo) -> std::io::Result<()> {
-    let efer = RegisterDescriptor::new(
+fn test_register(spcio: &mut SpcIo, opt_str_expr: Option<&str>, app_mode: AppMode) -> std::io::Result<()> {
+    let efer_descriptor = RegisterDescriptor::new(
         String::from("x86"),
         String::from("cpu"),
         String::from("EFER"),
@@ -208,10 +208,27 @@ fn test_register_descriptor(spcio: &mut SpcIo) -> std::io::Result<()> {
             ),
         ]
     );
-    write!(spcio.stream, "{}.{}.", efer.device(), efer.arch())?;
-    write_color(&mut spcio.stream, efer.name(), Color::Green, true)?;
-    writeln!(spcio.stream, " ({})", efer.description())?;
-    writeln!(spcio.stream, "{}", efer)?;
+    write!(spcio.stream, "{}.{} ", efer_descriptor.device(), efer_descriptor.arch())?;
+    write_color(&mut spcio.stream, efer_descriptor.name(), Color::Green, true)?;
+    writeln!(spcio.stream, " ({})", efer_descriptor.description())?;
+
+    match opt_str_expr {
+        Some(str_expr) => {
+            match evaluate_expr(str_expr) {
+                Ok(number) => {
+                    let mut efer: Register<u64> = Register::new(efer_descriptor).unwrap();
+                    efer.set_value(number.integer);
+                    writeln!(spcio.stream, "{}", efer)?;
+                }
+                Err(e) => write_error(spcio, str_expr, e, app_mode)?,
+            }
+        }
+
+        None => {
+            writeln!(spcio.stream, "{}", efer_descriptor)?;
+        }
+    }
+
     Ok(())
 }
 
@@ -226,10 +243,10 @@ fn interactive_mode(spcio: &mut SpcIo) -> std::io::Result<()> {
 
                 let mut tokens = input_expr.trim().split(' ').fuse();
                 let first = tokens.next();
-                let _second = tokens.next();
+                let second = tokens.next();
                 match first {
                     Some("q") | Some("quit") | Some("exit") => break,
-                    Some("efer") => test_register_descriptor(spcio)?,
+                    Some("efer") => test_register(spcio, second, AppMode::Interactive)?,
                     Some(x) if x.is_empty() => (),
 
                     // Use the original input expression given by the user rather

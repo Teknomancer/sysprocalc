@@ -23,8 +23,12 @@ impl<T: Unsigned + BitMemory> Register<T> {
         }
     }
 
-    pub fn set(&mut self, value: Option<T>) {
-        self.value = value;
+    pub fn set_value(&mut self, value: T) {
+        self.value = Some(value);
+    }
+
+    pub fn clear_value(&mut self) {
+        self.value = None;
     }
 
     #[inline(always)]
@@ -49,8 +53,10 @@ impl<T: Unsigned + BitMemory> fmt::Display for Register<T> {
         } else {
             let res: Result<RegisterValue, _> = self.value.unwrap().try_into();
             match res {
-                Ok(val) => write!(f, "{}", val),
                 Err(_) => write!(f, "Couldn't convert register value"),
+                Ok(val) => {
+                    write!(f, "{}", utils::get_binary_string(val))
+                }
             }
         }
     }
