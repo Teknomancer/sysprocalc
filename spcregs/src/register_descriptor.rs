@@ -1,7 +1,7 @@
 use crate::bit_range::{BitRange, ByteOrder};
-use std::fmt;
+use crate::register::MAX_BIT_COUNT;
 
-pub static MAX_BIT_COUNT: usize = u64::BITS as usize;
+use std::fmt;
 
 static BIT_RANGE_SEP: &str = ":";
 
