@@ -55,6 +55,9 @@ impl<T: Unsigned + BitMemory> fmt::Display for Register<T> {
             match res {
                 Err(_) => write!(f, "Couldn't convert register value"),
                 Ok(val) => {
+
+
+
                     write!(f, "{}", utils::get_binary_string(val))
                 }
             }

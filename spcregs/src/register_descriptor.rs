@@ -33,8 +33,47 @@ impl RegisterDescriptor {
         bit_count: usize,
         byte_order: ByteOrder,
         bit_ranges: Vec<BitRange>
-    ) -> Self {
-        Self { name, arch, device, desc, bit_count, byte_order, bit_ranges }
+    ) -> Result<Self, RegisterDescriptorError> {
+        // Check that the bit ranges isn't empty.
+        if bit_ranges.is_empty() {
+           return Err(RegisterDescriptorError::MissingBitRanges)
+        }
+
+        // Check if the number of bits in the register is within supported limits.
+        if bit_count > MAX_BIT_COUNT {
+            return Err(RegisterDescriptorError::InvalidBitCount);
+        }
+
+        let mut bitpos:Vec<_> = (0..bit_count).collect(); // Vector of valid bit positions to check overlap in bit ranges.
+        for bit_range in &bit_ranges {
+            if bit_range.name.is_empty() {
+               return Err(RegisterDescriptorError::MissingBitName);
+            }
+
+            if bit_range.short.is_empty() {
+               return Err(RegisterDescriptorError::MissingBitRangeDescription);
+            }
+
+            // Check if the bit range is within supported limits (note: end() is inclusive bound)
+            if bit_range.span.is_empty() || *bit_range.span.end() >= bit_count {
+                return Err(RegisterDescriptorError::InvalidBitRange);
+            }
+
+            // Check that bit ranges don't overlap.
+            // We replace items in a vector (0..MAX_BIT_COUNT) with poisoned values for
+            // each range in the description. If the removed items contains a poisoned
+            // value it implies some previous range already existed causing an overlap.
+            // E.g. If MAX_BIT_COUNT is 64, bitpos is (0..=63) and poison value is 64.
+            let end = *bit_range.span.end() + 1;    // Exclusive bound.
+            let start = *bit_range.span.start();    // Inclusive bound.
+            let poison = vec![MAX_BIT_COUNT; end - start];
+            let removed:Vec<_> = bitpos.splice(start..end, poison).collect();
+            if removed.iter().any(|&x| x == MAX_BIT_COUNT) {
+                return Err(RegisterDescriptorError::OverlappingBitRange);
+            }
+        }
+
+        Ok(Self { name, arch, device, desc, bit_count, byte_order, bit_ranges })
     }
 
     pub fn name(&self) -> &str {
@@ -96,50 +135,6 @@ impl RegisterDescriptor {
             }
         }
         col_len
-    }
-
-    pub fn validate(&self) -> Result<(), RegisterDescriptorError> {
-        // Check that the bit ranges isn't empty.
-        if self.bit_ranges.is_empty() {
-           return Err(RegisterDescriptorError::MissingBitRanges)
-        }
-
-        // Check if the number of bits in the register is within supported limits.
-        let bit_count = self.bit_count;
-        if bit_count > MAX_BIT_COUNT {
-            return Err(RegisterDescriptorError::InvalidBitCount);
-        }
-
-        let mut bitpos:Vec<_> = (0..bit_count).collect(); // Vector of valid bit positions to check overlap in bit ranges.
-        for bit_range in &self.bit_ranges {
-            if bit_range.name.is_empty() {
-               return Err(RegisterDescriptorError::MissingBitName);
-            }
-
-            if bit_range.short.is_empty() {
-               return Err(RegisterDescriptorError::MissingBitRangeDescription);
-            }
-
-            // Check if the bit range is within supported limits (note: end() is inclusive bound)
-            if bit_range.span.is_empty() || *bit_range.span.end() >= bit_count {
-                return Err(RegisterDescriptorError::InvalidBitRange);
-            }
-
-            // Check that bit ranges don't overlap.
-            // We replace items in a vector (0..MAX_BIT_COUNT) with poisoned values for
-            // each range in the description. If the removed items contains a poisoned
-            // value it implies some previous range already existed causing an overlap.
-            // E.g. If MAX_BIT_COUNT is 64, bitpos is (0..=63) and poison value is 64.
-            let end = *bit_range.span.end() + 1;    // Exclusive bound.
-            let start = *bit_range.span.start();    // Inclusive bound.
-            let poison = vec![MAX_BIT_COUNT; end - start];
-            let removed:Vec<_> = bitpos.splice(start..end, poison).collect();
-            if removed.iter().any(|&x| x == MAX_BIT_COUNT) {
-                return Err(RegisterDescriptorError::OverlappingBitRange);
-            }
-        }
-
-        Ok(())
     }
 }
 
