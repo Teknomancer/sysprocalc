@@ -5,8 +5,11 @@ use std::ops::RangeInclusive;
 mod cpu_x86_registers;
 
 enum BitRegister<'a> {
+    Reg1288(BitGroup<'a, u128>),
     Reg64(BitGroup<'a, u64>),
     Reg32(BitGroup<'a, u32>),
+    Reg16(BitGroup<'a, u16>),
+    Reg8(BitGroup<'a, u8>),
 }
 
 pub struct Registers<'a> {
