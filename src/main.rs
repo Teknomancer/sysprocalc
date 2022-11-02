@@ -207,7 +207,8 @@ fn test_register(spcio: &mut SpcIo, opt_str_expr: Option<&str>, app_mode: AppMod
                 String::from("Fast FXSAVE/FXRSTOR"),
             ),
         ]
-    );
+    ).unwrap();
+
     write!(spcio.stream, "{}.{} ", efer_descriptor.device(), efer_descriptor.arch())?;
     write_color(&mut spcio.stream, efer_descriptor.name(), Color::Green, true)?;
     writeln!(spcio.stream, " ({})", efer_descriptor.description())?;
