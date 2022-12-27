@@ -82,8 +82,8 @@ fn func_bits(func: &Func, idx_expr: usize, nums: &[Number]) -> Result<Number, Ex
     let max = std::cmp::max(nums[0].integer, nums[1].integer) as u32;
     if (0..u64::BITS).contains(&min) && (0..u64::BITS).contains(&max) {
         let mut integer : u64 = 0;
-        for n in min..max + 1  {
-            integer |= 1_u64.wrapping_shl(n as u32);
+        for n in min..max + 1 {
+            integer |= 1_u64.wrapping_shl(n);
         }
         let float = integer as f64;
         Ok(Number { integer, float })
