@@ -97,15 +97,16 @@ fn write_result(spcio: &mut SpcIo, number: &Number) -> std::io::Result<()> {
     Ok(())
 }
 
-fn write_error(spcio: &mut SpcIo, str_expr: &str, opt_padding: Option<usize>, err: ExprError, app_mode: AppMode) -> std::io::Result<()> {
+fn write_error(spcio: &mut SpcIo, str_expr: &str, opt_extra_padding: Option<usize>, err: ExprError, app_mode: AppMode)
+    -> std::io::Result<()> {
     // Write the caret indicating where in the expression the error occurs in interactive mode.
     if let AppMode::Interactive = app_mode {
         let idx_char = byte_index_to_char_index(str_expr, err.index());
         let user_prompt_padding = USER_PROMPT.chars().count();
 
-        // Calculate padding
-        let padding = if opt_padding.is_some() {
-            idx_char + user_prompt_padding + opt_padding.unwrap()
+        // Calculate padding.
+        let padding = if opt_extra_padding.is_some() {
+            idx_char + user_prompt_padding + opt_extra_padding.unwrap()
         } else {
             idx_char + user_prompt_padding
         };
