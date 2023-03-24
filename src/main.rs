@@ -242,12 +242,12 @@ fn interactive_mode(spcio: &mut SpcIo) -> std::io::Result<()> {
                 let input_expr = str_input.as_str();
                 editor.add_history_entry(input_expr);
 
-                let mut tokens = input_expr.trim().split(' ').fuse();
-                let first = tokens.next();
-                let second = tokens.next();
-                match first {
+                let mut tokens = input_expr.trim().splitn(2, ' ').fuse();
+                let command = tokens.next();
+                let args    = tokens.next();
+                match command {
                     Some("q") | Some("quit") | Some("exit") => break,
-                    Some("efer") => test_register(spcio, second, AppMode::Interactive)?,
+                    Some("efer") => test_register(spcio, args, AppMode::Interactive)?,
                     Some(x) if x.is_empty() => (),
 
                     // Use the original input expression given by the user rather
