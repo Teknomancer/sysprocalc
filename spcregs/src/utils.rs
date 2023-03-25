@@ -1,17 +1,21 @@
-// Figure out a better place to put this static function
-pub fn get_binary_string(val: u64) -> String {
+pub fn get_binary_string(val: u64, fixed_bit_width: Option<u32>) -> String {
     // Formats the number as binary digits with a space (from the right) for every 4 binary digits.
     static BIN_DIGITS: [char; 2] = ['0', '1'];
     let mut bin_out: Vec<char> = Vec::with_capacity(88);
     let mut val = val;
-    let num_digits = u64::MAX.count_ones() - val.leading_zeros();
+
+    let bit_width = match fixed_bit_width {
+        Some(fixed_bit_width) if fixed_bit_width <= u64::BITS
+            => fixed_bit_width,
+        _   => u64::MAX.count_ones() - val.leading_zeros(),
+    };
 
     // Push first bit (to avoid extra branch in the loop for not pushing ' ' on 0th iteration).
     bin_out.push(BIN_DIGITS[val.wrapping_rem(2) as usize]);
     val >>= 1;
 
     // Push remaining bits.
-    for idx in 1..num_digits {
+    for idx in 1..bit_width {
         if idx % 4 == 0 {
             bin_out.push(' ');
         }
@@ -23,7 +27,6 @@ pub fn get_binary_string(val: u64) -> String {
     bin_out.iter().rev().collect::<String>()
 }
 
-// Figure out a better place to put this static function
 pub fn get_binary_ruler_string(bit_count: u8) -> String {
     // Makes a binary ruler (for every 8 bits) to ease visual counting of bits.
     // There might be a more efficient way to do this with Rust's string/vector

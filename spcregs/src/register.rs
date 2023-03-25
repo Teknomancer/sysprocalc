@@ -58,7 +58,7 @@ impl<T: Unsigned + BitMemory> fmt::Display for Register<T> {
 
 
 
-                    write!(f, "{}", utils::get_binary_string(val))
+                    write!(f, "{}", utils::get_binary_string(val, Some(self.descriptor.bit_count() as u32)))
                 }
             }
         }
