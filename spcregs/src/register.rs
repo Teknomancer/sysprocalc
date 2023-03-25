@@ -56,9 +56,15 @@ impl<T: Unsigned + BitMemory> fmt::Display for Register<T> {
                 Err(_) => write!(f, "Couldn't convert register value"),
                 Ok(val) => {
 
+                    let bit_count = self.descriptor.bit_count();
 
+                    // First write out the binary bits seperated into groups of 4.
+                    write!(f, "{}", utils::get_binary_string(val, Some(bit_count as u32)))?;
 
-                    write!(f, "{}", utils::get_binary_string(val, Some(self.descriptor.bit_count() as u32)))
+                    // Now iterate over each bit range.
+                    for bit_range in self.descriptor.bit_ranges().iter().rev() {
+                    }
+                    Ok(())
                 }
             }
         }

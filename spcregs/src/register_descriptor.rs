@@ -46,6 +46,7 @@ impl RegisterDescriptor {
         }
 
         let mut bitpos:Vec<_> = (0..bit_count).collect(); // Vector of valid bit positions to check overlap in bit ranges.
+        let mut prev_range_end: Option<usize> = None;
         for bit_range in &bit_ranges {
             if bit_range.name.is_empty() {
                return Err(RegisterDescriptorError::MissingBitName);
@@ -72,6 +73,16 @@ impl RegisterDescriptor {
             if removed.iter().any(|&x| x == MAX_BIT_COUNT) {
                 return Err(RegisterDescriptorError::OverlappingBitRange);
             }
+
+            // Check that bit ranges are always in ascending order e.g, [0, 1, 2-12, 13-31].
+            // [0, 2-12, 1, 13-31] would be an error.
+            if prev_range_end.is_some() {
+                if *bit_range.span.end() + 1 <= prev_range_end.unwrap() {
+                    return Err(RegisterDescriptorError::InvalidBitRangeOrder);
+                }
+            }
+
+            prev_range_end = Some(*bit_range.span.end() + 1);
         }
 
         Ok(Self { name, arch, device, desc, bit_count, byte_order, bit_ranges })
@@ -95,6 +106,10 @@ impl RegisterDescriptor {
 
     pub fn bit_count(&self) -> usize {
         self.bit_count
+    }
+
+    pub fn bit_ranges(&self) -> &Vec<BitRange> {
+        &self.bit_ranges
     }
 
     fn column_width(&self, element: BitRangeElement) -> usize {
@@ -185,6 +200,7 @@ pub enum RegisterDescriptorError {
     MissingDevice,
     MissingName,
     OverlappingBitRange,
+    InvalidBitRangeOrder,
     UnknownArch,
 }
 
@@ -200,6 +216,7 @@ impl fmt::Display for RegisterDescriptorError {
             RegisterDescriptorError::MissingDevice => "missing device",
             RegisterDescriptorError::MissingName => "missing name",
             RegisterDescriptorError::OverlappingBitRange => "overlapping bit range",
+            RegisterDescriptorError::InvalidBitRangeOrder => "invalid ordering of bit ranges",
             RegisterDescriptorError::UnknownArch => "unknown architecture",
         };
         write!(f, "{}", err)
