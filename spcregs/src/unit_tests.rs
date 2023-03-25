@@ -175,5 +175,71 @@ fn test_invalid_register_descriptor() {
         ],
     );
     assert_eq!(res.unwrap_err(), RegisterDescriptorError::InvalidBitRange);
+
+    // Invalid bit range order
+    let res = RegisterDescriptor::new(
+        String::from("x86"),
+        String::from("cpu"),
+        String::from("generic"),
+        String::from("description"),
+        u64::BITS as usize,
+        ByteOrder::LittleEndian,
+        vec![
+            BitRange::new(
+                RangeInclusive::new(2, 63),
+                BitRangeKind::Normal,
+                true,
+                String::from("Inv 0"),
+                String::from("Inv 0"),
+                String::from("Inv Bit 0"),
+            ),
+            BitRange::new(
+                RangeInclusive::new(0, 1),
+                BitRangeKind::Normal,
+                true,
+                String::from("Inv 0"),
+                String::from("Inv 0"),
+                String::from("Inv Bit 0"),
+            ),
+        ],
+    );
+    assert_eq!(res.unwrap_err(), RegisterDescriptorError::InvalidBitRangeOrder);
+
+    // Invalid bit range order
+    let res = RegisterDescriptor::new(
+        String::from("x86"),
+        String::from("cpu"),
+        String::from("generic"),
+        String::from("description"),
+        u64::BITS as usize,
+        ByteOrder::LittleEndian,
+        vec![
+            BitRange::new(
+                RangeInclusive::new(0, 0),
+                BitRangeKind::Normal,
+                true,
+                String::from("Inv 0"),
+                String::from("Inv 0"),
+                String::from("Inv Bit 0"),
+            ),
+            BitRange::new(
+                RangeInclusive::new(33, 63),
+                BitRangeKind::Normal,
+                true,
+                String::from("Inv 0"),
+                String::from("Inv 0"),
+                String::from("Inv Bit 0"),
+            ),
+            BitRange::new(
+                RangeInclusive::new(1, 32),
+                BitRangeKind::Normal,
+                true,
+                String::from("Inv 0"),
+                String::from("Inv 0"),
+                String::from("Inv Bit 0"),
+            ),
+        ],
+    );
+    assert_eq!(res.unwrap_err(), RegisterDescriptorError::InvalidBitRangeOrder);
 }
 
