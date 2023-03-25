@@ -39,8 +39,9 @@ impl RegisterDescriptor {
            return Err(RegisterDescriptorError::MissingBitRanges)
         }
 
-        // Check if the number of bits in the register is within supported limits.
-        if bit_count > MAX_BIT_COUNT {
+        // Check if the number of bits in the register is within supported limits
+        // and is byte size aligned.
+        if bit_count == 0 || bit_count % 8 != 0 || bit_count > MAX_BIT_COUNT {
             return Err(RegisterDescriptorError::InvalidBitCount);
         }
 

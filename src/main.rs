@@ -64,7 +64,7 @@ fn write_result(spcio: &mut SpcIo, number: &Number) -> std::io::Result<()> {
     let str_oct = format!("{:#o}", number.integer);
 
     // Format as binary
-    let str_bin_sfill = spcregs::utils::get_binary_string(number.integer);
+    let str_bin_sfill = spcregs::utils::get_binary_string(number.integer, None);
 
     // Compute number of bits to make a binary ruler as well for writing the number of bits.
     let mut bit_count = u64::MAX.count_ones() - number.integer.leading_zeros();
@@ -260,7 +260,7 @@ fn interactive_mode(spcio: &mut SpcIo) -> std::io::Result<()> {
                 let efer_cmd = "efer";
                 match command {
                     Some("q") | Some("quit") | Some("exit") => break,
-                    Some(efer_cmd) => test_register(spcio, args, efer_cmd, AppMode::Interactive)?,
+                    Some("efer") => test_register(spcio, args, efer_cmd, AppMode::Interactive)?,
                     Some(x) if x.is_empty() => (),
 
                     // Use the original input expression given by the user rather
