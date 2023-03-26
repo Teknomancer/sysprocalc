@@ -170,7 +170,7 @@ fn test_register(spcio: &mut SpcIo, opt_str_expr: Option<&str>, str_cmd: &str, a
                 String::from("System Call Extensions"),
             ),
             BitRange::new(
-                RangeInclusive::new(1, 1),
+                RangeInclusive::new(8, 8),
                 BitRangeKind::Normal,
                 true,
                 String::from("LME"),
