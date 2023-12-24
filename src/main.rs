@@ -65,7 +65,7 @@ fn write_result(spcio: &mut SpcIo, number: &Number) -> std::io::Result<()> {
     let str_oct = format!("{:#o}", number.integer);
 
     // Format as binary
-    let str_bin_sfill = spcregs::utils::get_binary_string(number.integer);
+    let str_bin_sfill = spcregs::utils::get_binary_string(number.integer, None);
 
     // Compute number of bits to make a binary ruler as well for writing the number of bits.
     let mut bit_count = u64::MAX.count_ones() - number.integer.leading_zeros();
@@ -102,16 +102,27 @@ fn write_result(spcio: &mut SpcIo, number: &Number) -> std::io::Result<()> {
     Ok(())
 }
 
-fn write_error(spcio: &mut SpcIo, str_expr: &str, err: ExprError, app_mode: AppMode) -> std::io::Result<()> {
+fn write_error(spcio: &mut SpcIo, str_expr: &str, opt_extra_padding: Option<usize>, err: ExprError, app_mode: AppMode)
+    -> std::io::Result<()> {
     // Write the caret indicating where in the expression the error occurs in interactive mode.
     if let AppMode::Interactive = app_mode {
         let idx_char = byte_index_to_char_index(str_expr, err.index());
-        write!(spcio.stream, "{:width$}", " ", width = idx_char + USER_PROMPT.len())?;
+        let user_prompt_padding = USER_PROMPT.chars().count();
+
+        // Calculate padding.
+        let padding = if opt_extra_padding.is_some() {
+            idx_char + user_prompt_padding + opt_extra_padding.unwrap()
+        } else {
+            idx_char + user_prompt_padding
+        };
+
+        // Pad the caret to the correct position and write the caret.
+        write!(spcio.stream, "{:width$}", " ", width = padding)?;
         write_color(&mut spcio.stream, "^", Color::Red, true)?;
         writeln!(spcio.stream)?;
 
         // Passing width as 0 still produces 1 space, so do the padding here.
-        write!(spcio.stream, "{:width$}", " ", width = USER_PROMPT.len())?;
+        write!(spcio.stream, "{:width$}", " ", width = user_prompt_padding)?;
     }
 
     // Write the error.
@@ -141,12 +152,12 @@ fn evaluate_expr(str_expr: &str) -> Result<Number, ExprError>
 fn evaluate_expr_and_write_result(spcio: &mut SpcIo, str_expr: &str, app_mode: AppMode) -> std::io::Result<()> {
     match evaluate_expr(str_expr) {
         Ok(number) => write_result(spcio, &number)?,
-        Err(e) => write_error(spcio, str_expr, e, app_mode)?,
+        Err(e) => write_error(spcio, str_expr, None, e, app_mode)?,
     }
     Ok(())
 }
 
-fn test_register(spcio: &mut SpcIo, opt_str_expr: Option<&str>, app_mode: AppMode) -> std::io::Result<()> {
+fn test_register(spcio: &mut SpcIo, opt_str_expr: Option<&str>, str_cmd: &str, app_mode: AppMode) -> std::io::Result<()> {
     let efer_descriptor = RegisterDescriptor::new(
         String::from("x86"),
         String::from("cpu"),
@@ -164,7 +175,7 @@ fn test_register(spcio: &mut SpcIo, opt_str_expr: Option<&str>, app_mode: AppMod
                 String::from("System Call Extensions"),
             ),
             BitRange::new(
-                RangeInclusive::new(1, 1),
+                RangeInclusive::new(8, 8),
                 BitRangeKind::Normal,
                 true,
                 String::from("LME"),
@@ -226,7 +237,8 @@ fn test_register(spcio: &mut SpcIo, opt_str_expr: Option<&str>, app_mode: AppMod
                     efer.set_value(number.integer);
                     writeln!(spcio.stream, "{}", efer)?;
                 }
-                Err(e) => write_error(spcio, str_expr, e, app_mode)?,
+                // The extra 1 below is for the space following the command.
+                Err(e) => write_error(spcio, str_expr, Some(str_cmd.chars().count() + 1), e, app_mode)?,
             }
         }
 
@@ -247,12 +259,13 @@ fn interactive_mode(spcio: &mut SpcIo) -> std::io::Result<()> {
                 let input_expr = str_input.as_str();
                 editor.add_history_entry(input_expr);
 
-                let mut tokens = input_expr.trim().split(' ').fuse();
-                let first = tokens.next();
-                let second = tokens.next();
-                match first {
+                let mut tokens = input_expr.trim().splitn(2, ' ').fuse();
+                let command = tokens.next();
+                let args = tokens.next();
+                let efer_cmd = "efer";
+                match command {
                     Some("q") | Some("quit") | Some("exit") => break,
-                    Some("efer") => test_register(spcio, second, AppMode::Interactive)?,
+                    Some("efer") => test_register(spcio, args, efer_cmd, AppMode::Interactive)?,
                     Some(x) if x.is_empty() => (),
 
                     // Use the original input expression given by the user rather
