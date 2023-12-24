@@ -204,4 +204,3 @@ impl fmt::Display for RegisterDescriptorError {
         write!(f, "{}", err)
     }
 }
-

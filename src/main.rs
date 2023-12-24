@@ -15,10 +15,11 @@ mod logger;
 static ERR_INIT_LOGGER: &str = "Error initializing logger:";
 
 static USER_PROMPT: &str = "> ";
-static DEC_RADIX: &str = "Dec:";
-static HEX_RADIX: &str = "Hex:";
-static OCT_RADIX: &str = "Oct:";
-static BIN_RADIX: &str = "Bin:";
+static BOOL_RADIX: &str = "Bool:";
+static DEC_RADIX: &str = "Dec :";
+static HEX_RADIX: &str = "Hex :";
+static OCT_RADIX: &str = "Oct :";
+static BIN_RADIX: &str = "Bin :";
 static EXITING_APP: &str = "Exiting:";
 static BITS_PLURAL: &str = "bits";
 static BIT_SINGULAR: &str = "bit";
@@ -76,7 +77,11 @@ fn write_result(spcio: &mut SpcIo, number: &Number) -> std::io::Result<()> {
         str_bit_count = BITS_PLURAL;
     };
 
+    let str_bool = if number.integer != 0 { "true" } else { "false" };
+
     // Write the formatted values
+    write_color(&mut spcio.stream, BOOL_RADIX, Color::Cyan, true)?;
+    writeln!(spcio.stream, " {:>24} (nat)", str_bool)?;
     write_color(&mut spcio.stream, DEC_RADIX, Color::Cyan, true)?;
     writeln!(spcio.stream, " {:>24} (u64)  {:>26} (f)", number.integer, number.float)?;
     write_color(&mut spcio.stream, HEX_RADIX, Color::Cyan, true)?;
@@ -89,7 +94,7 @@ fn write_result(spcio: &mut SpcIo, number: &Number) -> std::io::Result<()> {
     // Write the binary ruler if we have 8 or more bits.
     if bit_count >= 8 {
         let str_bin_ruler = spcregs::utils::get_binary_ruler_string(bit_count as u8);
-        writeln!(spcio.stream, "     {}", str_bin_ruler)?;
+        writeln!(spcio.stream, "      {}", str_bin_ruler)?;
     }
 
     // Write a blank line

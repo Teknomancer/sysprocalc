@@ -2,7 +2,7 @@ use crate::{Number, ExprError, ExprErrorKind};
 use std::ops::Range;
 
 pub const MAX_FN_PARAMS: u8 = u8::max_value();
-pub static FUNCS: [Func<'static>; 4] = [
+pub static FUNCS: [Func<'static>; 5] = [
     Func {
         name:   "avg",
         params: Range { start: 2, end: MAX_FN_PARAMS },
@@ -23,6 +23,13 @@ pub static FUNCS: [Func<'static>; 4] = [
         syntax: "<n1>,<n2>",
         help:   "Set set of bits from [n1..n2]",
         evalfn: func_bits,
+    },
+    Func {
+        name:   "is_pow_of_two",
+        params: Range { start: 1, end: 2 },
+        syntax: "<n>",
+        help:   "Is power of 2",
+        evalfn: func_is_pow_of_two,
     },
     Func {
         name:   "sum",
@@ -92,5 +99,16 @@ fn func_bits(func: &Func, idx_expr: usize, nums: &[Number]) -> Result<Number, Ex
                               func.name, idx_expr, nums[0].integer as i64, nums[1].integer as i64);
         Err(ExprError::new(idx_expr, ExprErrorKind::FailedEvaluation, message))
     }
+}
+
+fn func_is_pow_of_two(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
+    let val = nums[0].integer as u64;
+    let integer = if val != 0 {
+        (val & (val - 1) == 0) as u64
+    } else {
+        0
+    };
+    let float = integer as f64;
+    Ok (Number { integer, float })
 }
 
