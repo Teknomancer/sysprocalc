@@ -267,8 +267,23 @@ fn valid_exprs_funcs() {
         ("bits(32,63)", Number { integer: 0xffffffff00000000u64, float: 0xffffffff00000000u64 as f64 }),
         ("bits(63,32)", Number { integer: 0xffffffff00000000u64, float: 0xffffffff00000000u64 as f64 }),
 
-        // if
-        // TODO
+        // is_pow_of_two
+        ("is_pow_of_two(0)", Number { integer: 0, float: 0 as f64 }),
+        ("is_pow_of_two(1)", Number { integer: 0, float: 0 as f64 }),
+        ("is_pow_of_two(2)", Number { integer: 1, float: 1 as f64 }),
+        ("is_pow_of_two(3)", Number { integer: 0, float: 0 as f64 }),
+        ("is_pow_of_two(4)", Number { integer: 1, float: 1 as f64 }),
+        ("is_pow_of_two(5)", Number { integer: 0, float: 0 as f64 }),
+        ("is_pow_of_two(6)", Number { integer: 0, float: 0 as f64 }),
+        ("is_pow_of_two(7)", Number { integer: 0, float: 0 as f64 }),
+        ("is_pow_of_two(8)", Number { integer: 1, float: 1 as f64 }),
+        ("is_pow_of_two(9)", Number { integer: 0, float: 0 as f64 }),
+        ("is_pow_of_two(10)", Number { integer: 0, float: 0 as f64 }),
+        ("is_pow_of_two(11)", Number { integer: 0, float: 0 as f64 }),
+        ("is_pow_of_two(12)", Number { integer: 0, float: 0 as f64 }),
+        ("is_pow_of_two(16)", Number { integer: 1, float: 1 as f64 }),
+        ("is_pow_of_two(32)", Number { integer: 1, float: 1 as f64 }),
+        ("is_pow_of_two(64)", Number { integer: 1, float: 1 as f64 }),
 
         // sum
         ("sum(0,0)", Number { integer: 0, float: 0 as f64 }),
