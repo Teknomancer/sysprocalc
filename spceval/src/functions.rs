@@ -103,7 +103,7 @@ fn func_bits(func: &Func, idx_expr: usize, nums: &[Number]) -> Result<Number, Ex
 
 fn func_is_pow_of_two(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let val = nums[0].integer as u64;
-    let integer = if val != 0 {
+    let integer = if val >= 2 {
         (val & (val - 1) == 0) as u64
     } else {
         0
