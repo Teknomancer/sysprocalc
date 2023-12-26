@@ -57,21 +57,36 @@ impl<T: Unsigned + BitMemory> fmt::Display for Register<T> {
                 Ok(val) => {
 
                     let bit_count    = self.descriptor.bit_count();
-                    let idx_last_bit = bit_count - 1;
+                    let mut idx_last_bit = bit_count - 1;
+                    let mut prev_padding = bit_count - 1;
                     assert!(bit_count > 0);
 
                     // First write out the binary bits seperated into groups of 4.
                     writeln!(f, "{}", utils::get_binary_string(val, Some(bit_count as u32)))?;
 
                     // Now iterate over each bit range.
-                    for bit_range in self.descriptor.bit_ranges() {
-                        let idx_bit  = bit_range.span.start();
-                        let bits     = idx_last_bit - idx_bit;
-                        let pad_bits = bits / 4;
-                        let padding  = bits + pad_bits;
-                        //writeln!(f, "idx_bit={} padding={}", idx_bit, padding);
-                        write!(f, "{:width$}", " ", width = padding)?;
-                        writeln!(f, "|");
+                    for bit_range_row in self.descriptor.bit_ranges().into_iter().rev() {
+                        for bit_range_col in self.descriptor.bit_ranges().into_iter().rev() {
+                            let idx_bit_col  = *bit_range_col.span.start();
+                            let bits_col     = if idx_last_bit > 0
+                                               { idx_last_bit - idx_bit_col }
+                                               else { 0 };
+                            //let padding_col = bit_count - 1 - idx_bit_col + ((bit_count - 1 - idx_bit_col) / 4);
+                            let padding_col = prev_padding - idx_bit_col - 1;
+                            write!(f, "{:width$}", " ", width = padding_col)?;
+                            write!(f, "|");
+                            writeln!(f, "idx_bit={} padding_col={} bits_col={}", idx_bit_col, padding_col, bits_col);
+                            idx_last_bit = idx_bit_col;
+                            prev_padding = idx_bit_col;
+                        }
+                        //let idx_bit_row  = bit_range_row.span.start();
+                        //let bits_row     = idx_last_bit - idx_bit_row;
+                        //let pad_bits_row = bits_row / 4;
+                        //let padding_row  = bits_row + pad_bits_row;
+                        ////writeln!(f, "idx_bit={} padding={}", idx_bit, padding);
+                        //write!(f, "{:width$}", " ", width = padding_row)?;
+                        //writeln!(f, "{}", padding_row);
+                        writeln!(f, " - {}", bit_range_row.name);
                     }
                     writeln!(f, "{}", bit_count + (bit_count - 1) / 4);
                     Ok(())
