@@ -269,7 +269,7 @@ fn valid_exprs_funcs() {
 
         // is_pow_of_two
         ("is_pow_of_two(0)", Number { integer: 0, float: 0 as f64 }),
-        ("is_pow_of_two(1)", Number { integer: 0, float: 0 as f64 }),
+        ("is_pow_of_two(1)", Number { integer: 1, float: 1 as f64 }),
         ("is_pow_of_two(2)", Number { integer: 1, float: 1 as f64 }),
         ("is_pow_of_two(3)", Number { integer: 0, float: 0 as f64 }),
         ("is_pow_of_two(4)", Number { integer: 1, float: 1 as f64 }),
