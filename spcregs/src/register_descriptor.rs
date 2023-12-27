@@ -152,6 +152,10 @@ impl RegisterDescriptor {
         }
         col_len
     }
+
+    pub fn top(&self) -> Option<&BitRange> {
+        self.bit_ranges().last()
+    }
 }
 
 impl fmt::Display for RegisterDescriptor {
