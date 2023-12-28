@@ -82,23 +82,26 @@ impl<T: Unsigned + BitMemory> fmt::Display for Register<T> {
                     // Now iterate over each bit range.
                     for bit_range_row in self.descriptor.bit_ranges().into_iter() {
                         write!(f, " ");
-                        let mut cur_bit = 0;
+                        let mut cur_bit = bit_count;
+                        let mut fill_char = " ";
                         for idx_bit_col in (0..bit_count).rev() {
-                            if idx_bit_col > *bit_range_row.span.start() {
-                                let pad = if idx_bit_col % 4 == 0 { 2 } else { 1 };
-                                write!(f, "{:width$}", " ", width = pad)?;
+                            if bit_range_row.span.contains(&idx_bit_col) {
+                                write!(f, "+");
+                                cur_bit = idx_bit_col;
+                                fill_char = "-";
                             } else {
-                                if idx_bit_col == *bit_range_row.span.start() {
-                                    write!(f, "+");
-                                    cur_bit = idx_bit_col;
-                                } else if self.descriptor.has_bit(&idx_bit_col) {
-                                    write!(f, "|");
+                                if self.descriptor.has_bit(&idx_bit_col) {
+                                    if  cur_bit == bit_count {
+                                        write!(f, "|");
+                                    } else {
+                                        write!(f, "{}", fill_char);
+                                    }
                                 } else {
-                                    write!(f, "-");
+                                    write!(f, "{}", fill_char);
                                 }
-                                if idx_bit_col > 0 && idx_bit_col % 4 == 0 {
-                                    write!(f, " ");
-                                }
+                            }
+                            if idx_bit_col > 0 && idx_bit_col % 4 == 0 {
+                                write!(f, "{}", fill_char);
                             }
                         }
                         let is_set_indicator = if val & ((1 as RegisterValue) << cur_bit) != 0 { " *" } else { "" };
