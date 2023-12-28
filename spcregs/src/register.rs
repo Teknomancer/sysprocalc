@@ -1,4 +1,4 @@
-use crate::register_descriptor::RegisterDescriptor;
+use crate::register_descriptor::{RegisterDescriptor, BitRangeElement};
 use crate::utils;
 use funty::{Integral, Unsigned};
 use bitvec::mem::BitMemory;
@@ -62,26 +62,46 @@ impl<T: Unsigned + BitMemory> fmt::Display for Register<T> {
                     assert!(bit_count > 0);
 
                     // First write out the binary bits seperated into groups of 4.
-                    writeln!(f, "{}", utils::get_binary_string(val, Some(bit_count as u32)))?;
+                    writeln!(f, " {}", utils::get_binary_string(val, Some(bit_count as u32)))?;
+
+                    if let Some(bit_range_row) = self.descriptor.bit_ranges().last() {
+                        write!(f, " ");
+                        for idx_bit_col in (0..bit_count).rev() {
+                            if idx_bit_col > *bit_range_row.span.start() {
+                                write!(f, " ");
+                            } else if self.descriptor.has_bit(&idx_bit_col) {
+                                write!(f, "|");
+                            }
+                            if idx_bit_col % 4 == 0 {
+                                write!(f, " ");
+                            }
+                        }
+                        writeln!(f);
+                    }
 
                     // Now iterate over each bit range.
-                    for bit_range_row in self.descriptor.bit_ranges().into_iter().rev() {
+                    for bit_range_row in self.descriptor.bit_ranges().into_iter() {
+                        write!(f, " ");
+                        let mut cur_bit = 0;
                         for idx_bit_col in (0..bit_count).rev() {
                             if idx_bit_col > *bit_range_row.span.start() {
                                 let pad = if idx_bit_col % 4 == 0 { 2 } else { 1 };
                                 write!(f, "{:width$}", " ", width = pad)?;
-                            }
-                            else if idx_bit_col == *bit_range_row.span.start() {
-                                write!(f, "+");
                             } else {
-                                // sigh... i can't make out yet how to fill properly. annoying.
-                                write!(f, "-");
-                                if idx_bit_col % 4 == 0 {
+                                if idx_bit_col == *bit_range_row.span.start() {
+                                    write!(f, "+");
+                                    cur_bit = idx_bit_col;
+                                } else {
+                                    write!(f, "-");
+                                }
+                                if idx_bit_col > 0 && idx_bit_col % 4 == 0 {
                                     write!(f, "-");
                                 }
                             }
                         }
-                        writeln!(f, " - {} ({})", bit_range_row.name, *bit_range_row.span.start());
+                        let is_set_indicator = if val & ((1 as RegisterValue) << cur_bit) != 0 { " *" } else { "" };
+                        writeln!(f, "--- {name:<width$} ({bit_num}){bit_is_set}", name = bit_range_row.name, width = self.descriptor.column_width(BitRangeElement::Name),
+                                 bit_num = *bit_range_row.span.start(), bit_is_set = is_set_indicator);
                     }
                     Ok(())
                 }

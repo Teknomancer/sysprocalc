@@ -17,7 +17,7 @@ pub struct RegisterDescriptor {
 }
 
 #[derive(Debug)]
-enum BitRangeElement {
+pub enum BitRangeElement {
     Bits,
     Name,
     Short,
@@ -112,7 +112,7 @@ impl RegisterDescriptor {
         &self.bit_ranges
     }
 
-    fn column_width(&self, element: BitRangeElement) -> usize {
+    pub fn column_width(&self, element: BitRangeElement) -> usize {
         let mut col_len = 0;
         match element {
             BitRangeElement::Bits => {
@@ -153,8 +153,15 @@ impl RegisterDescriptor {
         col_len
     }
 
-    pub fn top(&self) -> Option<&BitRange> {
-        self.bit_ranges().last()
+    pub fn has_bit(&self, bit: &usize) -> bool {
+        let mut is_found = false;
+        for bit_range in &self.bit_ranges {
+            if bit_range.span.contains(&bit) {
+                is_found = true;
+                break;
+            }
+        }
+        is_found
     }
 }
 
