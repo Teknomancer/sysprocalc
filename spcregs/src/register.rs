@@ -102,8 +102,12 @@ impl<T: Unsigned + BitMemory> fmt::Display for Register<T> {
                             }
                         }
                         let is_set_indicator = if val & ((1 as RegisterValue) << cur_bit) != 0 { " *" } else { "" };
-                        writeln!(f, "--- {name:<width$} ({bit_num}){bit_is_set}", name = bit_range_row.name, width = self.descriptor.column_width(BitRangeElement::Name),
-                                 bit_num = *bit_range_row.span.start(), bit_is_set = is_set_indicator);
+                        writeln!(f, "--- {name:<namewidth$} ({bitnum:>bitwidth$}){bit_is_set}",
+                                 name = bit_range_row.name,
+                                 namewidth = self.descriptor.column_width(BitRangeElement::Name),
+                                 bitnum = *bit_range_row.span.start(),
+                                 bitwidth = self.descriptor.column_width(BitRangeElement::Bits),
+                                 bit_is_set = is_set_indicator);
                     }
                     Ok(())
                 }
