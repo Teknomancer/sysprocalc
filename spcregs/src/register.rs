@@ -66,13 +66,13 @@ impl<T: Unsigned + BitMemory> fmt::Display for Register<T> {
 
                     if let Some(bit_range_row) = self.descriptor.bit_ranges().last() {
                         write!(f, " ");
-                        for idx_bit_col in (0..bit_count).rev() {
-                            if idx_bit_col > *bit_range_row.span.start() {
-                                write!(f, " ");
-                            } else if self.descriptor.has_bit(&idx_bit_col) {
+                        for bit_index in (0..bit_count).rev() {
+                            if self.descriptor.has_bit(&bit_index) {
                                 write!(f, "|");
+                            } else {
+                                write!(f, " ");
                             }
-                            if idx_bit_col % 4 == 0 {
+                            if bit_index % 4 == 0 {
                                 write!(f, " ");
                             }
                         }
@@ -91,11 +91,13 @@ impl<T: Unsigned + BitMemory> fmt::Display for Register<T> {
                                 if idx_bit_col == *bit_range_row.span.start() {
                                     write!(f, "+");
                                     cur_bit = idx_bit_col;
+                                } else if self.descriptor.has_bit(&idx_bit_col) {
+                                    write!(f, "|");
                                 } else {
                                     write!(f, "-");
                                 }
                                 if idx_bit_col > 0 && idx_bit_col % 4 == 0 {
-                                    write!(f, "-");
+                                    write!(f, " ");
                                 }
                             }
                         }
