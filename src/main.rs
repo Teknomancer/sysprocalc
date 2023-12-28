@@ -149,12 +149,28 @@ fn evaluate_expr(str_expr: &str) -> Result<Number, ExprError>
     res
 }
 
-fn evaluate_expr_and_write_result(spcio: &mut SpcIo, str_expr: &str, app_mode: AppMode) -> std::io::Result<()> {
-    match evaluate_expr(str_expr) {
-        Ok(number) => write_result(spcio, &number)?,
-        Err(e) => write_error(spcio, str_expr, None, e, app_mode)?,
+fn evaluate_input(spcio: &mut SpcIo, str_expr: &str, app_mode: AppMode) -> std::io::Result<()> {
+    let mut tokens = str_expr.trim().splitn(2, ' ').fuse();
+    let command = tokens.next();
+    let args = tokens.next();
+    let efer_cmd = "efer";
+    match command {
+        Some("q") | Some("quit") | Some("exit") => std::process::exit(0),
+        Some("efer") => test_register(spcio, args, efer_cmd, AppMode::Interactive),
+        Some(x) if x.is_empty() => Ok(()),
+
+        // Use the original input expression given by the user rather
+        // than the trimmed expression as it would mess up the error caret position.
+        _ => evaluate_expr_and_write_result(spcio, str_expr, AppMode::Interactive),
     }
-    Ok(())
+}
+
+fn evaluate_expr_and_write_result(spcio: &mut SpcIo, str_expr: &str, app_mode: AppMode) -> std::io::Result<()> {
+
+    match evaluate_expr(str_expr) {
+        Ok(number) => write_result(spcio, &number),
+        Err(e) => write_error(spcio, str_expr, None, e, app_mode),
+    }
 }
 
 fn test_register(spcio: &mut SpcIo, opt_str_expr: Option<&str>, str_cmd: &str, app_mode: AppMode) -> std::io::Result<()> {
@@ -258,20 +274,7 @@ fn interactive_mode(spcio: &mut SpcIo) -> std::io::Result<()> {
             if let Ok(str_input) = readline_result {
                 let input_expr = str_input.as_str();
                 editor.add_history_entry(input_expr);
-
-                let mut tokens = input_expr.trim().splitn(2, ' ').fuse();
-                let command = tokens.next();
-                let args = tokens.next();
-                let efer_cmd = "efer";
-                match command {
-                    Some("q") | Some("quit") | Some("exit") => break,
-                    Some("efer") => test_register(spcio, args, efer_cmd, AppMode::Interactive)?,
-                    Some(x) if x.is_empty() => (),
-
-                    // Use the original input expression given by the user rather
-                    // than the trimmed expression as it would mess up the error caret position.
-                    _ => evaluate_expr_and_write_result(spcio, input_expr, AppMode::Interactive)?,
-                }
+                evaluate_input(spcio, input_expr, AppMode::Interactive)?;
             } else {
                 let mut stderr = SpcIo { stream: StandardStream::stderr(spcio.color), color: spcio.color };
                 write_color(&mut stderr.stream, EXITING_APP, Color::Red, true)?;
@@ -307,7 +310,7 @@ fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
 
     if args.len() > 1 {
-        evaluate_expr_and_write_result(&mut stdout, args.get(1).unwrap(), AppMode::CommandLine)
+        evaluate_input(&mut stdout, args.get(1).unwrap(), AppMode::CommandLine)
     } else {
         interactive_mode(&mut stdout)
     }
