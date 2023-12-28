@@ -154,14 +154,12 @@ impl RegisterDescriptor {
     }
 
     pub fn has_bit(&self, bit: &usize) -> bool {
-        let mut is_found = false;
         for bit_range in &self.bit_ranges {
             if bit_range.span.contains(&bit) {
-                is_found = true;
-                break;
+                return true;
             }
         }
-        is_found
+        false
     }
 }
 
