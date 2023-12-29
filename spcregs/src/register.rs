@@ -56,10 +56,12 @@ impl<T: Unsigned + BitMemory> fmt::Display for Register<T> {
                 Err(_) => write!(f, "Couldn't convert register value"),
                 Ok(val) => {
 
-                    let bit_count    = self.descriptor.bit_count();
+                    let bit_count = self.descriptor.bit_count();
                     let mut idx_last_bit = bit_count - 1;
-                    let mut prev_padding = bit_count - 1;
                     assert!(bit_count > 0);
+
+                    // First write out the binary bits seperated into groups of 4.
+                    writeln!(f, " {}", utils::get_binary_string(val, Some(bit_count as u32)))?;
 
                     // On Windows, we use ASCII encoding as it's likely terminals
                     // don't support or use UTF8 as the default.
@@ -69,25 +71,24 @@ impl<T: Unsigned + BitMemory> fmt::Display for Register<T> {
                         ("\u{2500}", "\u{2502}", "\u{2514}")
                     };
 
-                    // First write out the binary bits seperated into groups of 4.
-                    writeln!(f, " {}", utils::get_binary_string(val, Some(bit_count as u32)))?;
-
-                    if let Some(bit_range_row) = self.descriptor.bit_ranges().last() {
-                        write!(f, " ");
-                        for bit_index in (0..bit_count).rev() {
-                            if self.descriptor.has_bit(&bit_index) {
-                                write!(f, "{}", vert_char);
-                            } else {
-                                write!(f, " ");
-                            }
-                            if bit_index % 4 == 0 {
-                                write!(f, " ");
-                            }
+                    // Write one line with just the lines (i.e. without any bit description).
+                    // for sake of aesthetics.
+                    let bit_range_row = self.descriptor.bit_ranges().last().unwrap();
+                    write!(f, " ");
+                    for bit_index in (0..bit_count).rev() {
+                        if self.descriptor.has_bit(&bit_index) {
+                            write!(f, "{}", vert_char);
+                        } else {
+                            write!(f, " ");
                         }
-                        writeln!(f);
+                        if bit_index % 4 == 0 {
+                            write!(f, " ");
+                        }
                     }
+                    writeln!(f);
 
-                    // Now iterate over each bit range.
+                    // Now iterate over each bit range and describe each bit
+                    // while drawing lines from the corresponding bit value.
                     for bit_range_row in self.descriptor.bit_ranges().into_iter() {
                         write!(f, " ");
                         let mut cur_bit = bit_count;
