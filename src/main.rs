@@ -166,7 +166,6 @@ fn evaluate_input(spcio: &mut SpcIo, str_expr: &str, app_mode: AppMode) -> std::
 }
 
 fn evaluate_expr_and_write_result(spcio: &mut SpcIo, str_expr: &str, app_mode: AppMode) -> std::io::Result<()> {
-
     match evaluate_expr(str_expr) {
         Ok(number) => write_result(spcio, &number),
         Err(e) => write_error(spcio, str_expr, None, e, app_mode),
@@ -179,7 +178,7 @@ fn test_register(spcio: &mut SpcIo, opt_str_expr: Option<&str>, str_cmd: &str, a
         String::from("cpu"),
         String::from("EFER"),
         String::from("Extended Feature Register"),
-        u64::BITS as usize,
+        u32::BITS as usize,
         ByteOrder::LittleEndian,
         vec![
             BitRange::new(
