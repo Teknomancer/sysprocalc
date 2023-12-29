@@ -61,6 +61,14 @@ impl<T: Unsigned + BitMemory> fmt::Display for Register<T> {
                     let mut prev_padding = bit_count - 1;
                     assert!(bit_count > 0);
 
+                    // On Windows, we use ASCII encoding as it's likely terminals
+                    // don't support or use UTF8 as the default.
+                    let (horiz_char, vert_char, edge_char) = if cfg!(windows) {
+                        ("-", "|", "+")
+                    } else {
+                        ("\u{2500}", "\u{2502}", "\u{2514}")
+                    };
+
                     // First write out the binary bits seperated into groups of 4.
                     writeln!(f, " {}", utils::get_binary_string(val, Some(bit_count as u32)))?;
 
@@ -68,7 +76,7 @@ impl<T: Unsigned + BitMemory> fmt::Display for Register<T> {
                         write!(f, " ");
                         for bit_index in (0..bit_count).rev() {
                             if self.descriptor.has_bit(&bit_index) {
-                                write!(f, "|");
+                                write!(f, "{}", vert_char);
                             } else {
                                 write!(f, " ");
                             }
@@ -86,13 +94,13 @@ impl<T: Unsigned + BitMemory> fmt::Display for Register<T> {
                         let mut fill_char = " ";
                         for idx_bit_col in (0..bit_count).rev() {
                             if bit_range_row.span.contains(&idx_bit_col) {
-                                write!(f, "+");
+                                write!(f, "{}", edge_char);
                                 cur_bit = idx_bit_col;
-                                fill_char = "-";
+                                fill_char = horiz_char;
                             } else {
                                 if self.descriptor.has_bit(&idx_bit_col) {
                                     if  cur_bit == bit_count {
-                                        write!(f, "|");
+                                        write!(f, "{}", vert_char);
                                     } else {
                                         write!(f, "{}", fill_char);
                                     }
@@ -105,7 +113,7 @@ impl<T: Unsigned + BitMemory> fmt::Display for Register<T> {
                             }
                         }
                         let is_set_indicator = if val & ((1 as RegisterValue) << cur_bit) != 0 { " *" } else { "" };
-                        writeln!(f, "--- {name:<namewidth$} ({bitnum:>bitwidth$}){bit_is_set}",
+                        writeln!(f, "\u{2500}\u{2500} {name:<namewidth$} ({bitnum:>bitwidth$}){bit_is_set}",
                                  name = bit_range_row.name,
                                  namewidth = self.descriptor.column_width(BitRangeElement::Name),
                                  bitnum = *bit_range_row.span.start(),
