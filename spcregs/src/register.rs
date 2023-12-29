@@ -113,7 +113,9 @@ impl<T: Unsigned + BitMemory> fmt::Display for Register<T> {
                             }
                         }
                         let is_set_indicator = if val & ((1 as RegisterValue) << cur_bit) != 0 { " *" } else { "" };
-                        writeln!(f, "\u{2500}\u{2500} {name:<namewidth$} ({bitnum:>bitwidth$}){bit_is_set}",
+                        writeln!(f, "{}{} {name:<namewidth$} ({bitnum:>bitwidth$}){bit_is_set}",
+                                 horiz_char,
+                                 horiz_char,
                                  name = bit_range_row.name,
                                  namewidth = self.descriptor.column_width(BitRangeElement::Name),
                                  bitnum = *bit_range_row.span.start(),
