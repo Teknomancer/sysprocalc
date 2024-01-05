@@ -27,7 +27,6 @@ bench = false
 spceval = { path = "spceval" }
 spcregs = { path = "spcregs" }
 log = "0.4"
-atty = "0.2"
 termcolor = "1.1"
 rustyline = "13.0"
 

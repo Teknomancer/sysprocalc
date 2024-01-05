@@ -1,11 +1,10 @@
 use spcregs::{BitRange, BitRangeKind, ByteOrder, Register, Unsigned, BitMemory, RegisterDescriptor};
 use spceval::{Number, ExprError};
 
-use rustyline::Editor;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 use std::env;
-use std::io::Write;
+use std::io::{Write, IsTerminal};
 use std::ops::RangeInclusive;
 
 #[cfg(debug_assertions)]
@@ -306,7 +305,7 @@ fn main() -> std::io::Result<()> {
 
     // Detect presence of a terminal to determine use of color output.
     // Later allow forcing a color choice via command-line arguments.
-    let color = if atty::is(atty::Stream::Stdout) {
+    let color = if std::io::stdout().is_terminal() {
         ColorChoice::Auto
     } else {
         ColorChoice::Never
