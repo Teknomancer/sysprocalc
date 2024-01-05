@@ -44,6 +44,10 @@ impl<T: Unsigned + BitMemory> Register<T> {
         // ("Integral") which only exists in the newer funty 2.0.x version.
         <T as Integral>::BITS as usize
     }
+
+    pub fn get_descriptor(&self) -> &RegisterDescriptor {
+        &self.descriptor
+    }
 }
 
 impl<T: Unsigned + BitMemory> fmt::Display for Register<T> {

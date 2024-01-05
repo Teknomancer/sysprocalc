@@ -1,4 +1,4 @@
-use spcregs::{BitRange, BitRangeKind, ByteOrder, Register, RegisterDescriptor};
+use spcregs::{BitRange, BitRangeKind, ByteOrder, Register, Unsigned, BitMemory, RegisterDescriptor};
 use spceval::{Number, ExprError};
 
 use rustyline::Editor;
@@ -172,6 +172,13 @@ fn evaluate_expr_and_write_result(spcio: &mut SpcIo, str_expr: &str, app_mode: A
     }
 }
 
+fn write_reg_desc_title<T: Unsigned + BitMemory>(spcio: &mut SpcIo, register: &Register<T>)  -> std::io::Result<()> {
+    write!(spcio.stream, "{}.{} ", register.get_descriptor().device(), register.get_descriptor().arch())?;
+    write_color(&mut spcio.stream, register.get_descriptor().name(), Color::Green, true)?;
+    writeln!(spcio.stream, " ({})", register.get_descriptor().description())?;
+    Ok(())
+}
+
 fn test_register(spcio: &mut SpcIo, opt_str_expr: Option<&str>, str_cmd: &str, app_mode: AppMode) -> std::io::Result<()> {
     let efer_descriptor = RegisterDescriptor::new(
         String::from("x86"),
@@ -240,9 +247,6 @@ fn test_register(spcio: &mut SpcIo, opt_str_expr: Option<&str>, str_cmd: &str, a
         ]
     ).unwrap();
 
-    write!(spcio.stream, "{}.{} ", efer_descriptor.device(), efer_descriptor.arch())?;
-    write_color(&mut spcio.stream, efer_descriptor.name(), Color::Green, true)?;
-    writeln!(spcio.stream, " ({})", efer_descriptor.description())?;
 
     match opt_str_expr {
         Some(str_expr) => {
@@ -250,6 +254,7 @@ fn test_register(spcio: &mut SpcIo, opt_str_expr: Option<&str>, str_cmd: &str, a
                 Ok(number) => {
                     let mut efer: Register<u64> = Register::new(efer_descriptor).unwrap();
                     efer.set_value(number.integer);
+                    write_reg_desc_title(spcio, &efer);
                     writeln!(spcio.stream, "{}", efer)?;
                 }
                 // The extra 1 below is for the space following the command.
@@ -258,6 +263,8 @@ fn test_register(spcio: &mut SpcIo, opt_str_expr: Option<&str>, str_cmd: &str, a
         }
 
         None => {
+            //let efer: Register<u64> = Register::new(efer_descriptor).unwrap();
+            //write_reg_desc_title(spcio, &efer);
             writeln!(spcio.stream, "{}", efer_descriptor)?;
         }
     }
@@ -266,7 +273,7 @@ fn test_register(spcio: &mut SpcIo, opt_str_expr: Option<&str>, str_cmd: &str, a
 }
 
 fn interactive_mode(spcio: &mut SpcIo) -> std::io::Result<()> {
-    let editor_result = Editor::<()>::new();
+    let editor_result = rustyline::DefaultEditor::new();
     if let Ok(mut editor) = editor_result {
         loop {
             let readline_result = editor.readline(USER_PROMPT);
