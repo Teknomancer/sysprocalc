@@ -1,5 +1,6 @@
 use crate::{Number, ExprError, ExprErrorKind};
 use std::ops::Range;
+use std::convert::TryFrom;
 
 const KB_IN_B: u64 = 0x400;
 const MB_IN_B: u64 = 0x100000;
@@ -8,7 +9,7 @@ const TB_IN_B: u64 = 0x10000000000;
 const PB_IN_B: u64 = 4000000000000;
 
 pub const MAX_FN_PARAMS: u8 = u8::max_value();
-pub static FUNCS: [Func<'static>; 15] = [
+pub static FUNCS: [Func<'static>; 16] = [
     Func {
         name:   "avg",
         params: Range { start: 2, end: MAX_FN_PARAMS },
@@ -62,7 +63,7 @@ pub static FUNCS: [Func<'static>; 15] = [
         name:   "bits",
         params: Range { start: 2, end: 3 },
         syntax: "<n1>,<n2>",
-        help:   "Set set of bits from [n1..n2]",
+        help:   "Set bits from [n1..n2]",
         evalfn: func_bits,
     },
     Func {
@@ -99,6 +100,13 @@ pub static FUNCS: [Func<'static>; 15] = [
         syntax: "<n>",
         help:   "Petabytes to bytes",
         evalfn: func_pb2b,
+    },
+    Func {
+        name:   "pow",
+        params: Range { start: 1, end: 3 },
+        syntax: "<n1>,<n2>",
+        help:   "Raise <n1> to power of <n2>",
+        evalfn: func_pow,
     },
     Func {
         name:   "sum",
@@ -205,6 +213,23 @@ fn func_pb2b(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, 
     let integer = nums[0].integer * PB_IN_B;
     let float = nums[0].float * PB_IN_B as f64;
     Ok(Number { integer, float })
+}
+
+fn func_pow(func: &Func, idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
+    if u32::try_from(nums[1].integer).is_ok() {
+        match u64::checked_pow(nums[0].integer, nums[1].integer as u32) {
+            Some(integer) => Ok(Number { integer, float: integer as f64 }),
+            None => {
+                let message = format!("for function '{}', {} power {} overflowed",
+                                  func.name, nums[0].integer, nums[1].integer);
+                Err(ExprError::new(idx_expr, ExprErrorKind::FailedEvaluation, message))
+            }
+        }
+    } else {
+        let message = format!("for function '{}', {} power {}, exponent overflowed (must be <= {})",
+                          func.name, nums[0].integer, nums[1].integer, std::u32::MAX);
+        Err(ExprError::new(idx_expr, ExprErrorKind::FailedEvaluation, message))
+    }
 }
 
 fn func_bit(func: &Func, idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
