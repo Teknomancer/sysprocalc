@@ -2,14 +2,14 @@ use crate::{Number, ExprError, ExprErrorKind};
 use std::ops::Range;
 use std::convert::TryFrom;
 
-const KB_IN_B: u64 = 0x400;
-const MB_IN_B: u64 = 0x100000;
-const GB_IN_B: u64 = 0x40000000;
-const TB_IN_B: u64 = 0x10000000000;
-const PB_IN_B: u64 = 4000000000000;
+const KB: u64 = 0x400;
+const MB: u64 = 0x100000;
+const GB: u64 = 0x40000000;
+const TB: u64 = 0x10000000000;
+const PB: u64 = 4000000000000;
 
 pub const MAX_FN_PARAMS: u8 = u8::max_value();
-pub static FUNCS: [Func<'static>; 16] = [
+pub static FUNCS: [Func<'static>; 20] = [
     Func {
         name:   "avg",
         params: Range { start: 2, end: MAX_FN_PARAMS },
@@ -95,6 +95,34 @@ pub static FUNCS: [Func<'static>; 16] = [
         evalfn: func_mb2b,
     },
     Func {
+        name:   "mb2kb",
+        params: Range { start: 1, end: 2 },
+        syntax: "<n>",
+        help:   "Megabytes to kilobytes",
+        evalfn: func_mb2kb,
+    },
+    Func {
+        name:   "mb2gb",
+        params: Range { start: 1, end: 2 },
+        syntax: "<n>",
+        help:   "Megabytes to gigabytes",
+        evalfn: func_mb2gb,
+    },
+    Func {
+        name:   "mb2tb",
+        params: Range { start: 1, end: 2 },
+        syntax: "<n>",
+        help:   "Megabytes to terabytes",
+        evalfn: func_mb2tb,
+    },
+    Func {
+        name:   "mb2pb",
+        params: Range { start: 1, end: 2 },
+        syntax: "<n>",
+        help:   "Megabytes to petabytes",
+        evalfn: func_mb2pb,
+    },
+    Func {
         name:   "pb2b",
         params: Range { start: 1, end: 2 },
         syntax: "<n>",
@@ -156,62 +184,86 @@ fn func_avg(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, E
 }
 
 fn func_b2kb(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
-    let integer = nums[0].integer / KB_IN_B;
-    let float = nums[0].float / KB_IN_B as f64;
+    let integer = nums[0].integer / KB;
+    let float = nums[0].float / KB as f64;
     Ok(Number { integer, float })
 }
 
 fn func_kb2b(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
-    let integer = nums[0].integer * KB_IN_B;
-    let float = nums[0].float * KB_IN_B as f64;
+    let integer = nums[0].integer * KB;
+    let float = nums[0].float * KB as f64;
     Ok(Number { integer, float })
 }
 
 fn func_b2mb(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
-    let integer = nums[0].integer / MB_IN_B;
-    let float = nums[0].float / MB_IN_B as f64;
+    let integer = nums[0].integer / MB;
+    let float = nums[0].float / MB as f64;
     Ok(Number { integer, float })
 }
 
 fn func_mb2b(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
-    let integer = nums[0].integer * MB_IN_B;
-    let float = nums[0].float * MB_IN_B as f64;
+    let integer = nums[0].integer * MB;
+    let float = nums[0].float * MB as f64;
+    Ok(Number { integer, float })
+}
+
+fn func_mb2kb(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
+    let integer = nums[0].integer * KB;
+    let float = nums[0].float * MB as f64;
+    Ok(Number { integer, float })
+}
+
+fn func_mb2gb(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
+    let integer = nums[0].integer / KB;
+    let float = nums[0].float / KB as f64;
+    Ok(Number { integer, float })
+}
+
+fn func_mb2tb(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
+    let integer = nums[0].integer / MB;
+    let float = nums[0].float / MB as f64;
+    Ok(Number { integer, float })
+}
+
+fn func_mb2pb(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
+    let integer = nums[0].integer / GB;
+    let float = nums[0].float / GB as f64;
     Ok(Number { integer, float })
 }
 
 fn func_b2gb(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
-    let integer = nums[0].integer / GB_IN_B;
-    let float = nums[0].float / GB_IN_B as f64;
+    let integer = nums[0].integer / GB;
+    let float = nums[0].float / GB as f64;
     Ok(Number { integer, float })
 }
 
 fn func_gb2b(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
-    let integer = nums[0].integer * GB_IN_B;
-    let float = nums[0].float * GB_IN_B as f64;
+    let integer = nums[0].integer * GB;
+    let float = nums[0].float * GB as f64;
     Ok(Number { integer, float })
 }
 
 fn func_b2tb(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
-    let integer = nums[0].integer / TB_IN_B;
-    let float = nums[0].float / TB_IN_B as f64;
+    let integer = nums[0].integer / TB;
+    let float = nums[0].float / TB as f64;
     Ok(Number { integer, float })
 }
 
 fn func_tb2b(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
-    let integer = nums[0].integer * TB_IN_B;
-    let float = nums[0].float * TB_IN_B as f64;
+    let integer = nums[0].integer * TB;
+    let float = nums[0].float * TB as f64;
     Ok(Number { integer, float })
 }
 
 fn func_b2pb(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
-    let integer = nums[0].integer / PB_IN_B;
-    let float = nums[0].float / PB_IN_B as f64;
+    let integer = nums[0].integer / PB;
+    let float = nums[0].float / PB as f64;
     Ok(Number { integer, float })
 }
 
 fn func_pb2b(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
-    let integer = nums[0].integer * PB_IN_B;
-    let float = nums[0].float * PB_IN_B as f64;
+    let integer = nums[0].integer * PB;
+    let float = nums[0].float * PB as f64;
     Ok(Number { integer, float })
 }
 
