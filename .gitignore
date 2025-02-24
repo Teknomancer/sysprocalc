@@ -18,4 +18,5 @@
 *.vpwhist
 *.vpwhistu
 *.vtg
-
+*.vpwhistuxml
+*.vpwwildcardcache
