@@ -246,7 +246,6 @@ fn test_register(spcio: &mut SpcIo, opt_str_expr: Option<&str>, str_cmd: &str, a
         ]
     ).unwrap();
 
-
     match opt_str_expr {
         Some(str_expr) => {
             match evaluate_expr(str_expr) {
