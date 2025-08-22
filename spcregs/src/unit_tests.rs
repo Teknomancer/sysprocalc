@@ -241,5 +241,102 @@ fn test_invalid_register_descriptor() {
         ],
     );
     assert_eq!(res.unwrap_err(), RegisterDescriptorError::InvalidBitRangeOrder);
+
+    // Missing bit range
+    let res = RegisterDescriptor::new(
+        String::from("x86"),
+        String::from("cpu"),
+        String::from("generic"),
+        String::from("description"),
+        u64::BITS as usize,
+        ByteOrder::LittleEndian,
+        vec![],
+    );
+    assert_eq!(res.unwrap_err(), RegisterDescriptorError::MissingBitRanges);
+
+    // Missing arch
+    let res = RegisterDescriptor::new(
+        String::from(""),
+        String::from("cpu"),
+        String::from("generic"),
+        String::from("description"),
+        u64::BITS as usize,
+        ByteOrder::LittleEndian,
+        vec![
+            BitRange::new(
+                RangeInclusive::new(0, 5),
+                BitRangeKind::Normal,
+                true,
+                String::from("Inv 0"),
+                String::from("Inv 0"),
+                String::from("Inv Bit 0"),
+            ),
+        ]
+    );
+    assert_eq!(res.unwrap_err(), RegisterDescriptorError::MissingArch);
+
+    // Missing device
+    let res = RegisterDescriptor::new(
+        String::from("x86"),
+        String::from(""),
+        String::from("generic"),
+        String::from("description"),
+        u64::BITS as usize,
+        ByteOrder::LittleEndian,
+        vec![
+            BitRange::new(
+                RangeInclusive::new(0, 5),
+                BitRangeKind::Normal,
+                true,
+                String::from("Inv 0"),
+                String::from("Inv 0"),
+                String::from("Inv Bit 0"),
+            ),
+        ]
+    );
+    assert_eq!(res.unwrap_err(), RegisterDescriptorError::MissingDevice);
+
+    // Missing name
+    let res = RegisterDescriptor::new(
+        String::from("x86"),
+        String::from("cpu"),
+        String::from(""),
+        String::from("description"),
+        u64::BITS as usize,
+        ByteOrder::LittleEndian,
+        vec![
+            BitRange::new(
+                RangeInclusive::new(0, 5),
+                BitRangeKind::Normal,
+                true,
+                String::from("Inv 0"),
+                String::from("Inv 0"),
+                String::from("Inv Bit 0"),
+            ),
+        ]
+    );
+    assert_eq!(res.unwrap_err(), RegisterDescriptorError::MissingName);
+
+    // Missing description
+    let res = RegisterDescriptor::new(
+        String::from("x86"),
+        String::from("cpu"),
+        String::from("generic"),
+        String::from(""),
+        u64::BITS as usize,
+        ByteOrder::LittleEndian,
+        vec![
+            BitRange::new(
+                RangeInclusive::new(0, 5),
+                BitRangeKind::Normal,
+                true,
+                String::from("Inv 0"),
+                String::from("Inv 0"),
+                String::from("Inv Bit 0"),
+            ),
+        ]
+    );
+    assert_eq!(res.unwrap_err(), RegisterDescriptorError::MissingDescription);
+
 }
 
