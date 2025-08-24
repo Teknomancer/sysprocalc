@@ -16,6 +16,23 @@ pub struct RegisterDescriptor {
     bit_ranges: Vec<BitRange>,
 }
 
+
+// -- Try this for table style struct initialization using macro.
+//macro_rules! gen_struct {
+//    ($name:ident, $($param:ident),*) => {
+//        struct $name {
+//            $( $param: bool ),*
+//        }
+//    }
+//}
+//
+//gen_struct!(MyStruct, foo, bar);
+//
+//fn foo() {
+//    let s = MyStruct { foo: true, bar: false };
+//}
+
+
 #[derive(Debug)]
 pub enum BitRangeElement {
     Bits,
