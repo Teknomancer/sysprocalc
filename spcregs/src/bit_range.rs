@@ -1,12 +1,13 @@
 use std::ops::RangeInclusive;
+use serde::Deserialize;
 
-#[derive(Debug)]
+#[derive(Deserialize, Debug)]
 pub enum ByteOrder {
     LittleEndian,
     BigEndian,
 }
 
-#[derive(Debug)]
+#[derive(Deserialize, Debug)]
 pub struct BitRange {
     pub span: RangeInclusive<usize>,
     pub kind: BitRangeKind,
@@ -29,7 +30,7 @@ impl BitRange {
     }
 }
 
-#[derive(Debug)]
+#[derive(Deserialize, Debug)]
 pub enum BitRangeKind {
     Normal,
     ReservedMustBeZero,
