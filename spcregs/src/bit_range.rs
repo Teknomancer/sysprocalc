@@ -8,7 +8,17 @@ pub enum ByteOrder {
 }
 
 #[derive(Deserialize, Debug)]
+pub enum BitRangeKind {
+    Normal,
+    ReservedMustBeZero,
+    ReservedMustBeOne,
+    ReservedUndefined,
+    ReservedIgnored,
+}
+
+#[derive(Deserialize, Debug)]
 pub struct BitRange {
+    #[serde(flatten)]
     pub span: RangeInclusive<usize>,
     pub kind: BitRangeKind,
     pub show: bool,
@@ -28,14 +38,5 @@ impl BitRange {
     ) -> Self {
         Self { span, kind, show, name, short, long }
     }
-}
-
-#[derive(Deserialize, Debug)]
-pub enum BitRangeKind {
-    Normal,
-    ReservedMustBeZero,
-    ReservedMustBeOne,
-    ReservedUndefined,
-    ReservedIgnored,
 }
 

@@ -1,6 +1,7 @@
 ﻿mod bit_range;
 mod register_descriptor;
 mod register;
+mod registers;
 pub mod utils;
 
 pub use bit_range::{BitRange, BitRangeKind, ByteOrder};

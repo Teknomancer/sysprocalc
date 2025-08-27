@@ -48,6 +48,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c34f04666d835ff5d62e058c3995147c06f42fe86ff053337632bca83e42702d"
 
 [[package]]
+name = "equivalent"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
+
+[[package]]
 name = "errno"
 version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -87,12 +93,28 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6d5a32815ae3f33302d95fdcb2ce17862f8c65363dcfd29360480ba1001fc9c"
 
 [[package]]
+name = "hashbrown"
+version = "0.15.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9229cfe53dfd69f0609a49f65461bd93001ea1ef889cd5529dd176593f5338a1"
+
+[[package]]
 name = "home"
 version = "0.5.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e3d1354bf6b7235cb4a0576c2619fd4ed18183f689b12b006a0ee7329eeff9a5"
 dependencies = [
  "windows-sys",
+]
+
+[[package]]
+name = "indexmap"
+version = "2.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f2481980430f9f78649238835720ddccc57e52df14ffce1c6f37391d61b563e9"
+dependencies = [
+ "equivalent",
+ "hashbrown",
 ]
 
 [[package]]
@@ -232,6 +254,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_spanned"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "40734c41988f7306bb04f0ecf60ec0f3f1caa34290e4e8ea471dcd3346483b83"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "smallvec"
 version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -254,6 +285,7 @@ dependencies = [
  "funty 2.0.0",
  "log",
  "serde",
+ "toml",
 ]
 
 [[package]]
@@ -298,6 +330,45 @@ checksum = "bab24d30b911b2376f3a13cc2cd443142f0c81dda04c118693e35b3835757755"
 dependencies = [
  "winapi-util",
 ]
+
+[[package]]
+name = "toml"
+version = "0.9.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "75129e1dc5000bfbaa9fee9d1b21f974f9fbad9daec557a521ee6e080825f6e8"
+dependencies = [
+ "indexmap",
+ "serde",
+ "serde_spanned",
+ "toml_datetime",
+ "toml_parser",
+ "toml_writer",
+ "winnow",
+]
+
+[[package]]
+name = "toml_datetime"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bade1c3e902f58d73d3f294cd7f20391c1cb2fbcb643b73566bc773971df91e3"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "toml_parser"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b551886f449aa90d4fe2bdaa9f4a2577ad2dde302c61ecf262d80b116db95c10"
+dependencies = [
+ "winnow",
+]
+
+[[package]]
+name = "toml_writer"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fcc842091f2def52017664b53082ecbbeb5c7731092bad69d2c63050401dfd64"
 
 [[package]]
 name = "unicode-ident"
@@ -419,6 +490,12 @@ name = "windows_x86_64_msvc"
 version = "0.52.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dff9641d1cd4be8d1a070daf9e3773c5f67e78b4d9d42263020c057706765c04"
+
+[[package]]
+name = "winnow"
+version = "0.7.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "21a0236b59786fed61e2a80582dd500fe61f18b5dca67a4a067d0bc9039339cf"
 
 [[package]]
 name = "wyz"

@@ -1,11 +1,12 @@
 use crate::bit_range::{BitRange, ByteOrder};
 use crate::register::MAX_BIT_COUNT;
+use serde::Deserialize;
 
 use std::fmt;
 
 static BIT_RANGE_SEP: &str = ":";
 
-#[derive(Debug)]
+#[derive(Deserialize, Debug)]
 pub struct RegisterDescriptor {
     arch: String,
     device: String,
