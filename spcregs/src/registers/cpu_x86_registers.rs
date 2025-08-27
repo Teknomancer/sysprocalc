@@ -6,20 +6,20 @@ use toml;
 
 static CPU_X86_EFER: LazyLock<RegisterDescriptor> = LazyLock::new(|| {
     toml::from_str(r#"
-    arch = "x86"
-    device = "cpu"
-    name = "EFER"
-    desc = "Extended Feature Register"
-    bit_count = 64
+    arch       = "x86"
+    device     = "cpu"
+    name       = "EFER"
+    desc       = "Extended Feature Register"
+    bit_count  = 64
     byte_order = "LittleEndian"
     bit_ranges = [
-      { start=14, end=14, kind=normal, show=true, name="FFXSR", short="Fast FXSAVE/FXRSTOR", long="Fast FXSAVE/FXRSTOR support" },
-      { start=13, end=13, kind=normal, show=true, name="LMSLE", short="LMSL Enable",         long="Long-mode segment limit enable (AMD)" },
-      { start=12, end=12, kind=normal, show=true, name="SVME",  short="SVME Enable",         long="Secure Virtual Machine enable (AMD)" },
-      { start=11, end=11, kind=normal, show=true, name="NXE",   short="NX Enable",           long="No-execute enable" },
-      { start=10, end=10, kind=normal, show=true, name="LMA",   short="LM Active",           long="Long-mode active" },
-      { start=8,  end=8,  kind=normal, show=true, name="LME",   short="LM Enable",           long="Long-mode enable" },
-      { start=0,  end=0,  kind=normal, show=true, name="SCE",   short="SC Extensions",       long="System call extensions" },
+        { start=14, end=14, kind=normal, show=true, name="FFXSR", short="Fast FXSAVE/FXRSTOR", long="Fast FXSAVE/FXRSTOR support" },
+        { start=13, end=13, kind=normal, show=true, name="LMSLE", short="LMSL Enable",         long="Long-mode segment limit enable (AMD)" },
+        { start=12, end=12, kind=normal, show=true, name="SVME",  short="SVME Enable",         long="Secure Virtual Machine enable (AMD)" },
+        { start=11, end=11, kind=normal, show=true, name="NXE",   short="NX Enable",           long="No-execute enable" },
+        { start=10, end=10, kind=normal, show=true, name="LMA",   short="LM Active",           long="Long-mode active" },
+        { start=8,  end=8,  kind=normal, show=true, name="LME",   short="LM Enable",           long="Long-mode enable" },
+        { start=0,  end=0,  kind=normal, show=true, name="SCE",   short="SC Extensions",       long="System call extensions" },
     ]
     "#).expect("Failed to parse TOML")
 });
