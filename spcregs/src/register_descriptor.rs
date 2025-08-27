@@ -141,6 +141,10 @@ impl RegisterDescriptor {
         self.bit_count
     }
 
+    pub fn byte_order(&self) -> ByteOrder {
+        self.byte_order
+    }
+
     pub fn bit_ranges(&self) -> &Vec<BitRange> {
         &self.bit_ranges
     }

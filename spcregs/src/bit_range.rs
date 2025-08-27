@@ -1,7 +1,7 @@
 use std::ops::RangeInclusive;
 use serde::Deserialize;
 
-#[derive(Deserialize, Debug)]
+#[derive(Copy, Clone, Deserialize, Debug, PartialEq)]
 pub enum ByteOrder {
     LittleEndian,
     BigEndian,
