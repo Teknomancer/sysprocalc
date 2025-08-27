@@ -1,7 +1,8 @@
 use crate::RegisterDescriptor;
 use std::collections::BTreeMap;
 
-mod cpu_x86_registers;
+pub mod cpu_x86_registers;
+pub use cpu_x86_registers::X86_CPU_EFER;
 
 pub struct Registers<'a> {
     registers: BTreeMap<String, &'a RegisterDescriptor>,

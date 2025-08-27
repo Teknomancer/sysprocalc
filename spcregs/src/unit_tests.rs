@@ -1,4 +1,4 @@
-use crate::{BitRange, BitRangeKind, RegisterDescriptor, RegisterDescriptorError, Register, MAX_BIT_COUNT, ByteOrder};
+use crate::{BitRange, BitRangeKind, RegisterDescriptor, RegisterDescriptorError, Register, MAX_BIT_COUNT, ByteOrder, X86_CPU_EFER};
 use std::ops::RangeInclusive;
 
 #[test]
@@ -337,6 +337,5 @@ fn test_invalid_register_descriptor() {
         ]
     );
     assert_eq!(res.unwrap_err(), RegisterDescriptorError::MissingDescription);
-
 }
 
