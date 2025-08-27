@@ -1,19 +1,10 @@
-use crate::BitGroup;
+use crate::RegisterDescriptor;
 use std::collections::BTreeMap;
-use std::ops::RangeInclusive;
 
 mod cpu_x86_registers;
 
-enum BitRegister<'a> {
-    Reg1288(BitGroup<'a, u128>),
-    Reg64(BitGroup<'a, u64>),
-    Reg32(BitGroup<'a, u32>),
-    Reg16(BitGroup<'a, u16>),
-    Reg8(BitGroup<'a, u8>),
-}
-
 pub struct Registers<'a> {
-    registers: BTreeMap<String, BitRegister<'a>>,
+    registers: BTreeMap<String, &'a RegisterDescriptor>,
 }
 
 impl<'a> Registers<'a> {
@@ -23,13 +14,8 @@ impl<'a> Registers<'a> {
         }
     }
 
-    pub fn set_value(&mut self, value: T) {
-        self.value = Some(value);
+    pub fn insert(&mut self, name: &str, reg: &'a RegisterDescriptor) -> Option<&RegisterDescriptor> {
+        self.registers.insert(name.to_string(), reg)
     }
-
-    pub fn clear_value(&mut self) {
-        self.value = None;
-    }
-
 }
 
