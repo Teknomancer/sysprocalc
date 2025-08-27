@@ -7,7 +7,7 @@ pub enum ByteOrder {
     BigEndian,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, PartialEq)]
 pub enum BitRangeKind {
     Normal,
     ReservedMustBeZero,
@@ -16,7 +16,7 @@ pub enum BitRangeKind {
     ReservedIgnored,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, PartialEq)]
 pub struct BitRange {
     #[serde(flatten)]
     pub span: RangeInclusive<usize>,
