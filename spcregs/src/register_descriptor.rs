@@ -52,21 +52,21 @@ impl RegisterDescriptor {
         byte_order: ByteOrder,
         bit_ranges: Vec<BitRange>
     ) -> Result<Self, RegisterDescriptorError> {
-		if arch.is_empty() { 
-			return Err(RegisterDescriptorError::MissingArch);
-		}
+        if arch.is_empty() { 
+            return Err(RegisterDescriptorError::MissingArch);
+        }
 
-		if device.is_empty() {
-			return Err(RegisterDescriptorError::MissingDevice);
-		}
+        if device.is_empty() {
+            return Err(RegisterDescriptorError::MissingDevice);
+        }
 
-		if name.is_empty() {
-			return Err(RegisterDescriptorError::MissingName);
-		}
+        if name.is_empty() {
+            return Err(RegisterDescriptorError::MissingName);
+        }
 
-		if desc.is_empty() {
-			return Err(RegisterDescriptorError::MissingDescription);
-		}
+        if desc.is_empty() {
+            return Err(RegisterDescriptorError::MissingDescription);
+        }
 
         if bit_ranges.is_empty() {
            return Err(RegisterDescriptorError::MissingBitRanges)
@@ -245,7 +245,7 @@ pub enum RegisterDescriptorError {
     MissingBitRangeDescription,
     MissingDevice,
     MissingName,
-	MissingDescription,
+    MissingDescription,
     OverlappingBitRange,
     InvalidBitRangeOrder,
     UnknownArch,
@@ -262,7 +262,7 @@ impl fmt::Display for RegisterDescriptorError {
             RegisterDescriptorError::MissingBitRangeDescription => "missing bit description",
             RegisterDescriptorError::MissingDevice => "missing device",
             RegisterDescriptorError::MissingName => "missing name",
-			RegisterDescriptorError::MissingDescription => "missing description",
+            RegisterDescriptorError::MissingDescription => "missing description",
             RegisterDescriptorError::OverlappingBitRange => "overlapping bit range",
             RegisterDescriptorError::InvalidBitRangeOrder => "invalid ordering of bit ranges",
             RegisterDescriptorError::UnknownArch => "unknown architecture",
