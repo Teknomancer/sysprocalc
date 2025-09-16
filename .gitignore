@@ -26,3 +26,6 @@
 
 # Ignore Sublime Text project
 *.sublime-workspace
+
+# Ignore Zed project
+/.zed/
