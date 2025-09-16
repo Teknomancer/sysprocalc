@@ -6,7 +6,7 @@ pub mod cpu_x86_registers;
 pub use cpu_x86_registers::X86_CPU_EFER;
 
 pub struct Registers<'a> {
-    registers: HashMap<String, &'a RegisterDescriptor>,
+    registers: HashMap<&'a str, &'a RegisterDescriptor>,
 }
 
 impl<'a> Registers<'a> {
@@ -16,8 +16,8 @@ impl<'a> Registers<'a> {
         }
     }
 
-    pub fn insert(&mut self, name: &str, reg: &'a RegisterDescriptor) -> Option<&RegisterDescriptor> {
-        self.registers.insert(name.to_string(), reg)
+    pub fn insert(&mut self, name: &'a str, reg: &'a RegisterDescriptor) -> Option<&RegisterDescriptor> {
+        self.registers.insert(name, reg)
     }
 }
 
@@ -26,4 +26,3 @@ pub static REGISTERS: LazyLock<Registers> = LazyLock::new(|| {
     map.insert(X86_CPU_EFER.name(), &X86_CPU_EFER);
     map
 });
-
