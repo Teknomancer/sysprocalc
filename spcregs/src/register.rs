@@ -1,7 +1,7 @@
 use crate::register_descriptor::{RegisterDescriptor, BitRangeElement};
 use crate::utils;
 use funty::{Integral, Unsigned};
-use bitvec::mem::BitMemory;
+use bitvec::mem::BitRegister;
 use std::fmt;
 
 // The type that can hold the maximum value supported in a register
@@ -9,12 +9,12 @@ use std::fmt;
 pub type RegisterValue = u64;
 pub static MAX_BIT_COUNT: usize = RegisterValue::BITS as usize;
 
-pub struct Register<T: Unsigned + BitMemory> {
+pub struct Register<T: BitRegister> {
     value: Option<T>,
     descriptor: RegisterDescriptor,
 }
 
-impl<T: Unsigned + BitMemory> Register<T> {
+impl<T: BitRegister> Register<T> {
     pub fn new(descriptor: RegisterDescriptor) -> Result<Self, RegisterError> {
         if Register::<T>::bit_capacity() >= descriptor.bit_count() {
             Ok(Self { value: None, descriptor })
@@ -50,7 +50,7 @@ impl<T: Unsigned + BitMemory> Register<T> {
     }
 }
 
-impl<T: Unsigned + BitMemory> fmt::Display for Register<T> {
+impl<T: BitRegister> fmt::Display for Register<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.value.is_none() {
             write!(f, "{}", self.descriptor)

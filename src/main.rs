@@ -1,4 +1,4 @@
-use spcregs::{BitRange, BitRangeKind, ByteOrder, Register, Unsigned, BitMemory, RegisterDescriptor};
+use spcregs::{BitRange, BitRangeKind, ByteOrder, Register, Unsigned, BitRegister, RegisterDescriptor};
 use spceval::{Number, ExprError};
 
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
@@ -171,7 +171,7 @@ fn evaluate_expr_and_write_result(spcio: &mut SpcIo, str_expr: &str, app_mode: A
     }
 }
 
-fn write_reg_desc_title<T: Unsigned + BitMemory>(spcio: &mut SpcIo, register: &Register<T>)  -> std::io::Result<()> {
+fn write_reg_desc_title<T: BitRegister>(spcio: &mut SpcIo, register: &Register<T>)  -> std::io::Result<()> {
     write!(spcio.stream, "{}.{} ", register.get_descriptor().device(), register.get_descriptor().arch())?;
     write_color(&mut spcio.stream, register.get_descriptor().name(), Color::Green, true)?;
     writeln!(spcio.stream, " ({})", register.get_descriptor().description())?;

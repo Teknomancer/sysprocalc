@@ -520,7 +520,7 @@ fn parse_num(str_expr: &str) -> (Option<Number>, usize) {
     // of the length of any prefix that's already part of the expression in 'len_prefix' (as
     // done above). This also has a side effect in making the loop below faster as we eliminate
     // checks that doesn't need to happen on every iteration.
-    let mut str_num = ArrayString::<[_;STR_SIZE]>::new();
+    let mut str_num = ArrayString::<STR_SIZE>::new();
     let mut has_dec_pt = false;
     let mut is_fp_exp_notation = false;
     let mut is_fp_exp_sign = false;

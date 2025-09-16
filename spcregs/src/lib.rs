@@ -11,7 +11,7 @@ pub use registers::{X86_CPU_EFER};
 
 // Re-export externals
 pub use funty::Unsigned;
-pub use bitvec::mem::BitMemory;
+pub use bitvec::mem::BitRegister;
 
 #[cfg(test)]
 mod unit_tests;
