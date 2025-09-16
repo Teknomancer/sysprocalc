@@ -61,7 +61,6 @@ impl<T: Unsigned + BitMemory> fmt::Display for Register<T> {
                 Ok(val) => {
 
                     let bit_count = self.descriptor.bit_count();
-                    let mut idx_last_bit = bit_count - 1;
                     assert!(bit_count > 0);
 
                     // First write out the binary bits seperated into groups of 4.

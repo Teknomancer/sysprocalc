@@ -1,4 +1,4 @@
-use crate::{BitRange, BitRangeKind, RegisterDescriptor, RegisterDescriptorError, Register, MAX_BIT_COUNT, ByteOrder, X86_CPU_EFER};
+use crate::{BitRange, BitRangeKind, RegisterDescriptor, RegisterDescriptorError, MAX_BIT_COUNT, ByteOrder};
 use std::ops::RangeInclusive;
 
 #[test]
