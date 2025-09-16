@@ -26,9 +26,9 @@ bench = false
 [dependencies]
 spceval = { path = "spceval" }
 spcregs = { path = "spcregs" }
-log = "0.4"
-termcolor = "1.1"
-rustyline = "13.0"
+log = "0.4.28"
+termcolor = "1.4.1"
+rustyline = "17.0.1"
 
 [profile.release]
 lto = "fat"

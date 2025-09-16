@@ -11,8 +11,8 @@ keywords = ["x86","x86-register","x86-register-descriptions","hardware-register"
 edition = "2021"
 
 [dependencies]
-log = "0.4"
-bitvec = "0.22.3"
+log = "0.4.28"
+bitvec = "1.0.1"
 funty = "2.0.0"
 serde = { version = "1.0", features = ["derive"] }
 toml = "0.9.5"
