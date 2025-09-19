@@ -1,4 +1,4 @@
-use spcregs::{BitRange, BitRangeKind, ByteOrder, Register, Unsigned, BitRegister, RegisterDescriptor};
+use spcregs::{BitRange, BitRangeKind, ByteOrder, Register, BitRegister, RegisterDescriptor};
 use spceval::{Number, ExprError};
 
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
