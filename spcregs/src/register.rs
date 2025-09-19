@@ -1,6 +1,5 @@
 use crate::register_descriptor::{RegisterDescriptor, BitRangeElement};
 use crate::utils;
-use funty::{Integral, Unsigned};
 use bitvec::mem::BitRegister;
 use std::fmt;
 
@@ -33,16 +32,7 @@ impl<T: BitRegister> Register<T> {
 
     #[inline(always)]
     const fn bit_capacity() -> usize {
-        // T::BITS is ambiguous because of multiple definitions caused by using
-        // funty 2.0.x and funty 1.2.0. The latter is used by bitvec 0.22.x,
-        // see https://github.com/myrrlyn/funty/issues/3
-
-        // I strongly prefer using the latest version of crates whenever possible.
-        // I don't want to include an older funty version as it also means using
-        // older names such as "IsUnsigned" vs the newer "Unsigned" etc.
-        // To resolve this problem, we must fully qualify the type to its trait
-        // ("Integral") which only exists in the newer funty 2.0.x version.
-        <T as Integral>::BITS as usize
+        T::BITS as usize
     }
 
     pub fn get_descriptor(&self) -> &RegisterDescriptor {
@@ -76,7 +66,6 @@ impl<T: BitRegister> fmt::Display for Register<T> {
 
                     // Write one line with just the lines (i.e. without any bit description).
                     // for sake of aesthetics.
-                    let bit_range_row = self.descriptor.bit_ranges().last().unwrap();
                     write!(f, " ");
                     for bit_index in (0..bit_count).rev() {
                         if self.descriptor.has_bit(&bit_index) {
@@ -146,4 +135,3 @@ impl fmt::Display for RegisterError {
         write!(f, "{}", err)
     }
 }
-
