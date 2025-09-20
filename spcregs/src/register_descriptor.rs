@@ -74,7 +74,7 @@ impl RegisterDescriptor {
 
         // Check if the number of bits in the register is within supported limits
         // and is byte size aligned.
-        if bit_count == 0 || bit_count % 8 != 0 || bit_count > MAX_BIT_COUNT {
+        if bit_count == 0 || !bit_count.is_multiple_of(8) || bit_count > MAX_BIT_COUNT {
             return Err(RegisterDescriptorError::InvalidBitCount);
         }
 
@@ -103,7 +103,7 @@ impl RegisterDescriptor {
             let start = *bit_range.span.start();    // Inclusive bound.
             let poison = vec![MAX_BIT_COUNT; end - start];
             let removed:Vec<_> = bitpos.splice(start..end, poison).collect();
-            if removed.iter().any(|&x| x == MAX_BIT_COUNT) {
+            if removed.contains(&MAX_BIT_COUNT) {
                 return Err(RegisterDescriptorError::OverlappingBitRange);
             }
 
@@ -192,7 +192,7 @@ impl RegisterDescriptor {
 
     pub fn has_bit(&self, bit: &usize) -> bool {
         for bit_range in &self.bit_ranges {
-            if bit_range.span.contains(&bit) {
+            if bit_range.span.contains(bit) {
                 return true;
             }
         }

@@ -35,7 +35,7 @@ pub fn get_binary_ruler_string(bit_count: u8) -> String {
     // First convert the u32 to usize since we need a usize to index into an array.
     // This is will panic if the conversion fails (on architectures where usize
     // is insufficient to hold 32 bits). Panic is better than failing in weird ways.
-    let bit_count = usize::try_from(bit_count).unwrap();
+    let bit_count = usize::from(bit_count);
 
     // Ensure if we ever add 128-bit support this code will at least assert.
     debug_assert!(bit_count <= 64);

@@ -109,8 +109,8 @@ fn write_error(spcio: &mut SpcIo, str_expr: &str, opt_extra_padding: Option<usiz
         let user_prompt_padding = USER_PROMPT.chars().count();
 
         // Calculate padding.
-        let padding = if opt_extra_padding.is_some() {
-            idx_char + user_prompt_padding + opt_extra_padding.unwrap()
+        let padding = if let Some(extra_padding) = opt_extra_padding {
+            idx_char + user_prompt_padding + extra_padding
         } else {
             idx_char + user_prompt_padding
         };
@@ -148,7 +148,7 @@ fn evaluate_expr(str_expr: &str) -> Result<Number, ExprError>
     res
 }
 
-fn evaluate_input(spcio: &mut SpcIo, str_expr: &str, app_mode: AppMode) -> std::io::Result<()> {
+fn evaluate_input(spcio: &mut SpcIo, str_expr: &str, _app_mode: AppMode) -> std::io::Result<()> {
     let mut tokens = str_expr.trim().splitn(2, ' ').fuse();
     let command = tokens.next();
     let args = tokens.next();
@@ -156,7 +156,7 @@ fn evaluate_input(spcio: &mut SpcIo, str_expr: &str, app_mode: AppMode) -> std::
     match command {
         Some("q") | Some("quit") | Some("exit") => std::process::exit(0),
         Some("efer") => test_register(spcio, args, efer_cmd, AppMode::Interactive),
-        Some(x) if x.is_empty() => Ok(()),
+        Some("") => Ok(()),
 
         // Use the original input expression given by the user rather
         // than the trimmed expression as it would mess up the error caret position.
@@ -252,7 +252,7 @@ fn test_register(spcio: &mut SpcIo, opt_str_expr: Option<&str>, str_cmd: &str, a
                 Ok(number) => {
                     let mut efer: Register<u64> = Register::new(efer_descriptor).unwrap();
                     efer.set_value(number.integer);
-                    write_reg_desc_title(spcio, &efer);
+                    write_reg_desc_title(spcio, &efer)?;
                     writeln!(spcio.stream, "{}", efer)?;
                 }
                 // The extra 1 below is for the space following the command.
@@ -277,7 +277,7 @@ fn interactive_mode(spcio: &mut SpcIo) -> std::io::Result<()> {
             let readline_result = editor.readline(USER_PROMPT);
             if let Ok(str_input) = readline_result {
                 let input_expr = str_input.as_str();
-                editor.add_history_entry(input_expr);
+                let _ = editor.add_history_entry(input_expr);
                 evaluate_input(spcio, input_expr, AppMode::Interactive)?;
             } else {
                 let mut stderr = SpcIo { stream: StandardStream::stderr(spcio.color), color: spcio.color };
@@ -288,7 +288,7 @@ fn interactive_mode(spcio: &mut SpcIo) -> std::io::Result<()> {
         }
         Ok(())
     } else {
-        Err(std::io::Error::new(std::io::ErrorKind::Other, "failed to create readline editor object"))
+        Err(std::io::Error::other("failed to create readline editor object"))
     }
 }
 
