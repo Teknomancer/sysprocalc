@@ -66,43 +66,41 @@ impl<T: BitRegister> fmt::Display for Register<T> {
 
                     // Write one line with just the lines (i.e. without any bit description).
                     // for sake of aesthetics.
-                    write!(f, " ");
+                    write!(f, " ")?;
                     for bit_index in (0..bit_count).rev() {
                         if self.descriptor.has_bit(&bit_index) {
-                            write!(f, "{}", vert_char);
+                            write!(f, "{}", vert_char)?;
                         } else {
-                            write!(f, " ");
+                            write!(f, " ")?;
                         }
                         if bit_index % 4 == 0 {
-                            write!(f, " ");
+                            write!(f, " ")?;
                         }
                     }
-                    writeln!(f);
+                    writeln!(f)?;
 
                     // Now iterate over each bit range and describe each bit
                     // while drawing lines from the corresponding bit value.
                     for bit_range_row in self.descriptor.bit_ranges().into_iter() {
-                        write!(f, " ");
+                        write!(f, " ")?;
                         let mut cur_bit = bit_count;
                         let mut fill_char = " ";
                         for idx_bit_col in (0..bit_count).rev() {
                             if bit_range_row.span.contains(&idx_bit_col) {
-                                write!(f, "{}", edge_char);
+                                write!(f, "{}", edge_char)?;
                                 cur_bit = idx_bit_col;
                                 fill_char = horiz_char;
-                            } else {
-                                if self.descriptor.has_bit(&idx_bit_col) {
-                                    if  cur_bit == bit_count {
-                                        write!(f, "{}", vert_char);
-                                    } else {
-                                        write!(f, "{}", fill_char);
-                                    }
+                            } else if self.descriptor.has_bit(&idx_bit_col) {
+                                if  cur_bit == bit_count {
+                                    write!(f, "{}", vert_char)?;
                                 } else {
-                                    write!(f, "{}", fill_char);
+                                    write!(f, "{}", fill_char)?;
                                 }
+                            } else {
+                                write!(f, "{}", fill_char)?;
                             }
                             if idx_bit_col > 0 && idx_bit_col % 4 == 0 {
-                                write!(f, "{}", fill_char);
+                                write!(f, "{}", fill_char)?;
                             }
                         }
                         let is_set_indicator = if val & ((1 as RegisterValue) << cur_bit) != 0 { " *" } else { "" };
@@ -113,7 +111,7 @@ impl<T: BitRegister> fmt::Display for Register<T> {
                                  namewidth = self.descriptor.column_width(BitRangeElement::Name),
                                  bitnum = *bit_range_row.span.start(),
                                  bitwidth = self.descriptor.column_width(BitRangeElement::Bits),
-                                 bit_is_set = is_set_indicator);
+                                 bit_is_set = is_set_indicator)?;
                     }
                     Ok(())
                 }
