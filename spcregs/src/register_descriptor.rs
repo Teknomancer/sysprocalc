@@ -109,10 +109,9 @@ impl RegisterDescriptor {
 
             // Check that bit ranges are always in ascending order e.g, [0, 1, 2-12, 13-31].
             // [0, 2-12, 1, 13-31] would be an error.
-            if prev_range_end.is_some() {
-                if *bit_range.span.end() + 1 <= prev_range_end.unwrap() {
-                    return Err(RegisterDescriptorError::InvalidBitRangeOrder);
-                }
+            if let Some(end) = prev_range_end
+                && *bit_range.span.end() < end {
+                return Err(RegisterDescriptorError::InvalidBitRangeOrder);
             }
 
             prev_range_end = Some(*bit_range.span.end() + 1);

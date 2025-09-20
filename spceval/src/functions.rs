@@ -8,7 +8,7 @@ const GB: u64 = 0x40000000;
 const TB: u64 = 0x10000000000;
 const PB: u64 = 4000000000000;
 
-pub const MAX_FN_PARAMS: u8 = u8::max_value();
+pub const MAX_FN_PARAMS: u8 = u8::MAX;
 pub static FUNCS: [Func<'static>; 20] = [
     Func {
         name:   "avg",
@@ -279,7 +279,7 @@ fn func_pow(func: &Func, idx_expr: usize, nums: &[Number]) -> Result<Number, Exp
         }
     } else {
         let message = format!("for function '{}', {} power {}, exponent overflowed (must be <= {})",
-                          func.name, nums[0].integer, nums[1].integer, std::u32::MAX);
+                          func.name, nums[0].integer, nums[1].integer, u32::MAX);
         Err(ExprError::new(idx_expr, ExprErrorKind::FailedEvaluation, message))
     }
 }
@@ -315,7 +315,7 @@ fn func_bits(func: &Func, idx_expr: usize, nums: &[Number]) -> Result<Number, Ex
 }
 
 fn func_is_pow_of_two(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
-    let val = nums[0].integer as u64;
+    let val = nums[0].integer;
     let integer = if val > 0 {
         (val & (val - 1) == 0) as u64
     } else {
