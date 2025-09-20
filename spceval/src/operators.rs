@@ -106,7 +106,7 @@ fn cmp_eq_f64(a: f64, b: f64) -> bool {
     let abs_diff = (a - b).abs();
     let abs_cmp = if abs_a > abs_b { abs_b } else { abs_a };
 
-    abs_diff <= abs_cmp * std::f64::EPSILON
+    abs_diff <= abs_cmp * f64::EPSILON
 }
 
 fn oper_nop(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {

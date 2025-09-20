@@ -81,7 +81,7 @@ impl<T: BitRegister> fmt::Display for Register<T> {
 
                     // Now iterate over each bit range and describe each bit
                     // while drawing lines from the corresponding bit value.
-                    for bit_range_row in self.descriptor.bit_ranges().into_iter() {
+                    for bit_range_row in self.descriptor.bit_ranges().iter() {
                         write!(f, " ")?;
                         let mut cur_bit = bit_count;
                         let mut fill_char = " ";
