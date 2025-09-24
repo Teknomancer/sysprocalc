@@ -11,10 +11,13 @@ pub struct Registers<'a> {
 
 impl<'a> Registers<'a> {
     pub fn new() -> Self {
-        // let mut registers: HashMap<&str, &RegisterDescriptor> = HashMap::with_capacity(REGISTERS.len());
-        // registers.insert(X86_CPU_EFER.name(), &X86_CPU_EFER); 
+        let mut registers: HashMap<&str, &RegisterDescriptor> = HashMap::with_capacity(REGISTERS.len());
+        for desc in REGISTERS.iter() {
+            registers.insert(desc.name(), desc);
+        }
         Self {
-            registers: REGISTERS.iter().map(|k| (k.name(), *k)).collect()
+            // registers: REGISTERS.iter().map(|k| (k.name(), *k)).collect() // I have no idea how many copies this might do
+            registers: registers
         }
     }
 
