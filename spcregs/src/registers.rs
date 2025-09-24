@@ -11,8 +11,10 @@ pub struct Registers<'a> {
 
 impl<'a> Registers<'a> {
     pub fn new() -> Self {
+        // let mut registers: HashMap<&str, &RegisterDescriptor> = HashMap::with_capacity(REGISTERS.len());
+        // registers.insert(X86_CPU_EFER.name(), &X86_CPU_EFER); 
         Self {
-            registers: HashMap::new()
+            registers: REGISTERS.iter().map(|k| (k.name(), *k)).collect()
         }
     }
 
@@ -21,8 +23,7 @@ impl<'a> Registers<'a> {
     }
 }
 
-pub static REGISTERS: LazyLock<Registers> = LazyLock::new(|| {
-    let mut map: Registers = Registers::new();
-    map.insert(X86_CPU_EFER.name(), &X86_CPU_EFER);
-    map
-});
+// All new register descriptors should be added here
+static REGISTERS: LazyLock<[&RegisterDescriptor; 1]> = LazyLock::new(|| { [
+    &X86_CPU_EFER,
+]});
