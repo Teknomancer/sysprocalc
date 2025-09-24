@@ -1,4 +1,4 @@
-use spcregs::{BitRange, BitRangeKind, ByteOrder, Register, BitRegister, RegisterDescriptor};
+use spcregs::{BitRange, BitRangeKind, ByteOrder, Register, BitRegister, RegisterDescriptor, RegisterMap};
 use spceval::{Number, ExprError};
 
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
@@ -316,6 +316,8 @@ fn main() -> std::io::Result<()> {
     if args.len() > 1 {
         evaluate_input(&mut stdout, args.get(1).unwrap(), AppMode::CommandLine)
     } else {
+        let regmap = RegisterMap::new();
+        print!("items={}\n", regmap.len());
         interactive_mode(&mut stdout)
     }
 }
