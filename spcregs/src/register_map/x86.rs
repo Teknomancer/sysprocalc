@@ -1,6 +1,30 @@
 use crate::RegisterDescriptor;
 use std::sync::LazyLock;
 
+pub static CR0: LazyLock<RegisterDescriptor> = LazyLock::new(|| {
+    toml::from_str(r#"
+        arch       = "x86"
+        device     = "cpu"
+        name       = "cr0"
+        desc       = "Control Register 0"
+        bit_count  = 32
+        byte_order = "LittleEndian"
+        bit_ranges = [
+            { start=0,  end=0,  kind="Normal", show=true, name="PE",    short="Protected Mode Enable", long="Protected Mode Enable." },
+            { start=1,  end=1,  kind="Normal", show=true, name="MP",    short="Monitor Co-Processor",  long="Controls interaction of WAIT/FWAIT instructions with CR0.TS." },
+            { start=2,  end=2,  kind="Normal", show=true, name="EM",    short="Emulation",             long="If set, no x87 FPU emulation." },
+            { start=3,  end=3,  kind="Normal", show=true, name="TS",    short="Task Switched",         long="If set, save FPU context on FPU instruction after a task switch." },
+            { start=4,  end=4,  kind="Normal", show=true, name="ET",    short="Extension Type",        long="On 386, specified if math coprocessor was an 80287 or 80387." },
+            { start=5,  end=5,  kind="Normal", show=true, name="NE",    short="Numeric Error",         long="If set, enables x87 FPU error reporting." },
+            { start=16, end=16, kind="Normal", show=true, name="WP",    short="Write Protect",         long="Controls whether the CPU can write to pages marked read-only." },
+            { start=18, end=18, kind="Normal", show=true, name="AM",    short="Alignment Mask",        long="If set, enables alignment check for CPL=3 when EFLAGS.AC is set." },
+            { start=29, end=29, kind="Normal", show=true, name="NW",    short="Not Write-Through",     long="Controls write-back or write-through for writes that hit the cache." },
+            { start=30, end=30, kind="Normal", show=true, name="CD",    short="Cache Disable",         long="If set, disables memory caching." },
+            { start=31, end=31, kind="Normal", show=true, name="PG",    short="Paging",                long="If set, enables memory paging." },
+        ]
+    "#).expect("Failed to parse TOML")
+});
+
 pub static EFER: LazyLock<RegisterDescriptor> = LazyLock::new(|| {
     toml::from_str(r#"
         arch       = "x86"
@@ -10,13 +34,13 @@ pub static EFER: LazyLock<RegisterDescriptor> = LazyLock::new(|| {
         bit_count  = 32
         byte_order = "LittleEndian"
         bit_ranges = [
-            { start=0,  end=0,  kind="Normal", show=true, name="SCE",   short="SC Extensions",       long="System Call Extensions" },
-            { start=8,  end=8,  kind="Normal", show=true, name="LME",   short="LM Enable",           long="Long Mode Enable" },
-            { start=10, end=10, kind="Normal", show=true, name="LMA",   short="LM Active",           long="Long Mode Active" },
-            { start=11, end=11, kind="Normal", show=true, name="NXE",   short="NX Enable",           long="No-Execute Enable" },
-            { start=12, end=12, kind="Normal", show=true, name="SVME",  short="SVM Enable",          long="Secure Virtual Machine Enable (AMD)" },
-            { start=13, end=13, kind="Normal", show=true, name="LMSLE", short="LMSL Enable",         long="Long Mode Segment Limit Enable (AMD)" },
-            { start=14, end=14, kind="Normal", show=true, name="FFXSR", short="Fast FXSAVE/FXRSTOR", long="Fast FXSAVE/FXRSTOR support" },
+            { start=0,  end=0,  kind="Normal", show=true, name="SCE",   short="SC Extensions",       long="System Call Extensions." },
+            { start=8,  end=8,  kind="Normal", show=true, name="LME",   short="LM Enable",           long="Long Mode Enable." },
+            { start=10, end=10, kind="Normal", show=true, name="LMA",   short="LM Active",           long="Long Mode Active." },
+            { start=11, end=11, kind="Normal", show=true, name="NXE",   short="NX Enable",           long="No-Execute Enable." },
+            { start=12, end=12, kind="Normal", show=true, name="SVME",  short="SVM Enable",          long="Secure Virtual Machine Enable (AMD)." },
+            { start=13, end=13, kind="Normal", show=true, name="LMSLE", short="LMSL Enable",         long="Long Mode Segment Limit Enable (AMD)." },
+            { start=14, end=14, kind="Normal", show=true, name="FFXSR", short="Fast FXSAVE/FXRSTOR", long="Fast FXSAVE/FXRSTOR support." },
         ]
     "#).expect("Failed to parse TOML")
 });
@@ -35,43 +59,43 @@ mod tests {
                           true,
                           String::from("SCE"),
                           String::from("SC Extensions"),
-                          String::from("System Call Extensions")),
+                          String::from("System Call Extensions.")),
             BitRange::new(RangeInclusive::new(8, 8),
                           BitRangeKind::Normal,
                           true,
                           String::from("LME"),
                           String::from("LM Enable"),
-                          String::from("Long Mode Enable")),
+                          String::from("Long Mode Enable.")),
             BitRange::new(RangeInclusive::new(10, 10),
                           BitRangeKind::Normal,
                           true,
                           String::from("LMA"),
                           String::from("LM Active"),
-                          String::from("Long Mode Active")),
+                          String::from("Long Mode Active.")),
             BitRange::new(RangeInclusive::new(11, 11),
                           BitRangeKind::Normal,
                           true,
                           String::from("NXE"),
                           String::from("NX Enable"),
-                          String::from("No-Execute Enable")),
+                          String::from("No-Execute Enable.")),
             BitRange::new(RangeInclusive::new(12, 12),
                           BitRangeKind::Normal,
                           true,
                           String::from("SVME"),
                           String::from("SVM Enable"),
-                          String::from("Secure Virtual Machine Enable (AMD)")),
+                          String::from("Secure Virtual Machine Enable (AMD).")),
             BitRange::new(RangeInclusive::new(13, 13),
                           BitRangeKind::Normal,
                           true,
                           String::from("LMSLE"),
                           String::from("LMSL Enable"),
-                          String::from("Long Mode Segment Limit Enable (AMD)")),
+                          String::from("Long Mode Segment Limit Enable (AMD).")),
             BitRange::new(RangeInclusive::new(14, 14),
                          BitRangeKind::Normal,
                          true,
                          String::from("FFXSR"),
                          String::from("Fast FXSAVE/FXRSTOR"),
-                         String::from("Fast FXSAVE/FXRSTOR support")),
+                         String::from("Fast FXSAVE/FXRSTOR support.")),
             ] );
 
         assert_eq!(EFER.arch(), "x86");
