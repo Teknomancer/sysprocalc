@@ -148,19 +148,25 @@ fn evaluate_expr(str_expr: &str) -> Result<Number, ExprError>
     res
 }
 
-fn evaluate_input(spcio: &mut SpcIo, str_expr: &str, _app_mode: AppMode) -> std::io::Result<()> {
+fn evaluate_input(spcio: &mut SpcIo, reg_map: &RegisterMap, str_expr: &str, _app_mode: AppMode) -> std::io::Result<()> {
     let mut tokens = str_expr.trim().splitn(2, ' ').fuse();
-    let command = tokens.next();
+    let cmd = tokens.next();
     let args = tokens.next();
-    let efer_cmd = "efer";
-    match command {
+    match cmd {
         Some("q") | Some("quit") | Some("exit") => std::process::exit(0),
-        Some("efer") => test_register(spcio, args, efer_cmd, AppMode::Interactive),
         Some("") => Ok(()),
-
-        // Use the original input expression given by the user rather
-        // than the trimmed expression as it would mess up the error caret position.
-        _ => evaluate_expr_and_write_result(spcio, str_expr, AppMode::Interactive),
+        Some(cmd) => {
+            if let Some(reg) = reg_map.get(&cmd) {
+                evaluate_register(spcio, reg, args, _app_mode)
+            } else {
+                evaluate_expr_and_write_result(spcio, str_expr, AppMode::Interactive)
+            }
+        }
+        _ => {
+            // Use the original input expression given by the user rather
+            // than the trimmed expression as it would mess up the error caret position.
+            evaluate_expr_and_write_result(spcio, str_expr, AppMode::Interactive)
+        }
     }
 }
 
@@ -178,99 +184,32 @@ fn write_reg_desc_title<T: BitRegister>(spcio: &mut SpcIo, register: &Register<T
     Ok(())
 }
 
-fn test_register(spcio: &mut SpcIo, opt_str_expr: Option<&str>, str_cmd: &str, app_mode: AppMode) -> std::io::Result<()> {
-    let efer_descriptor = RegisterDescriptor::new(
-        String::from("x86"),
-        String::from("cpu"),
-        String::from("EFER"),
-        String::from("Extended Feature Register"),
-        u32::BITS as usize,
-        ByteOrder::LittleEndian,
-        vec![
-            BitRange::new(
-                RangeInclusive::new(0, 0),
-                BitRangeKind::Normal,
-                true,
-                String::from("SCE"),
-                String::from("SysCall"),
-                String::from("System Call Extensions"),
-            ),
-            BitRange::new(
-                RangeInclusive::new(8, 8),
-                BitRangeKind::Normal,
-                true,
-                String::from("LME"),
-                String::from("Long mode enable"),
-                String::from("Long mode enable"),
-            ),
-            BitRange::new(
-                RangeInclusive::new(10, 10),
-                BitRangeKind::Normal,
-                true,
-                String::from("LMA"),
-                String::from("Long mode active"),
-                String::from("Long mode active"),
-            ),
-            BitRange::new(
-                RangeInclusive::new(11, 11),
-                BitRangeKind::Normal,
-                true,
-                String::from("NXE"),
-                String::from("No-execute enable"),
-                String::from("No-execute enable"),
-            ),
-            BitRange::new(
-                RangeInclusive::new(12, 12),
-                BitRangeKind::Normal,
-                true,
-                String::from("SVME"),
-                String::from("SVM enable"),
-                String::from("Secure virtual machine enable (AMD)"),
-            ),
-            BitRange::new(
-                RangeInclusive::new(13, 13),
-                BitRangeKind::Normal,
-                true,
-                String::from("LMSL"),
-                String::from("LMSL enable"),
-                String::from("Long mode segment limit enable (AMD)"),
-            ),
-            BitRange::new(
-                RangeInclusive::new(14, 14),
-                BitRangeKind::Normal,
-                true,
-                String::from("FFXSR"),
-                String::from("Fast FXSAVE/FXRSTOR"),
-                String::from("Fast FXSAVE/FXRSTOR"),
-            ),
-        ]
-    ).unwrap();
-
+fn evaluate_register(spcio: &mut SpcIo, reg: &RegisterDescriptor, opt_str_expr: Option<&str>, app_mode: AppMode) -> std::io::Result<()> {
     match opt_str_expr {
         Some(str_expr) => {
             match evaluate_expr(str_expr) {
                 Ok(number) => {
-                    let mut efer: Register<u64> = Register::new(efer_descriptor).unwrap();
-                    efer.set_value(number.integer);
-                    write_reg_desc_title(spcio, &efer)?;
-                    writeln!(spcio.stream, "{}", efer)?;
+                    let mut reg: Register<u64> = Register::new(reg).unwrap();
+                    reg.set_value(number.integer);
+                    write_reg_desc_title(spcio, &reg)?;
+                    writeln!(spcio.stream, "{}", reg)?;
                 }
                 // The extra 1 below is for the space following the command.
-                Err(e) => write_error(spcio, str_expr, Some(str_cmd.chars().count() + 1), e, app_mode)?,
+                Err(e) => write_error(spcio, str_expr, Some(reg.name().chars().count() + 1), e, app_mode)?,
             }
         }
 
         None => {
             //let efer: Register<u64> = Register::new(efer_descriptor).unwrap();
             //write_reg_desc_title(spcio, &efer);
-            writeln!(spcio.stream, "{}", efer_descriptor)?;
+            writeln!(spcio.stream, "{}", reg)?;
         }
     }
 
     Ok(())
 }
 
-fn interactive_mode(spcio: &mut SpcIo) -> std::io::Result<()> {
+fn interactive_mode(spcio: &mut SpcIo, reg_map: &RegisterMap) -> std::io::Result<()> {
     let editor_result = rustyline::DefaultEditor::new();
     if let Ok(mut editor) = editor_result {
         loop {
@@ -278,7 +217,7 @@ fn interactive_mode(spcio: &mut SpcIo) -> std::io::Result<()> {
             if let Ok(str_input) = readline_result {
                 let input_expr = str_input.as_str();
                 let _ = editor.add_history_entry(input_expr);
-                evaluate_input(spcio, input_expr, AppMode::Interactive)?;
+                evaluate_input(spcio, reg_map, input_expr, AppMode::Interactive)?;
             } else {
                 let mut stderr = SpcIo { stream: StandardStream::stderr(spcio.color), color: spcio.color };
                 write_color(&mut stderr.stream, EXITING_APP, Color::Red, true)?;
@@ -312,13 +251,11 @@ fn main() -> std::io::Result<()> {
 
     let mut stdout = SpcIo { stream: StandardStream::stdout(color), color };
     let args: Vec<String> = env::args().collect();
+    let reg_map = RegisterMap::new();
 
     if args.len() > 1 {
-        evaluate_input(&mut stdout, args.get(1).unwrap(), AppMode::CommandLine)
+        evaluate_input(&mut stdout, &reg_map, args.get(1).unwrap(), AppMode::CommandLine)
     } else {
-        let regmap = RegisterMap::new();
-        print!("items={}\n", regmap.len());
-        interactive_mode(&mut stdout)
+        interactive_mode(&mut stdout, &reg_map)
     }
 }
-

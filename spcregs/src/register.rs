@@ -8,13 +8,13 @@ use std::fmt;
 pub type RegisterValue = u64;
 pub static MAX_BIT_COUNT: usize = RegisterValue::BITS as usize;
 
-pub struct Register<T: BitRegister> {
+pub struct Register<'a, T: BitRegister> {
     value: Option<T>,
-    descriptor: RegisterDescriptor,
+    descriptor: &'a RegisterDescriptor,
 }
 
-impl<T: BitRegister> Register<T> {
-    pub fn new(descriptor: RegisterDescriptor) -> Result<Self, RegisterError> {
+impl<'a, T: BitRegister> Register<'a, T> {
+    pub fn new(descriptor: &'a RegisterDescriptor) -> Result<Self, RegisterError> {
         if Register::<T>::bit_capacity() >= descriptor.bit_count() {
             Ok(Self { value: None, descriptor })
         } else {
@@ -40,7 +40,7 @@ impl<T: BitRegister> Register<T> {
     }
 }
 
-impl<T: BitRegister> fmt::Display for Register<T> {
+impl<'a, T: BitRegister> fmt::Display for Register<'a, T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.value.is_none() {
             write!(f, "{}", self.descriptor)

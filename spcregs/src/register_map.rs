@@ -28,6 +28,10 @@ impl<'a> RegisterMap<'a> {
     pub fn len(&self) -> usize {
         self.map.len()
     }
+
+    pub fn get(&self, name: &'a str) -> Option<&&RegisterDescriptor> {
+        self.map.get(name)
+    }
 }
 
 // All new register descriptors should be added here
