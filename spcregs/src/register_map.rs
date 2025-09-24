@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use std::sync::LazyLock;
 
 mod x86;
-use x86::EFER;
 
 pub struct RegisterMap<'a> {
     map: HashMap<&'a str, &'a RegisterDescriptor>,
@@ -35,6 +34,7 @@ impl<'a> RegisterMap<'a> {
 }
 
 // All new register descriptors should be added here
-static REGISTERS: LazyLock<[&RegisterDescriptor; 1]> = LazyLock::new(|| { [
-    &EFER,
+static REGISTERS: LazyLock<[&RegisterDescriptor; 2]> = LazyLock::new(|| { [
+    &x86::CR0,
+    &x86::EFER,
 ]});
