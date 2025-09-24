@@ -2,27 +2,31 @@ use crate::RegisterDescriptor;
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
-pub mod cpu_x86_registers;
-pub use cpu_x86_registers::X86_CPU_EFER;
+mod cpu_x86_registers;
+use cpu_x86_registers::X86_CPU_EFER;
 
-pub struct Registers<'a> {
-    registers: HashMap<&'a str, &'a RegisterDescriptor>,
+pub struct RegisterMap<'a> {
+    map: HashMap<&'a str, &'a RegisterDescriptor>,
 }
 
-impl<'a> Registers<'a> {
+impl<'a> RegisterMap<'a> {
     pub fn new() -> Self {
-        let mut registers: HashMap<&str, &RegisterDescriptor> = HashMap::with_capacity(REGISTERS.len());
+        let mut map: HashMap<&str, &RegisterDescriptor> = HashMap::with_capacity(REGISTERS.len());
         for desc in REGISTERS.iter() {
-            registers.insert(desc.name(), desc);
+            map.insert(desc.name(), desc);
         }
         Self {
-            // registers: REGISTERS.iter().map(|k| (k.name(), *k)).collect() // I have no idea how many copies this might do
-            registers: registers
+            // map: REGISTERS.iter().map(|k| (k.name(), *k)).collect() // I have no idea how many copies this might do
+            map: map
         }
     }
 
     pub fn insert(&mut self, name: &'a str, reg: &'a RegisterDescriptor) -> Option<&RegisterDescriptor> {
-        self.registers.insert(name, reg)
+        self.map.insert(name, reg)
+    }
+
+    pub fn len(&self) -> usize {
+        self.map.len()
     }
 }
 
