@@ -1,7 +1,7 @@
 use crate::RegisterDescriptor;
 use std::sync::LazyLock;
 
-pub static X86_CPU_EFER: LazyLock<RegisterDescriptor> = LazyLock::new(|| {
+pub static EFER: LazyLock<RegisterDescriptor> = LazyLock::new(|| {
     toml::from_str(r#"
         arch       = "x86"
         device     = "cpu"
@@ -74,12 +74,12 @@ mod tests {
                          String::from("Fast FXSAVE/FXRSTOR support")),
             ] );
 
-        assert_eq!(X86_CPU_EFER.arch(), "x86");
-        assert_eq!(X86_CPU_EFER.device(), "cpu");
-        assert_eq!(X86_CPU_EFER.name(), "efer");
-        assert_eq!(X86_CPU_EFER.description(), "Extended Feature Register");
-        assert_eq!(X86_CPU_EFER.bit_count(), 32);
-        assert_eq!(X86_CPU_EFER.byte_order(), ByteOrder::LittleEndian);
-        assert_eq!(X86_CPU_EFER.bit_ranges(), &bits);
+        assert_eq!(EFER.arch(), "x86");
+        assert_eq!(EFER.device(), "cpu");
+        assert_eq!(EFER.name(), "efer");
+        assert_eq!(EFER.description(), "Extended Feature Register");
+        assert_eq!(EFER.bit_count(), 32);
+        assert_eq!(EFER.byte_order(), ByteOrder::LittleEndian);
+        assert_eq!(EFER.bit_ranges(), &bits);
     }
 }
