@@ -2,8 +2,8 @@ use crate::RegisterDescriptor;
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
-mod cpu_x86_registers;
-use cpu_x86_registers::X86_CPU_EFER;
+mod x86;
+use x86::EFER;
 
 pub struct RegisterMap<'a> {
     map: HashMap<&'a str, &'a RegisterDescriptor>,
@@ -17,7 +17,7 @@ impl<'a> RegisterMap<'a> {
         }
         Self {
             // map: REGISTERS.iter().map(|k| (k.name(), *k)).collect() // I have no idea how many copies this might do
-            map: map
+            map
         }
     }
 
@@ -36,5 +36,5 @@ impl<'a> RegisterMap<'a> {
 
 // All new register descriptors should be added here
 static REGISTERS: LazyLock<[&RegisterDescriptor; 1]> = LazyLock::new(|| { [
-    &X86_CPU_EFER,
+    &EFER,
 ]});

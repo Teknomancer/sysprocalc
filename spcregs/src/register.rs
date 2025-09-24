@@ -36,7 +36,7 @@ impl<'a, T: BitRegister> Register<'a, T> {
     }
 
     pub fn get_descriptor(&self) -> &RegisterDescriptor {
-        &self.descriptor
+        self.descriptor
     }
 }
 

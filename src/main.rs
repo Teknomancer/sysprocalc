@@ -1,11 +1,8 @@
-use spcregs::{BitRange, BitRangeKind, ByteOrder, Register, BitRegister, RegisterDescriptor, RegisterMap};
+use spcregs::{Register, BitRegister, RegisterDescriptor, RegisterMap};
 use spceval::{Number, ExprError};
-
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
-
 use std::env;
 use std::io::{Write, IsTerminal};
-use std::ops::RangeInclusive;
 
 #[cfg(debug_assertions)]
 mod logger;
@@ -156,7 +153,7 @@ fn evaluate_input(spcio: &mut SpcIo, reg_map: &RegisterMap, str_expr: &str, _app
         Some("q") | Some("quit") | Some("exit") => std::process::exit(0),
         Some("") => Ok(()),
         Some(cmd) => {
-            if let Some(reg) = reg_map.get(&cmd) {
+            if let Some(reg) = reg_map.get(cmd) {
                 evaluate_register(spcio, reg, args, _app_mode)
             } else {
                 evaluate_expr_and_write_result(spcio, str_expr, AppMode::Interactive)
