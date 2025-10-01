@@ -1,6 +1,7 @@
 use super::{Number, ExprError, ExprErrorKind};
 use std::cmp::Ordering;
 
+#[rustfmt::skip]
 pub static OPERS: [Oper<'static>; 24] = [
     // Precedence 1 (highest priority)
     Oper { kind: OperKind::OpenParen,  prec: 1,  params: 0, assoc: OperAssoc::Nil,   evalfn: oper_nop,         name: "(",  syntax: "(<expr>",            help: "Begin expression.",       },

@@ -33,7 +33,7 @@ impl<'a> RegisterMap<'a> {
     }
 }
 
-// All new register descriptors should be added here
+#[rustfmt::skip]
 static REGISTERS: LazyLock<[&RegisterDescriptor; 2]> = LazyLock::new(|| { [
     &x86::CR0,
     &x86::EFER,

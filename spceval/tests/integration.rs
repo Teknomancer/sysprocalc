@@ -18,6 +18,7 @@ fn test_invalid_expr(str_expr: &str, expr_error_kind: ExprErrorKind) {
 
 #[test]
 fn valid_exprs_unary_opers() {
+    #[rustfmt::skip]
     let expr_results = vec![
         // Unary minus
         ("-0", Number { integer: 0, float: 0.0 }),
@@ -57,6 +58,7 @@ fn valid_exprs_unary_opers() {
 
 #[test]
 fn valid_exprs_binary_opers() {
+    #[rustfmt::skip]
     let expr_results = vec![
         // Add
         ("0+0", Number { integer: 0, float: 0.0 }),
@@ -238,6 +240,7 @@ fn valid_exprs_binary_opers() {
 
 #[test]
 fn valid_exprs_funcs() {
+    #[rustfmt::skip]
     let expr_results = vec![
         // avg
         ("avg(0,0)", Number { integer: 0, float: 0 as f64 }),
@@ -321,6 +324,7 @@ fn valid_exprs() {
     let num_max_sub_expr = 0xf0e1d2c3b4a59687;
     let max_sub_expr = format!("{}{}{}", open_parens, num_max_sub_expr.to_string(), close_parens);
 
+    #[rustfmt::skip]
     let expr_results = vec![
         ("2+2", Number { integer: 4, float: 4.0 }),
         ("-4", Number { integer: 0xfffffffffffffffc, float: -4.0 }),
@@ -455,4 +459,3 @@ fn invalid_exprs() {
         test_invalid_expr(&expr_res.0, expr_res.1);
     }
 }
-
