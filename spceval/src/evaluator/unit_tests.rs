@@ -52,6 +52,7 @@ fn parse_invalid_nums() {
 
 #[test]
 fn parse_valid_nums_u64() {
+    #[rustfmt::skip]
     let pair_int_result = vec![
         // 0-9
         ("0", 0  ), ("1", 1  ), ("2", 2  ), ("3", 3  ), ("4", 4  ), ("5", 5  ),
@@ -143,6 +144,7 @@ fn parse_valid_nums_u64() {
 
 #[test]
 fn parse_valid_nums_f64() {
+    #[rustfmt::skip]
     let pair_float_result = vec![
         ("0.0"      , 0.0   ),
         ("0.1"      , 0.1   ),
@@ -325,4 +327,3 @@ fn valid_exprs_eval_fail() {
         test_valid_expr_but_eval_fail(&expr_res.0, expr_res.1);
     }
 }
-
