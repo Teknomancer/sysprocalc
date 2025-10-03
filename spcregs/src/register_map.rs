@@ -5,7 +5,7 @@ use std::sync::LazyLock;
 mod x86;
 
 pub struct RegisterMap<'a> {
-    map: HashMap<&'a str, &'a RegisterDescriptor>,
+    map: HashMap<&'a str, &'a RegisterDescriptor<'a>>,
 }
 
 impl<'a> RegisterMap<'a> {

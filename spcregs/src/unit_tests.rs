@@ -1,13 +1,14 @@
 use crate::{BitRange, BitRangeKind, RegisterDescriptor, RegisterDescriptorError, MAX_BIT_COUNT, ByteOrder};
 use std::ops::RangeInclusive;
+use std::borrow::Cow;
 
 #[test]
 fn test_valid_register_descriptor() {
     let res = RegisterDescriptor::new(
-        String::from("x86"),
-        String::from("cpu"),
-        String::from("generic"),
-        String::from("description"),
+        Cow::from("x86"),
+        Cow::from("cpu"),
+        Cow::from("generic"),
+        Cow::from("description"),
         u64::BITS as usize,
         ByteOrder::LittleEndian,
         vec![
@@ -15,17 +16,17 @@ fn test_valid_register_descriptor() {
                 RangeInclusive::new(0, 0),
                 BitRangeKind::Normal,
                 true,
-                String::from("Gen 0"),
-                String::from("Generic 0"),
-                String::from("Generic Bit 0"),
+                Cow::from("Gen 0"),
+                Cow::from("Generic 0"),
+                Cow::from("Generic Bit 0"),
             ),
             BitRange::new(
                 RangeInclusive::new(8, 8),
                 BitRangeKind::Normal,
                 true,
-                String::from("Gen 1"),
-                String::from("Generic 1"),
-                String::from("Generic Bit 1"),
+                Cow::from("Gen 1"),
+                Cow::from("Generic 1"),
+                Cow::from("Generic Bit 1"),
             ),
         ]
     );
@@ -36,10 +37,10 @@ fn test_valid_register_descriptor() {
 fn test_invalid_register_descriptor() {
     // Overlapping bit ranges (0..5) and (5..7)
     let res = RegisterDescriptor::new(
-        String::from("x86"),
-        String::from("cpu"),
-        String::from("generic"),
-        String::from("description"),
+        Cow::from("x86"),
+        Cow::from("cpu"),
+        Cow::from("generic"),
+        Cow::from("description"),
         u64::BITS as usize,
         ByteOrder::LittleEndian,
         vec![
@@ -47,17 +48,17 @@ fn test_invalid_register_descriptor() {
                 RangeInclusive::new(0, 5),
                 BitRangeKind::Normal,
                 true,
-                String::from("Inv 0"),
-                String::from("Inv 0"),
-                String::from("Inv Bit 0"),
+                Cow::from("Inv 0"),
+                Cow::from("Inv 0"),
+                Cow::from("Inv Bit 0"),
             ),
             BitRange::new(
                 RangeInclusive::new(5, 7),
                 BitRangeKind::Normal,
                 true,
-                String::from("Inv 1"),
-                String::from("Inv 1"),
-                String::from("Inv Bit 1"),
+                Cow::from("Inv 1"),
+                Cow::from("Inv 1"),
+                Cow::from("Inv Bit 1"),
             ),
         ],
     );
@@ -65,10 +66,10 @@ fn test_invalid_register_descriptor() {
 
     // Overlapping bit ranges (63..63) and (32..63)
     let res = RegisterDescriptor::new(
-       String::from("x86"),
-       String::from("cpu"),
-       String::from("generic"),
-       String::from("description"),
+       Cow::from("x86"),
+       Cow::from("cpu"),
+       Cow::from("generic"),
+       Cow::from("description"),
        u64::BITS as usize,
        ByteOrder::LittleEndian,
        vec![
@@ -76,17 +77,17 @@ fn test_invalid_register_descriptor() {
                RangeInclusive::new(63, 63),
                BitRangeKind::Normal,
                true,
-               String::from("Inv 1"),
-               String::from("Inv 1"),
-               String::from("Inv Bit 1"),
+               Cow::from("Inv 1"),
+               Cow::from("Inv 1"),
+               Cow::from("Inv Bit 1"),
            ),
            BitRange::new(
                RangeInclusive::new(32, 63),
                BitRangeKind::Normal,
                true,
-               String::from("Inv 0"),
-               String::from("Inv 0"),
-               String::from("Inv Bit 0"),
+               Cow::from("Inv 0"),
+               Cow::from("Inv 0"),
+               Cow::from("Inv Bit 0"),
            ),
        ],
     );
@@ -94,10 +95,10 @@ fn test_invalid_register_descriptor() {
 
     // Invalid bit range (1..0)
     let res = RegisterDescriptor::new(
-        String::from("x86"),
-        String::from("cpu"),
-        String::from("generic"),
-        String::from("description"),
+        Cow::from("x86"),
+        Cow::from("cpu"),
+        Cow::from("generic"),
+        Cow::from("description"),
         u64::BITS as usize,
         ByteOrder::LittleEndian,
         vec![
@@ -105,9 +106,9 @@ fn test_invalid_register_descriptor() {
                 RangeInclusive::new(1, 0),
                 BitRangeKind::Normal,
                 true,
-                String::from("Inv 0"),
-                String::from("Inv 0"),
-                String::from("Inv Bit 0"),
+                Cow::from("Inv 0"),
+                Cow::from("Inv 0"),
+                Cow::from("Inv Bit 0"),
             ),
         ],
     );
@@ -115,10 +116,10 @@ fn test_invalid_register_descriptor() {
 
     // Invalid bit range (0..MAX_BIT_COUNT)
     let res = RegisterDescriptor::new(
-        String::from("x86"),
-        String::from("cpu"),
-        String::from("generic"),
-        String::from("description"),
+        Cow::from("x86"),
+        Cow::from("cpu"),
+        Cow::from("generic"),
+        Cow::from("description"),
         u64::BITS as usize,
         ByteOrder::LittleEndian,
         vec![
@@ -126,9 +127,9 @@ fn test_invalid_register_descriptor() {
                 RangeInclusive::new(0, MAX_BIT_COUNT),
                 BitRangeKind::Normal,
                 true,
-                String::from("Inv 0"),
-                String::from("Inv 0"),
-                String::from("Inv Bit 0"),
+                Cow::from("Inv 0"),
+                Cow::from("Inv 0"),
+                Cow::from("Inv Bit 0"),
             ),
         ],
     );
@@ -136,10 +137,10 @@ fn test_invalid_register_descriptor() {
 
     // Invalid bit range (bit_count+1..bit_count+2)
     let res = RegisterDescriptor::new(
-        String::from("x86"),
-        String::from("cpu"),
-        String::from("generic"),
-        String::from("description"),
+        Cow::from("x86"),
+        Cow::from("cpu"),
+        Cow::from("generic"),
+        Cow::from("description"),
         u64::BITS as usize,
         ByteOrder::LittleEndian,
         vec![
@@ -147,9 +148,9 @@ fn test_invalid_register_descriptor() {
                 RangeInclusive::new(64, 65),
                 BitRangeKind::Normal,
                 true,
-                String::from("Inv 0"),
-                String::from("Inv 0"),
-                String::from("Inv Bit 0"),
+                Cow::from("Inv 0"),
+                Cow::from("Inv 0"),
+                Cow::from("Inv Bit 0"),
             ),
         ],
     );
@@ -157,10 +158,10 @@ fn test_invalid_register_descriptor() {
 
     // Invalid bit range (bit_count+1..0)
     let res = RegisterDescriptor::new(
-        String::from("x86"),
-        String::from("cpu"),
-        String::from("generic"),
-        String::from("description"),
+        Cow::from("x86"),
+        Cow::from("cpu"),
+        Cow::from("generic"),
+        Cow::from("description"),
         u64::BITS as usize,
         ByteOrder::LittleEndian,
         vec![
@@ -168,9 +169,9 @@ fn test_invalid_register_descriptor() {
                 RangeInclusive::new(64, 0),
                 BitRangeKind::Normal,
                 true,
-                String::from("Inv 0"),
-                String::from("Inv 0"),
-                String::from("Inv Bit 0"),
+                Cow::from("Inv 0"),
+                Cow::from("Inv 0"),
+                Cow::from("Inv Bit 0"),
             ),
         ],
     );
@@ -178,10 +179,10 @@ fn test_invalid_register_descriptor() {
 
     // Invalid bit range order
     let res = RegisterDescriptor::new(
-        String::from("x86"),
-        String::from("cpu"),
-        String::from("generic"),
-        String::from("description"),
+        Cow::from("x86"),
+        Cow::from("cpu"),
+        Cow::from("generic"),
+        Cow::from("description"),
         u64::BITS as usize,
         ByteOrder::LittleEndian,
         vec![
@@ -189,17 +190,17 @@ fn test_invalid_register_descriptor() {
                 RangeInclusive::new(2, 63),
                 BitRangeKind::Normal,
                 true,
-                String::from("Inv 0"),
-                String::from("Inv 0"),
-                String::from("Inv Bit 0"),
+                Cow::from("Inv 0"),
+                Cow::from("Inv 0"),
+                Cow::from("Inv Bit 0"),
             ),
             BitRange::new(
                 RangeInclusive::new(0, 1),
                 BitRangeKind::Normal,
                 true,
-                String::from("Inv 0"),
-                String::from("Inv 0"),
-                String::from("Inv Bit 0"),
+                Cow::from("Inv 0"),
+                Cow::from("Inv 0"),
+                Cow::from("Inv Bit 0"),
             ),
         ],
     );
@@ -207,10 +208,10 @@ fn test_invalid_register_descriptor() {
 
     // Invalid bit range order
     let res = RegisterDescriptor::new(
-        String::from("x86"),
-        String::from("cpu"),
-        String::from("generic"),
-        String::from("description"),
+        Cow::from("x86"),
+        Cow::from("cpu"),
+        Cow::from("generic"),
+        Cow::from("description"),
         u64::BITS as usize,
         ByteOrder::LittleEndian,
         vec![
@@ -218,25 +219,25 @@ fn test_invalid_register_descriptor() {
                 RangeInclusive::new(0, 0),
                 BitRangeKind::Normal,
                 true,
-                String::from("Inv 0"),
-                String::from("Inv 0"),
-                String::from("Inv Bit 0"),
+                Cow::from("Inv 0"),
+                Cow::from("Inv 0"),
+                Cow::from("Inv Bit 0"),
             ),
             BitRange::new(
                 RangeInclusive::new(33, 63),
                 BitRangeKind::Normal,
                 true,
-                String::from("Inv 0"),
-                String::from("Inv 0"),
-                String::from("Inv Bit 0"),
+                Cow::from("Inv 0"),
+                Cow::from("Inv 0"),
+                Cow::from("Inv Bit 0"),
             ),
             BitRange::new(
                 RangeInclusive::new(1, 32),
                 BitRangeKind::Normal,
                 true,
-                String::from("Inv 0"),
-                String::from("Inv 0"),
-                String::from("Inv Bit 0"),
+                Cow::from("Inv 0"),
+                Cow::from("Inv 0"),
+                Cow::from("Inv Bit 0"),
             ),
         ],
     );
@@ -244,10 +245,10 @@ fn test_invalid_register_descriptor() {
 
     // Missing bit range
     let res = RegisterDescriptor::new(
-        String::from("x86"),
-        String::from("cpu"),
-        String::from("generic"),
-        String::from("description"),
+        Cow::from("x86"),
+        Cow::from("cpu"),
+        Cow::from("generic"),
+        Cow::from("description"),
         u64::BITS as usize,
         ByteOrder::LittleEndian,
         vec![],
@@ -256,10 +257,10 @@ fn test_invalid_register_descriptor() {
 
     // Missing arch
     let res = RegisterDescriptor::new(
-        String::from(""),
-        String::from("cpu"),
-        String::from("generic"),
-        String::from("description"),
+        Cow::from(""),
+        Cow::from("cpu"),
+        Cow::from("generic"),
+        Cow::from("description"),
         u64::BITS as usize,
         ByteOrder::LittleEndian,
         vec![
@@ -267,9 +268,9 @@ fn test_invalid_register_descriptor() {
                 RangeInclusive::new(0, 5),
                 BitRangeKind::Normal,
                 true,
-                String::from("Inv 0"),
-                String::from("Inv 0"),
-                String::from("Inv Bit 0"),
+                Cow::from("Inv 0"),
+                Cow::from("Inv 0"),
+                Cow::from("Inv Bit 0"),
             ),
         ]
     );
@@ -277,10 +278,10 @@ fn test_invalid_register_descriptor() {
 
     // Missing device
     let res = RegisterDescriptor::new(
-        String::from("x86"),
-        String::from(""),
-        String::from("generic"),
-        String::from("description"),
+        Cow::from("x86"),
+        Cow::from(""),
+        Cow::from("generic"),
+        Cow::from("description"),
         u64::BITS as usize,
         ByteOrder::LittleEndian,
         vec![
@@ -288,9 +289,9 @@ fn test_invalid_register_descriptor() {
                 RangeInclusive::new(0, 5),
                 BitRangeKind::Normal,
                 true,
-                String::from("Inv 0"),
-                String::from("Inv 0"),
-                String::from("Inv Bit 0"),
+                Cow::from("Inv 0"),
+                Cow::from("Inv 0"),
+                Cow::from("Inv Bit 0"),
             ),
         ]
     );
@@ -298,10 +299,10 @@ fn test_invalid_register_descriptor() {
 
     // Missing name
     let res = RegisterDescriptor::new(
-        String::from("x86"),
-        String::from("cpu"),
-        String::from(""),
-        String::from("description"),
+        Cow::from("x86"),
+        Cow::from("cpu"),
+        Cow::from(""),
+        Cow::from("description"),
         u64::BITS as usize,
         ByteOrder::LittleEndian,
         vec![
@@ -309,9 +310,9 @@ fn test_invalid_register_descriptor() {
                 RangeInclusive::new(0, 5),
                 BitRangeKind::Normal,
                 true,
-                String::from("Inv 0"),
-                String::from("Inv 0"),
-                String::from("Inv Bit 0"),
+                Cow::from("Inv 0"),
+                Cow::from("Inv 0"),
+                Cow::from("Inv Bit 0"),
             ),
         ]
     );
@@ -319,10 +320,10 @@ fn test_invalid_register_descriptor() {
 
     // Missing description
     let res = RegisterDescriptor::new(
-        String::from("x86"),
-        String::from("cpu"),
-        String::from("generic"),
-        String::from(""),
+        Cow::from("x86"),
+        Cow::from("cpu"),
+        Cow::from("generic"),
+        Cow::from(""),
         u64::BITS as usize,
         ByteOrder::LittleEndian,
         vec![
@@ -330,9 +331,9 @@ fn test_invalid_register_descriptor() {
                 RangeInclusive::new(0, 5),
                 BitRangeKind::Normal,
                 true,
-                String::from("Inv 0"),
-                String::from("Inv 0"),
-                String::from("Inv Bit 0"),
+                Cow::from("Inv 0"),
+                Cow::from("Inv 0"),
+                Cow::from("Inv Bit 0"),
             ),
         ]
     );
