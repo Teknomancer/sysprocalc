@@ -10,13 +10,9 @@ static BIT_RANGE_SEP: &str = ":";
 #[derive(Deserialize, Debug)]
 #[serde(bound(deserialize = "'de: 'static"))]
 pub struct RegisterDescriptor<'a> {
-    #[serde(borrow)]
     arch: Cow<'a, str>,
-    #[serde(borrow)]
     device: Cow<'a, str>,
-    #[serde(borrow)]
     name: Cow<'a, str>,
-    #[serde(borrow)]
     desc: Cow<'a, str>,
     bit_count: usize,
     byte_order: ByteOrder,
