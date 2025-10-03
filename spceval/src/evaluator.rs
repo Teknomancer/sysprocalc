@@ -189,20 +189,14 @@ impl ExprCtx {
         while let Some(ref_token) = self.stack_op.last() {
             // If the stack has an open parenthesis, we have a parenthesis mismatch.
             match ref_token {
-                Token::Oper(OperToken { idx_oper, idx_expr }) => {
-                    debug_assert!(*idx_oper < OPERS.len());
-                    let oper = &OPERS[*idx_oper];
-                    if oper.kind == OperKind::OpenParen {
-                        let message = format!("for opening parenthesis at {}", *idx_expr);
-                        trace!("Parenthesis mismatch {}", message);
-                        return Err(ExprError {
-                            idx_expr: *idx_expr,
-                            kind: ExprErrorKind::MismatchParenthesis,
-                            message
-                        });
-                    } else {
-                        self.pop_to_output_queue();
-                    }
+                Token::Oper(OperToken { idx_oper, idx_expr }) if OPERS[*idx_oper].kind == OperKind::OpenParen => {
+                    let message = format!("for opening parenthesis at {}", *idx_expr);
+                    trace!("Parenthesis mismatch {}", message);
+                    return Err(ExprError {
+                        idx_expr: *idx_expr,
+                        kind: ExprErrorKind::MismatchParenthesis,
+                        message
+                    });
                 }
                 _ => self.pop_to_output_queue(),
             }
@@ -257,14 +251,17 @@ impl ExprCtx {
     fn process_open_paren(&mut self, oper_token: OperToken, opt_prev_token: &Option<Token> ) -> Result<(), ExprError> {
         // Previous token if any cannot be a close parenthesis or a number.
         // E.g "(5)(2)" or "5(2)".
-        let is_prev_token_invalid = match opt_prev_token {
-            Some(Token::Num(_)) => true,
-            Some(Token::Oper(OperToken { idx_oper, .. })) => OPERS[*idx_oper].kind == OperKind::CloseParen,
-            _ => false,
+        let is_prev_token_valid = match opt_prev_token {
+            Some(Token::Num(_)) => false,
+            Some(Token::Oper(OperToken { idx_oper, .. })) => OPERS[*idx_oper].kind != OperKind::CloseParen,
+            _ => true,
         };
-        if !is_prev_token_invalid {
+        if is_prev_token_valid {
             self.sub_exprs += 1;
-            if self.sub_exprs == MAX_SUB_EXPRS {
+            if self.sub_exprs < MAX_SUB_EXPRS {
+                self.stack_op.push(Token::Oper(oper_token));
+                Ok(())
+            } else {
                 let message = format!("starting with open parenthesis at '{}'", oper_token.idx_expr);
                 trace!("{:?} {}", ExprErrorKind::ExceededMaxSubExpr, message);
                 Err(ExprError {
@@ -272,9 +269,6 @@ impl ExprCtx {
                     kind: ExprErrorKind::ExceededMaxSubExpr,
                     message
                 })
-            } else {
-                self.stack_op.push(Token::Oper(oper_token));
-                Ok(())
             }
         } else {
             let message = format!("for open parenthesis at '{}'", oper_token.idx_expr);

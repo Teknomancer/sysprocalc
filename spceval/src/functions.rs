@@ -9,6 +9,7 @@ const TB: u64 = 0x10000000000;
 const PB: u64 = 4000000000000;
 
 pub const MAX_FN_PARAMS: u8 = u8::MAX;
+#[rustfmt::skip]
 pub static FUNCS: [Func<'static>; 20] = [
     Func {
         name:   "avg",
