@@ -10,7 +10,7 @@ pub static MAX_BIT_COUNT: usize = RegisterValue::BITS as usize;
 
 pub struct Register<'a, T: BitRegister> {
     value: Option<T>,
-    descriptor: &'a RegisterDescriptor,
+    descriptor: &'a RegisterDescriptor<'a>,
 }
 
 impl<'a, T: BitRegister> Register<'a, T> {

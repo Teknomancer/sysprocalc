@@ -3,18 +3,24 @@ use crate::register::MAX_BIT_COUNT;
 use serde::Deserialize;
 
 use std::fmt;
+use std::borrow::Cow;
 
 static BIT_RANGE_SEP: &str = ":";
 
 #[derive(Deserialize, Debug)]
-pub struct RegisterDescriptor {
-    arch: String,
-    device: String,
-    name: String,
-    desc: String,
+#[serde(bound(deserialize = "'de: 'static"))]
+pub struct RegisterDescriptor<'a> {
+    #[serde(borrow)]
+    arch: Cow<'a, str>,
+    #[serde(borrow)]
+    device: Cow<'a, str>,
+    #[serde(borrow)]
+    name: Cow<'a, str>,
+    #[serde(borrow)]
+    desc: Cow<'a, str>,
     bit_count: usize,
     byte_order: ByteOrder,
-    bit_ranges: Vec<BitRange>,
+    bit_ranges: Vec<BitRange<'a>>,
 }
 
 
@@ -42,17 +48,17 @@ pub enum BitRangeElement {
     Long,
 }
 
-impl RegisterDescriptor {
+impl<'a> RegisterDescriptor<'a> {
     pub fn new(
-        arch: String,
-        device: String,
-        name: String,
-        desc: String,
+        arch: Cow<'a, str>,
+        device: Cow<'a, str>,
+        name: Cow<'a, str>,
+        desc: Cow<'a, str>,
         bit_count: usize,
         byte_order: ByteOrder,
-        bit_ranges: Vec<BitRange>
+        bit_ranges: Vec<BitRange<'a>>
     ) -> Result<Self, RegisterDescriptorError> {
-        if arch.is_empty() { 
+        if arch.is_empty() {
             return Err(RegisterDescriptorError::MissingArch);
         }
 
@@ -199,7 +205,7 @@ impl RegisterDescriptor {
     }
 }
 
-impl fmt::Display for RegisterDescriptor {
+impl<'a> fmt::Display for RegisterDescriptor<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Figure out column widths.
         static COL_SEP: &str = "  ";

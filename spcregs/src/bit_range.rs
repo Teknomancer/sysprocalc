@@ -1,4 +1,5 @@
 use std::ops::RangeInclusive;
+use std::borrow::Cow;
 use serde::Deserialize;
 
 #[derive(Copy, Clone, Deserialize, Debug, PartialEq)]
@@ -17,26 +18,29 @@ pub enum BitRangeKind {
 }
 
 #[derive(Deserialize, Debug, PartialEq)]
-pub struct BitRange {
+#[serde(bound(deserialize = "'de: 'static"))]
+pub struct BitRange<'a> {
     #[serde(flatten)]
     pub span: RangeInclusive<usize>,
     pub kind: BitRangeKind,
     pub show: bool,
-    pub name: String,
-    pub short: String,
-    pub long: String,
+    #[serde(borrow)]
+    pub name: Cow<'a, str>,
+    #[serde(borrow)]
+    pub short: Cow<'a, str>,
+    #[serde(borrow)]
+    pub long: Cow<'a, str>,
 }
 
-impl BitRange {
+impl<'a> BitRange<'a> {
     pub fn new(
         span: RangeInclusive<usize>,
         kind: BitRangeKind,
         show: bool,
-        name: String,
-        short: String,
-        long: String
+        name: Cow<'a, str>,
+        short: Cow<'a, str>,
+        long: Cow<'a, str>
     ) -> Self {
         Self { span, kind, show, name, short, long }
     }
 }
-

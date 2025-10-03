@@ -1,5 +1,6 @@
 use crate::RegisterDescriptor;
 use std::sync::LazyLock;
+use std::borrow::Cow;
 
 pub static CR0: LazyLock<RegisterDescriptor> = LazyLock::new(|| {
     toml::from_str(r#"
@@ -53,50 +54,50 @@ mod tests {
 
     #[test]
     fn test_x86_cpu_efer() {
-        let bits = Vec::from( [
+        let bits = Vec::from([
             BitRange::new(RangeInclusive::new(0, 0),
                           BitRangeKind::Normal,
                           true,
-                          String::from("SCE"),
-                          String::from("SC Extensions"),
-                          String::from("System Call Extensions.")),
+                          Cow::Borrowed("SCE"),
+                          Cow::Borrowed("SC Extensions"),
+                          Cow::Borrowed("System Call Extensions.")),
             BitRange::new(RangeInclusive::new(8, 8),
                           BitRangeKind::Normal,
                           true,
-                          String::from("LME"),
-                          String::from("LM Enable"),
-                          String::from("Long Mode Enable.")),
+                          Cow::Borrowed("LME"),
+                          Cow::Borrowed("LM Enable"),
+                          Cow::Borrowed("Long Mode Enable.")),
             BitRange::new(RangeInclusive::new(10, 10),
                           BitRangeKind::Normal,
                           true,
-                          String::from("LMA"),
-                          String::from("LM Active"),
-                          String::from("Long Mode Active.")),
+                          Cow::Borrowed("LMA"),
+                          Cow::Borrowed("LM Active"),
+                          Cow::Borrowed("Long Mode Active.")),
             BitRange::new(RangeInclusive::new(11, 11),
                           BitRangeKind::Normal,
                           true,
-                          String::from("NXE"),
-                          String::from("NX Enable"),
-                          String::from("No-Execute Enable.")),
+                          Cow::Borrowed("NXE"),
+                          Cow::Borrowed("NX Enable"),
+                          Cow::Borrowed("No-Execute Enable.")),
             BitRange::new(RangeInclusive::new(12, 12),
                           BitRangeKind::Normal,
                           true,
-                          String::from("SVME"),
-                          String::from("SVM Enable"),
-                          String::from("Secure Virtual Machine Enable (AMD).")),
+                          Cow::Borrowed("SVME"),
+                          Cow::Borrowed("SVM Enable"),
+                          Cow::Borrowed("Secure Virtual Machine Enable (AMD).")),
             BitRange::new(RangeInclusive::new(13, 13),
                           BitRangeKind::Normal,
                           true,
-                          String::from("LMSLE"),
-                          String::from("LMSL Enable"),
-                          String::from("Long Mode Segment Limit Enable (AMD).")),
+                          Cow::Borrowed("LMSLE"),
+                          Cow::Borrowed("LMSL Enable"),
+                          Cow::Borrowed("Long Mode Segment Limit Enable (AMD).")),
             BitRange::new(RangeInclusive::new(14, 14),
                          BitRangeKind::Normal,
                          true,
-                         String::from("FFXSR"),
-                         String::from("Fast FXSAVE/FXRSTOR"),
-                         String::from("Fast FXSAVE/FXRSTOR support.")),
-            ] );
+                         Cow::Borrowed("FFXSR"),
+                         Cow::Borrowed("Fast FXSAVE/FXRSTOR"),
+                         Cow::Borrowed("Fast FXSAVE/FXRSTOR support.")),
+        ]);
 
         assert_eq!(EFER.arch(), "x86");
         assert_eq!(EFER.device(), "cpu");
