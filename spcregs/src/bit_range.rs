@@ -1,6 +1,6 @@
-use std::ops::RangeInclusive;
-use std::borrow::Cow;
 use serde::Deserialize;
+use std::borrow::Cow;
+use std::ops::RangeInclusive;
 
 #[derive(Copy, Clone, Deserialize, Debug, PartialEq)]
 pub enum ByteOrder {
@@ -36,7 +36,7 @@ impl<'a> BitRange<'a> {
         show: bool,
         name: Cow<'a, str>,
         short: Cow<'a, str>,
-        long: Cow<'a, str>
+        long: Cow<'a, str>,
     ) -> Self {
         Self { span, kind, show, name, short, long }
     }

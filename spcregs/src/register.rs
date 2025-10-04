@@ -1,4 +1,4 @@
-use crate::register_descriptor::{RegisterDescriptor, BitRangeElement};
+use crate::register_descriptor::{BitRangeElement, RegisterDescriptor};
 use crate::utils;
 use bitvec::mem::BitRegister;
 use std::fmt;
@@ -49,7 +49,6 @@ impl<'a, T: BitRegister> fmt::Display for Register<'a, T> {
             match res {
                 Err(_) => write!(f, "Couldn't convert register value"),
                 Ok(val) => {
-
                     let bit_count = self.descriptor.bit_count();
                     assert!(bit_count > 0);
 
@@ -91,7 +90,7 @@ impl<'a, T: BitRegister> fmt::Display for Register<'a, T> {
                                 cur_bit = idx_bit_col;
                                 fill_char = horiz_char;
                             } else if self.descriptor.has_bit(&idx_bit_col) {
-                                if  cur_bit == bit_count {
+                                if cur_bit == bit_count {
                                     write!(f, "{}", vert_char)?;
                                 } else {
                                     write!(f, "{}", fill_char)?;
@@ -103,15 +102,22 @@ impl<'a, T: BitRegister> fmt::Display for Register<'a, T> {
                                 write!(f, "{}", fill_char)?;
                             }
                         }
-                        let is_set_indicator = if val & ((1 as RegisterValue) << cur_bit) != 0 { " *" } else { "" };
-                        writeln!(f, "{}{} {name:<namewidth$} ({bitnum:>bitwidth$}){bit_is_set}",
-                                 horiz_char,
-                                 horiz_char,
-                                 name = bit_range_row.name,
-                                 namewidth = self.descriptor.column_width(BitRangeElement::Name),
-                                 bitnum = *bit_range_row.span.start(),
-                                 bitwidth = self.descriptor.column_width(BitRangeElement::Bits),
-                                 bit_is_set = is_set_indicator)?;
+                        let is_set_indicator = if val & ((1 as RegisterValue) << cur_bit) != 0 {
+                            " *"
+                        } else {
+                            ""
+                        };
+                        writeln!(
+                            f,
+                            "{}{} {name:<namewidth$} ({bitnum:>bitwidth$}){bit_is_set}",
+                            horiz_char,
+                            horiz_char,
+                            name = bit_range_row.name,
+                            namewidth = self.descriptor.column_width(BitRangeElement::Name),
+                            bitnum = *bit_range_row.span.start(),
+                            bitwidth = self.descriptor.column_width(BitRangeElement::Bits),
+                            bit_is_set = is_set_indicator
+                        )?;
                     }
                     Ok(())
                 }
@@ -128,7 +134,7 @@ pub enum RegisterError {
 impl fmt::Display for RegisterError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let err = match *self {
-            RegisterError::InvalidBitCount => "register size insufficient to describe all its bits"
+            RegisterError::InvalidBitCount => "register size insufficient to describe all its bits",
         };
         write!(f, "{}", err)
     }

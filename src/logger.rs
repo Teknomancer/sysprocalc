@@ -1,4 +1,4 @@
-use log::{Record, Level, Metadata, SetLoggerError, LevelFilter};
+use log::{Level, LevelFilter, Metadata, Record, SetLoggerError};
 
 struct Logger;
 
@@ -15,7 +15,7 @@ impl log::Log for Logger {
         }
     }
 
-    fn flush(&self) { }
+    fn flush(&self) {}
 }
 
 static LOGGER: Logger = Logger;
@@ -23,7 +23,5 @@ static LOGGER: Logger = Logger;
 pub fn init(level: LevelFilter) -> Result<(), SetLoggerError> {
     // Levels are in the following order: Off, Error, Warn, Info, Debug, Trace.
     // Enabling a level enables levels prior to it.
-    log::set_logger(&LOGGER)
-        .map(|()| log::set_max_level(level))
+    log::set_logger(&LOGGER).map(|()| log::set_max_level(level))
 }
-

@@ -1,6 +1,6 @@
-use crate::{BitRange, BitRangeKind, RegisterDescriptor, RegisterDescriptorError, MAX_BIT_COUNT, ByteOrder};
-use std::ops::RangeInclusive;
+use crate::{BitRange, BitRangeKind, ByteOrder, MAX_BIT_COUNT, RegisterDescriptor, RegisterDescriptorError};
 use std::borrow::Cow;
+use std::ops::RangeInclusive;
 
 #[test]
 fn test_valid_register_descriptor() {
@@ -28,7 +28,7 @@ fn test_valid_register_descriptor() {
                 Cow::from("Generic 1"),
                 Cow::from("Generic Bit 1"),
             ),
-        ]
+        ],
     );
     assert!(res.is_ok());
 }
@@ -66,30 +66,30 @@ fn test_invalid_register_descriptor() {
 
     // Overlapping bit ranges (63..63) and (32..63)
     let res = RegisterDescriptor::new(
-       Cow::from("x86"),
-       Cow::from("cpu"),
-       Cow::from("generic"),
-       Cow::from("description"),
-       u64::BITS as usize,
-       ByteOrder::LittleEndian,
-       vec![
-           BitRange::new(
-               RangeInclusive::new(63, 63),
-               BitRangeKind::Normal,
-               true,
-               Cow::from("Inv 1"),
-               Cow::from("Inv 1"),
-               Cow::from("Inv Bit 1"),
-           ),
-           BitRange::new(
-               RangeInclusive::new(32, 63),
-               BitRangeKind::Normal,
-               true,
-               Cow::from("Inv 0"),
-               Cow::from("Inv 0"),
-               Cow::from("Inv Bit 0"),
-           ),
-       ],
+        Cow::from("x86"),
+        Cow::from("cpu"),
+        Cow::from("generic"),
+        Cow::from("description"),
+        u64::BITS as usize,
+        ByteOrder::LittleEndian,
+        vec![
+            BitRange::new(
+                RangeInclusive::new(63, 63),
+                BitRangeKind::Normal,
+                true,
+                Cow::from("Inv 1"),
+                Cow::from("Inv 1"),
+                Cow::from("Inv Bit 1"),
+            ),
+            BitRange::new(
+                RangeInclusive::new(32, 63),
+                BitRangeKind::Normal,
+                true,
+                Cow::from("Inv 0"),
+                Cow::from("Inv 0"),
+                Cow::from("Inv Bit 0"),
+            ),
+        ],
     );
     assert_eq!(res.unwrap_err(), RegisterDescriptorError::OverlappingBitRange);
 
@@ -101,16 +101,14 @@ fn test_invalid_register_descriptor() {
         Cow::from("description"),
         u64::BITS as usize,
         ByteOrder::LittleEndian,
-        vec![
-            BitRange::new(
-                RangeInclusive::new(1, 0),
-                BitRangeKind::Normal,
-                true,
-                Cow::from("Inv 0"),
-                Cow::from("Inv 0"),
-                Cow::from("Inv Bit 0"),
-            ),
-        ],
+        vec![BitRange::new(
+            RangeInclusive::new(1, 0),
+            BitRangeKind::Normal,
+            true,
+            Cow::from("Inv 0"),
+            Cow::from("Inv 0"),
+            Cow::from("Inv Bit 0"),
+        )],
     );
     assert_eq!(res.unwrap_err(), RegisterDescriptorError::InvalidBitRange);
 
@@ -122,16 +120,14 @@ fn test_invalid_register_descriptor() {
         Cow::from("description"),
         u64::BITS as usize,
         ByteOrder::LittleEndian,
-        vec![
-            BitRange::new(
-                RangeInclusive::new(0, MAX_BIT_COUNT),
-                BitRangeKind::Normal,
-                true,
-                Cow::from("Inv 0"),
-                Cow::from("Inv 0"),
-                Cow::from("Inv Bit 0"),
-            ),
-        ],
+        vec![BitRange::new(
+            RangeInclusive::new(0, MAX_BIT_COUNT),
+            BitRangeKind::Normal,
+            true,
+            Cow::from("Inv 0"),
+            Cow::from("Inv 0"),
+            Cow::from("Inv Bit 0"),
+        )],
     );
     assert_eq!(res.unwrap_err(), RegisterDescriptorError::InvalidBitRange);
 
@@ -143,16 +139,14 @@ fn test_invalid_register_descriptor() {
         Cow::from("description"),
         u64::BITS as usize,
         ByteOrder::LittleEndian,
-        vec![
-            BitRange::new(
-                RangeInclusive::new(64, 65),
-                BitRangeKind::Normal,
-                true,
-                Cow::from("Inv 0"),
-                Cow::from("Inv 0"),
-                Cow::from("Inv Bit 0"),
-            ),
-        ],
+        vec![BitRange::new(
+            RangeInclusive::new(64, 65),
+            BitRangeKind::Normal,
+            true,
+            Cow::from("Inv 0"),
+            Cow::from("Inv 0"),
+            Cow::from("Inv Bit 0"),
+        )],
     );
     assert_eq!(res.unwrap_err(), RegisterDescriptorError::InvalidBitRange);
 
@@ -164,16 +158,14 @@ fn test_invalid_register_descriptor() {
         Cow::from("description"),
         u64::BITS as usize,
         ByteOrder::LittleEndian,
-        vec![
-            BitRange::new(
-                RangeInclusive::new(64, 0),
-                BitRangeKind::Normal,
-                true,
-                Cow::from("Inv 0"),
-                Cow::from("Inv 0"),
-                Cow::from("Inv Bit 0"),
-            ),
-        ],
+        vec![BitRange::new(
+            RangeInclusive::new(64, 0),
+            BitRangeKind::Normal,
+            true,
+            Cow::from("Inv 0"),
+            Cow::from("Inv 0"),
+            Cow::from("Inv Bit 0"),
+        )],
     );
     assert_eq!(res.unwrap_err(), RegisterDescriptorError::InvalidBitRange);
 
@@ -263,16 +255,14 @@ fn test_invalid_register_descriptor() {
         Cow::from("description"),
         u64::BITS as usize,
         ByteOrder::LittleEndian,
-        vec![
-            BitRange::new(
-                RangeInclusive::new(0, 5),
-                BitRangeKind::Normal,
-                true,
-                Cow::from("Inv 0"),
-                Cow::from("Inv 0"),
-                Cow::from("Inv Bit 0"),
-            ),
-        ]
+        vec![BitRange::new(
+            RangeInclusive::new(0, 5),
+            BitRangeKind::Normal,
+            true,
+            Cow::from("Inv 0"),
+            Cow::from("Inv 0"),
+            Cow::from("Inv Bit 0"),
+        )],
     );
     assert_eq!(res.unwrap_err(), RegisterDescriptorError::MissingArch);
 
@@ -284,16 +274,14 @@ fn test_invalid_register_descriptor() {
         Cow::from("description"),
         u64::BITS as usize,
         ByteOrder::LittleEndian,
-        vec![
-            BitRange::new(
-                RangeInclusive::new(0, 5),
-                BitRangeKind::Normal,
-                true,
-                Cow::from("Inv 0"),
-                Cow::from("Inv 0"),
-                Cow::from("Inv Bit 0"),
-            ),
-        ]
+        vec![BitRange::new(
+            RangeInclusive::new(0, 5),
+            BitRangeKind::Normal,
+            true,
+            Cow::from("Inv 0"),
+            Cow::from("Inv 0"),
+            Cow::from("Inv Bit 0"),
+        )],
     );
     assert_eq!(res.unwrap_err(), RegisterDescriptorError::MissingDevice);
 
@@ -305,16 +293,14 @@ fn test_invalid_register_descriptor() {
         Cow::from("description"),
         u64::BITS as usize,
         ByteOrder::LittleEndian,
-        vec![
-            BitRange::new(
-                RangeInclusive::new(0, 5),
-                BitRangeKind::Normal,
-                true,
-                Cow::from("Inv 0"),
-                Cow::from("Inv 0"),
-                Cow::from("Inv Bit 0"),
-            ),
-        ]
+        vec![BitRange::new(
+            RangeInclusive::new(0, 5),
+            BitRangeKind::Normal,
+            true,
+            Cow::from("Inv 0"),
+            Cow::from("Inv 0"),
+            Cow::from("Inv Bit 0"),
+        )],
     );
     assert_eq!(res.unwrap_err(), RegisterDescriptorError::MissingName);
 
@@ -326,17 +312,14 @@ fn test_invalid_register_descriptor() {
         Cow::from(""),
         u64::BITS as usize,
         ByteOrder::LittleEndian,
-        vec![
-            BitRange::new(
-                RangeInclusive::new(0, 5),
-                BitRangeKind::Normal,
-                true,
-                Cow::from("Inv 0"),
-                Cow::from("Inv 0"),
-                Cow::from("Inv Bit 0"),
-            ),
-        ]
+        vec![BitRange::new(
+            RangeInclusive::new(0, 5),
+            BitRangeKind::Normal,
+            true,
+            Cow::from("Inv 0"),
+            Cow::from("Inv 0"),
+            Cow::from("Inv Bit 0"),
+        )],
     );
     assert_eq!(res.unwrap_err(), RegisterDescriptorError::MissingDescription);
 }
-

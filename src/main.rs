@@ -1,8 +1,8 @@
-use spcregs::{Register, BitRegister, RegisterDescriptor, RegisterMap};
-use spceval::{Number, ExprError};
-use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
+use spceval::{ExprError, Number};
+use spcregs::{BitRegister, Register, RegisterDescriptor, RegisterMap};
 use std::env;
-use std::io::{Write, IsTerminal};
+use std::io::{IsTerminal, Write};
+use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 #[cfg(debug_assertions)]
 mod logger;
@@ -31,9 +31,7 @@ struct SpcIo {
 }
 
 fn write_color(stream: &mut StandardStream, message: &str, col: Color, is_bold: bool) -> std::io::Result<()> {
-    stream.set_color(ColorSpec::new()
-          .set_fg(Some(col))
-          .set_bold(is_bold))?;
+    stream.set_color(ColorSpec::new().set_fg(Some(col)).set_bold(is_bold))?;
     write!(stream, "{}", message)?;
     stream.reset()?;
     Ok(())
@@ -98,8 +96,13 @@ fn write_result(spcio: &mut SpcIo, number: &Number) -> std::io::Result<()> {
     Ok(())
 }
 
-fn write_error(spcio: &mut SpcIo, str_expr: &str, opt_extra_padding: Option<usize>, err: ExprError, app_mode: AppMode)
-    -> std::io::Result<()> {
+fn write_error(
+    spcio: &mut SpcIo,
+    str_expr: &str,
+    opt_extra_padding: Option<usize>,
+    err: ExprError,
+    app_mode: AppMode,
+) -> std::io::Result<()> {
     // Write the caret indicating where in the expression the error occurs in interactive mode.
     if let AppMode::Interactive = app_mode {
         let idx_char = byte_index_to_char_index(str_expr, err.index());
@@ -130,8 +133,7 @@ fn write_error(spcio: &mut SpcIo, str_expr: &str, opt_extra_padding: Option<usiz
     Ok(())
 }
 
-fn evaluate_expr(str_expr: &str) -> Result<Number, ExprError>
-{
+fn evaluate_expr(str_expr: &str) -> Result<Number, ExprError> {
     // Enable trace level logging while parsing and evaluating using spceval.
     #[cfg(debug_assertions)]
     log::set_max_level(log::LevelFilter::Trace);
@@ -174,14 +176,19 @@ fn evaluate_expr_and_write_result(spcio: &mut SpcIo, str_expr: &str, app_mode: A
     }
 }
 
-fn write_reg_desc_title<T: BitRegister>(spcio: &mut SpcIo, register: &Register<T>)  -> std::io::Result<()> {
+fn write_reg_desc_title<T: BitRegister>(spcio: &mut SpcIo, register: &Register<T>) -> std::io::Result<()> {
     write!(spcio.stream, "{}.{} ", register.get_descriptor().device(), register.get_descriptor().arch())?;
     write_color(&mut spcio.stream, register.get_descriptor().name(), Color::Green, true)?;
     writeln!(spcio.stream, " ({})", register.get_descriptor().description())?;
     Ok(())
 }
 
-fn evaluate_register(spcio: &mut SpcIo, reg: &RegisterDescriptor, opt_str_expr: Option<&str>, app_mode: AppMode) -> std::io::Result<()> {
+fn evaluate_register(
+    spcio: &mut SpcIo,
+    reg: &RegisterDescriptor,
+    opt_str_expr: Option<&str>,
+    app_mode: AppMode,
+) -> std::io::Result<()> {
     match opt_str_expr {
         Some(str_expr) => {
             match evaluate_expr(str_expr) {

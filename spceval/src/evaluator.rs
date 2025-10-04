@@ -1,11 +1,11 @@
 use crate::functions::{FUNCS, Func};
-use crate::operators::{OPERS, Oper, OperKind, OperAssoc};
+use crate::operators::{OPERS, Oper, OperAssoc, OperKind};
 
-use std::fmt;
+use arrayvec::ArrayString;
+use log::{debug, trace}; // others: {warn,info}
 use std::collections::VecDeque;
 use std::convert::TryFrom;
-use log::{trace, debug};   // others: {warn,info}
-use arrayvec::ArrayString;
+use std::fmt;
 
 extern crate static_assertions as sa;
 
@@ -192,11 +192,7 @@ impl ExprCtx {
                 Token::Oper(OperToken { idx_oper, idx_expr }) if OPERS[*idx_oper].kind == OperKind::OpenParen => {
                     let message = format!("for opening parenthesis at {}", *idx_expr);
                     trace!("Parenthesis mismatch {}", message);
-                    return Err(ExprError {
-                        idx_expr: *idx_expr,
-                        kind: ExprErrorKind::MismatchParenthesis,
-                        message
-                    });
+                    return Err(ExprError { idx_expr: *idx_expr, kind: ExprErrorKind::MismatchParenthesis, message });
                 }
                 _ => self.pop_to_output_queue(),
             }
@@ -223,17 +219,15 @@ impl ExprCtx {
             Ok(())
         } else {
             // Too many or too few parameters passed to the function, bail.
-            let message = format!("for function '{}'. expects [{}..{}) parameters, got {} instead",
-                                  func.name, func.params.start, func.params.end, func_token.params);
-            Err(ExprError {
-                idx_expr: func_token.idx_expr,
-                kind: ExprErrorKind::InvalidParamCount,
-                message
-            })
+            let message = format!(
+                "for function '{}'. expects [{}..{}) parameters, got {} instead",
+                func.name, func.params.start, func.params.end, func_token.params
+            );
+            Err(ExprError { idx_expr: func_token.idx_expr, kind: ExprErrorKind::InvalidParamCount, message })
         }
     }
 
-    fn collect_params(&mut self, params: usize, stack_output: &mut Vec<Number> ) -> Option<Vec<Number>> {
+    fn collect_params(&mut self, params: usize, stack_output: &mut Vec<Number>) -> Option<Vec<Number>> {
         if params > 0 {
             let stack_len = stack_output.len();
             if stack_len >= params {
@@ -243,12 +237,12 @@ impl ExprCtx {
                 stack_output.clear();
                 None
             }
-        } else  {
+        } else {
             None
         }
     }
 
-    fn process_open_paren(&mut self, oper_token: OperToken, opt_prev_token: &Option<Token> ) -> Result<(), ExprError> {
+    fn process_open_paren(&mut self, oper_token: OperToken, opt_prev_token: &Option<Token>) -> Result<(), ExprError> {
         // Previous token if any cannot be a close parenthesis or a number.
         // E.g "(5)(2)" or "5(2)".
         let is_prev_token_valid = match opt_prev_token {
@@ -264,31 +258,21 @@ impl ExprCtx {
             } else {
                 let message = format!("starting with open parenthesis at '{}'", oper_token.idx_expr);
                 trace!("{:?} {}", ExprErrorKind::ExceededMaxSubExpr, message);
-                Err(ExprError {
-                    idx_expr: oper_token.idx_expr,
-                    kind: ExprErrorKind::ExceededMaxSubExpr,
-                    message
-                })
+                Err(ExprError { idx_expr: oper_token.idx_expr, kind: ExprErrorKind::ExceededMaxSubExpr, message })
             }
         } else {
             let message = format!("for open parenthesis at '{}'", oper_token.idx_expr);
             trace!("{:?} {}", ExprErrorKind::MissingOperatorOrFunction, message);
-            Err(ExprError {
-                idx_expr: oper_token.idx_expr,
-                kind: ExprErrorKind::MissingOperatorOrFunction,
-                message
-            })
+            Err(ExprError { idx_expr: oper_token.idx_expr, kind: ExprErrorKind::MissingOperatorOrFunction, message })
         }
     }
 
-    fn process_close_paren(&mut self, oper_token: OperToken, opt_prev_token: &Option<Token> ) -> Result<(), ExprError> {
+    fn process_close_paren(&mut self, oper_token: OperToken, opt_prev_token: &Option<Token>) -> Result<(), ExprError> {
         // Find matching open parenthesis.
         let mut is_open_paren_found = false;
         while let Some(ref_token) = self.stack_op.last() {
             match ref_token {
-                Token::Oper(OperToken { idx_oper, .. })
-                    if OPERS[*idx_oper].kind == OperKind::OpenParen =>
-                {
+                Token::Oper(OperToken { idx_oper, .. }) if OPERS[*idx_oper].kind == OperKind::OpenParen => {
                     is_open_paren_found = true;
                     break;
                 }
@@ -320,7 +304,10 @@ impl ExprCtx {
                     func_token.params = match opt_prev_token {
                         Some(Token::Num(_)) => 1,
                         Some(Token::Oper(OperToken { idx_oper, .. }))
-                            if OPERS[*idx_oper].assoc == OperAssoc::Left && OPERS[*idx_oper].params == 1 => 1,
+                            if OPERS[*idx_oper].assoc == OperAssoc::Left && OPERS[*idx_oper].params == 1 =>
+                        {
+                            1
+                        }
                         _ => 0,
                     }
                 }
@@ -331,11 +318,7 @@ impl ExprCtx {
             // If we didn't find a matching opening parenthesis, bail.
             let message = format!("for closing parenthesis at {}", oper_token.idx_expr);
             trace!("Parenthesis mismatch {}", message);
-            Err(ExprError {
-                idx_expr: oper_token.idx_expr,
-                kind: ExprErrorKind::MismatchParenthesis,
-                message
-            })
+            Err(ExprError { idx_expr: oper_token.idx_expr, kind: ExprErrorKind::MismatchParenthesis, message })
         }
     }
 
@@ -344,8 +327,7 @@ impl ExprCtx {
         let oper = &OPERS[oper_token.idx_oper];
         while let Some(ref_token) = self.stack_op.last() {
             match ref_token {
-                Token::Oper(OperToken { idx_oper, .. })
-                    if OPERS[*idx_oper].kind == OperKind::OpenParen => break,
+                Token::Oper(OperToken { idx_oper, .. }) if OPERS[*idx_oper].kind == OperKind::OpenParen => break,
                 _ => self.pop_to_output_queue(),
             }
         }
@@ -354,8 +336,7 @@ impl ExprCtx {
         // We debug asserted below for paranoia.
         if self.stack_op.last().is_some() {
             let paren_token = self.stack_op.pop().unwrap();
-            if cfg!(debug_assertions)
-            {
+            if cfg!(debug_assertions) {
                 let oper_paren = OperToken::try_from(paren_token).unwrap();
                 debug_assert!(OPERS[oper_paren.idx_oper].kind == OperKind::OpenParen);
             }
@@ -371,21 +352,13 @@ impl ExprCtx {
                 // No function preceeding open parenthesis for a parameter separator, e.g. "(32,5)"
                 let message = format!("for parameter separator '{}' at {}", oper.name, oper_token.idx_expr);
                 trace!("{:?} {}", ExprErrorKind::MissingFunction, message);
-                Err(ExprError {
-                    idx_expr: oper_token.idx_expr,
-                    kind: ExprErrorKind::MissingFunction,
-                    message
-                })
+                Err(ExprError { idx_expr: oper_token.idx_expr, kind: ExprErrorKind::MissingFunction, message })
             }
         } else {
             // No matching open parenthesis for the parameter separator, e.g. "32,4".
             let message = format!("for parameter separator '{}' at {}", oper.name, oper_token.idx_expr);
             trace!("{:?} {}", ExprErrorKind::MissingParenthesis, message);
-            Err(ExprError {
-                idx_expr: oper_token.idx_expr,
-                kind: ExprErrorKind::MissingParenthesis,
-                message
-            })
+            Err(ExprError { idx_expr: oper_token.idx_expr, kind: ExprErrorKind::MissingParenthesis, message })
         }
     }
 
@@ -404,15 +377,13 @@ impl ExprCtx {
             // 3. Must not be a right associative operator.
             debug_assert!(opt_prev_token.is_some());
             match opt_prev_token {
-                Some(Token::Oper(OperToken { idx_oper, .. }))
-                    if OPERS[*idx_oper].kind != OperKind::CloseParen =>
-                {
+                Some(Token::Oper(OperToken { idx_oper, .. })) if OPERS[*idx_oper].kind != OperKind::CloseParen => {
                     let message = format!("for operator '{}' at {}", oper.name, oper_token.idx_expr);
                     trace!("{:?} {}", ExprErrorKind::MissingOperand, message);
                     return Err(ExprError {
                         idx_expr: oper_token.idx_expr,
                         kind: ExprErrorKind::MissingOperand,
-                        message
+                        message,
                     });
                 }
                 _ => (),
@@ -427,7 +398,8 @@ impl ExprCtx {
                     if token_stack_oper.kind == OperKind::OpenParen {
                         break;
                     } else if token_stack_oper.prec < oper.prec
-                               || (oper.assoc == OperAssoc::Left && oper.prec == token_stack_oper.prec) {
+                        || (oper.assoc == OperAssoc::Left && oper.prec == token_stack_oper.prec)
+                    {
                         // Pop operator with higher priority (depending on associativity) to the output queue.
                         self.pop_to_output_queue();
                     } else {
@@ -446,7 +418,7 @@ impl ExprCtx {
     }
 
     #[inline]
-    fn process_oper(&mut self, oper_token: OperToken, opt_prev_token: &Option<Token> ) -> Result<(), ExprError> {
+    fn process_oper(&mut self, oper_token: OperToken, opt_prev_token: &Option<Token>) -> Result<(), ExprError> {
         debug_assert!(oper_token.idx_oper < OPERS.len());
         let oper = &OPERS[oper_token.idx_oper];
         match oper.kind {
@@ -468,8 +440,7 @@ fn parse_function(str_expr: &str, funcs: &[Func]) -> Option<usize> {
         // If this is the first occurrence of this function, record where we found it.
         // Otherwise, record the currently found function only if its length exceeds that
         // of a previously found one (e.g., find "bits" and not stop at "bit").
-        if str_expr.starts_with(func.name)
-           && (!is_found || func.name.len() > funcs[idx_found].name.len()) {
+        if str_expr.starts_with(func.name) && (!is_found || func.name.len() > funcs[idx_found].name.len()) {
             idx_found = idx;
             is_found = true;
         }
@@ -496,9 +467,21 @@ fn parse_num(str_expr: &str) -> (Option<Number>, usize) {
         iter_expr.next();
         if let Some(n) = iter_expr.peek() {
             match n {
-                'x' => { len_prefix += 1; iter_expr.next(); radix = 16; }
-                'b' => { len_prefix += 1; iter_expr.next(); radix = 2; }
-                'o' => { len_prefix += 1; iter_expr.next(); radix = 8; }
+                'x' => {
+                    len_prefix += 1;
+                    iter_expr.next();
+                    radix = 16;
+                }
+                'b' => {
+                    len_prefix += 1;
+                    iter_expr.next();
+                    radix = 2;
+                }
+                'o' => {
+                    len_prefix += 1;
+                    iter_expr.next();
+                    radix = 8;
+                }
                 _ => (),
             }
         } else {
@@ -537,7 +520,7 @@ fn parse_num(str_expr: &str) -> (Option<Number>, usize) {
             } else if chr == '.' && radix == 10 && !has_dec_pt {
                 has_dec_pt = true;
                 str_num.push(chr);
-            } else if (chr == 'e' || chr == 'E') && has_dec_pt  {
+            } else if (chr == 'e' || chr == 'E') && has_dec_pt {
                 // Floating point exponent notation (e.g., "2.5e10" or "2.5E-10").
                 str_num.push(chr);
                 is_fp_exp_notation = true;
@@ -563,8 +546,7 @@ fn parse_num(str_expr: &str) -> (Option<Number>, usize) {
     } else if str_num.ends_with('.') {
         // Number ends in a decimal point, return invalid.
         (None, 0)
-    }
-    else if !has_dec_pt {
+    } else if !has_dec_pt {
         // Integer.
         match u64::from_str_radix(&str_num, radix) {
             Ok(v) => (Some(Number { integer: v, float: v as f64 }), consumed),
@@ -583,7 +565,7 @@ fn parse_num(str_expr: &str) -> (Option<Number>, usize) {
     }
 }
 
-fn parse_oper(str_expr: &str, opers: &[Oper], opt_prev_token: &Option<Token> ) -> Option<usize> {
+fn parse_oper(str_expr: &str, opers: &[Oper], opt_prev_token: &Option<Token>) -> Option<usize> {
     debug_assert_eq!(str_expr.trim_start_matches(char::is_whitespace), str_expr);
 
     let mut is_found = false;
@@ -593,9 +575,7 @@ fn parse_oper(str_expr: &str, opers: &[Oper], opt_prev_token: &Option<Token> ) -
         // If this is the first occurrence of this operator, record where we found it.
         // Otherwise, record the currently found operator only if its length exceeds that
         // of a previously found one (e.g., find "<<" and not stop at "<").
-        if str_expr.starts_with(op.name)
-           && (!is_found
-               || op.name.len() > opers[idx_found].name.len()) {
+        if str_expr.starts_with(op.name) && (!is_found || op.name.len() > opers[idx_found].name.len()) {
             // Is this a left associative operator, ensure a previous token exists and that
             // it's not an operator (other than close parenthesis), otherwise skip finding
             // it as a valid operator.
@@ -606,8 +586,7 @@ fn parse_oper(str_expr: &str, opers: &[Oper], opt_prev_token: &Option<Token> ) -
                     Some(Token::Oper(OperToken { idx_oper, .. })) => {
                         // E.g. ")-5" when parsing "-" can be valid. So don't skip finding "-".
                         // E.g. "(<<7" when parsing "<<" is invalid, so skip finding it.
-                        if opers[*idx_oper].kind == OperKind::OpenParen
-                           || opers[*idx_oper].kind == OperKind::ParamSep {
+                        if opers[*idx_oper].kind == OperKind::OpenParen || opers[*idx_oper].kind == OperKind::ParamSep {
                             continue;
                         }
                     }
@@ -622,7 +601,8 @@ fn parse_oper(str_expr: &str, opers: &[Oper], opt_prev_token: &Option<Token> ) -
             // Maybe error messages might not be great.
             else if op.assoc == OperAssoc::Right
                 && let Some(Token::Oper(OperToken { idx_oper, .. })) = opt_prev_token
-                && opers[*idx_oper].assoc == OperAssoc::Right {
+                && opers[*idx_oper].assoc == OperAssoc::Right
+            {
                 continue;
             }
             is_found = true;
@@ -644,13 +624,9 @@ fn check_prev_token_not_function(opt_prev_token: &Option<Token>) -> Result<(), E
             let idx_open_paren = idx_expr + FUNCS[*idx_func].name.len();
             let message = format!("at {} for function '{}'", idx_open_paren, &FUNCS[*idx_func].name);
             trace!("{:?} {}", ExprErrorKind::MissingParenthesis, message);
-            Err(ExprError {
-                idx_expr: idx_open_paren,
-                kind: ExprErrorKind::MissingParenthesis,
-                message
-            })
+            Err(ExprError { idx_expr: idx_open_paren, kind: ExprErrorKind::MissingParenthesis, message })
         }
-        _ => Ok(())
+        _ => Ok(()),
     }
 }
 
@@ -659,31 +635,21 @@ fn check_prev_token_not_number(opt_prev_token: &Option<Token>) -> Result<(), Exp
         Some(Token::Num(NumToken { number, idx_expr })) => {
             let message = format!("following number {} at {}", number.float, idx_expr);
             trace!("{:?} {}", ExprErrorKind::MissingOperator, message);
-            Err(ExprError {
-                idx_expr: *idx_expr,
-                kind: ExprErrorKind::MissingOperator,
-                message
-            })
+            Err(ExprError { idx_expr: *idx_expr, kind: ExprErrorKind::MissingOperator, message })
         }
-        _ => Ok(())
+        _ => Ok(()),
     }
 }
 
 fn check_prev_token_not_close_paren(opt_prev_token: &Option<Token>) -> Result<(), ExprError> {
     match opt_prev_token {
-        Some(Token::Oper(OperToken { idx_oper, idx_expr }))
-            if OPERS[*idx_oper].kind == OperKind::CloseParen =>
-        {
+        Some(Token::Oper(OperToken { idx_oper, idx_expr })) if OPERS[*idx_oper].kind == OperKind::CloseParen => {
             let idx_oper_or_func = idx_expr + OPERS[*idx_oper].name.len();
             let message = format!("at {}", idx_oper_or_func);
             trace!("{:?} {}", ExprErrorKind::MissingOperatorOrFunction, message);
-            Err(ExprError {
-                idx_expr: idx_oper_or_func,
-                kind: ExprErrorKind::MissingOperatorOrFunction,
-                message
-            })
+            Err(ExprError { idx_expr: idx_oper_or_func, kind: ExprErrorKind::MissingOperatorOrFunction, message })
         }
-        _ => Ok(())
+        _ => Ok(()),
     }
 }
 
@@ -691,19 +657,13 @@ fn check_open_paren_for_func(oper_token: &OperToken, opt_prev_token: &Option<Tok
     debug_assert!(oper_token.idx_oper < OPERS.len());
     let oper = &OPERS[oper_token.idx_oper];
     match opt_prev_token {
-        Some(Token::Func(FuncToken { idx_func, idx_expr, .. } ))
-            if oper.kind != OperKind::OpenParen =>
-        {
+        Some(Token::Func(FuncToken { idx_func, idx_expr, .. })) if oper.kind != OperKind::OpenParen => {
             let idx_open_paren = idx_expr + FUNCS[*idx_func].name.len();
             let message = format!("at {} for function '{}'", idx_open_paren, &FUNCS[*idx_func].name);
             trace!("{:?} {}", ExprErrorKind::MissingParenthesis, message);
-            Err(ExprError {
-                idx_expr: idx_open_paren,
-                kind: ExprErrorKind::MissingParenthesis,
-                message
-            })
+            Err(ExprError { idx_expr: idx_open_paren, kind: ExprErrorKind::MissingParenthesis, message })
         }
-        _ => Ok(())
+        _ => Ok(()),
     }
 }
 
@@ -765,11 +725,7 @@ fn parse_expr(str_expr: &str) -> Result<ExprCtx, ExprError> {
         } else {
             let message = format!("at {}", idx);
             trace!("{:?} {}", ExprErrorKind::InvalidExpr, message);
-            return Err(ExprError {
-                idx_expr: idx,
-                kind: ExprErrorKind::InvalidExpr,
-                message
-            });
+            return Err(ExprError { idx_expr: idx, kind: ExprErrorKind::InvalidExpr, message });
         }
 
         if len_token >= 2 {
@@ -779,18 +735,14 @@ fn parse_expr(str_expr: &str) -> Result<ExprCtx, ExprError> {
 
     if expr_ctx.stack_op.is_empty() && expr_ctx.queue_output.is_empty() {
         trace!("'{:?}", ExprErrorKind::EmptyExpr);
-        Err(ExprError {
-            idx_expr: last_idx,
-            kind: ExprErrorKind::EmptyExpr,
-            message: "".to_string()
-        })
+        Err(ExprError { idx_expr: last_idx, kind: ExprErrorKind::EmptyExpr, message: "".to_string() })
     } else {
         debug!("Op Stack:");
-        for (idx,token) in expr_ctx.stack_op.iter().rev().enumerate() {
+        for (idx, token) in expr_ctx.stack_op.iter().rev().enumerate() {
             debug!("  stack[{}]: {:?}", expr_ctx.stack_op.len() - 1 - idx, token);
         }
         debug!("Output Queue:");
-        for (idx,token) in expr_ctx.queue_output.iter().enumerate() {
+        for (idx, token) in expr_ctx.queue_output.iter().enumerate() {
             debug!("  queue[{}]: {:?}", idx, token);
         }
 
@@ -817,11 +769,7 @@ fn evaluate_expr(expr_ctx: &mut ExprCtx) -> Result<Number, ExprError> {
                 } else {
                     let message = format!("for operator '{}' at {}", oper.name, idx_expr);
                     trace!("{:?} {}", ExprErrorKind::InvalidParamCount, message);
-                    return Err(ExprError {
-                        idx_expr,
-                        kind: ExprErrorKind::InvalidParamCount,
-                        message
-                    });
+                    return Err(ExprError { idx_expr, kind: ExprErrorKind::InvalidParamCount, message });
                 }
             }
 
@@ -835,11 +783,7 @@ fn evaluate_expr(expr_ctx: &mut ExprCtx) -> Result<Number, ExprError> {
                 } else {
                     let message = format!("for function '{}' at {}", function.name, idx_expr);
                     trace!("{:?} {}", ExprErrorKind::InvalidParamCount, message);
-                    return Err(ExprError {
-                        idx_expr,
-                        kind: ExprErrorKind::InvalidParamCount,
-                        message
-                    });
+                    return Err(ExprError { idx_expr, kind: ExprErrorKind::InvalidParamCount, message });
                 }
             }
         }
@@ -850,11 +794,7 @@ fn evaluate_expr(expr_ctx: &mut ExprCtx) -> Result<Number, ExprError> {
     } else {
         let message = "evaluation failed".to_string();
         trace!("{}", message);
-        Err(ExprError {
-            idx_expr: 0,
-            kind: ExprErrorKind::InvalidExpr,
-            message
-        })
+        Err(ExprError { idx_expr: 0, kind: ExprErrorKind::InvalidExpr, message })
     }
 }
 
@@ -862,7 +802,5 @@ pub const fn max_sub_expressions() -> usize {
     MAX_SUB_EXPRS as usize
 }
 
-
 #[cfg(test)]
 mod unit_tests;
-

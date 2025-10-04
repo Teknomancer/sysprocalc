@@ -5,9 +5,8 @@ pub fn get_binary_string(val: u64, fixed_bit_width: Option<u32>) -> String {
     let mut val = val;
 
     let bit_width = match fixed_bit_width {
-        Some(fixed_bit_width) if fixed_bit_width <= u64::BITS
-            => fixed_bit_width,
-        _   => u64::MAX.count_ones() - val.leading_zeros(),
+        Some(fixed_bit_width) if fixed_bit_width <= u64::BITS => fixed_bit_width,
+        _ => u64::MAX.count_ones() - val.leading_zeros(),
     };
 
     // Push first bit (to avoid extra branch in the loop for not pushing ' ' on 0th iteration).
@@ -77,4 +76,3 @@ pub fn get_binary_ruler_string(bit_count: u8) -> String {
         "".to_string()
     }
 }
-

@@ -1,4 +1,4 @@
-use super::{Number, ExprError, ExprErrorKind};
+use super::{ExprError, ExprErrorKind, Number};
 use std::cmp::Ordering;
 
 #[rustfmt::skip]
@@ -76,11 +76,11 @@ impl Eq for Oper<'_> {}
 // PartialEq is required by PartialOrd which is required for sorting.
 impl PartialEq for Oper<'_> {
     fn eq(&self, other: &Oper) -> bool {
-           self.kind == other.kind
-        && self.prec == other.prec
-        && self.params == other.params
-        && self.assoc == other.assoc
-        && self.name == other.name
+        self.kind == other.kind
+            && self.prec == other.prec
+            && self.params == other.params
+            && self.assoc == other.assoc
+            && self.name == other.name
     }
 }
 
@@ -111,7 +111,7 @@ fn cmp_eq_f64(a: f64, b: f64) -> bool {
 }
 
 fn oper_nop(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
-    Ok (nums[0])
+    Ok(nums[0])
 }
 
 fn oper_add(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
@@ -162,7 +162,7 @@ fn oper_mul(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
 fn oper_div(idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let lhs = nums[0];
     let rhs = nums[1];
-    if  rhs.integer != 0 && !cmp_eq_f64(rhs.float, 0f64) {
+    if rhs.integer != 0 && !cmp_eq_f64(rhs.float, 0f64) {
         let integer = lhs.integer.wrapping_div(rhs.integer);
         let float = lhs.float / rhs.float;
         Ok(Number { integer, float })
@@ -267,4 +267,3 @@ fn oper_bit_or(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let float = integer as f64;
     Ok(Number { integer, float })
 }
-
