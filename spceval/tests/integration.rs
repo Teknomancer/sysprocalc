@@ -1,4 +1,4 @@
-use spceval::{Number, ExprErrorKind};
+use spceval::{ExprErrorKind, Number};
 
 #[inline(always)]
 fn test_valid_expr(str_expr: &str, num_expected: &Number) {
@@ -301,7 +301,6 @@ fn valid_exprs_funcs() {
     }
 }
 
-
 #[test]
 fn valid_exprs() {
     // These are valid expressions and must produce the right results.
@@ -318,7 +317,7 @@ fn valid_exprs() {
     // paranthesis, operator priority etc.
 
     const MAX_VALID_PARENS: usize = spceval::max_sub_expressions() - 1;
-    debug_assert!((1..u8::max as usize).contains(&MAX_VALID_PARENS));   // Sanity, arbitrary bounds check before str::repeat().
+    debug_assert!((1..u8::max as usize).contains(&MAX_VALID_PARENS)); // Sanity, arbitrary bounds check before str::repeat().
     let open_parens = "(".repeat(MAX_VALID_PARENS);
     let close_parens = ")".repeat(MAX_VALID_PARENS);
     let num_max_sub_expr = 0xf0e1d2c3b4a59687;
@@ -370,6 +369,7 @@ fn invalid_exprs() {
     // like ",5" will fail during parsing.
     // TODO: Try split this into logical categories.
     let max_sub_expr = &"(".repeat(spceval::max_sub_expressions());
+    #[rustfmt::skip]
     let expr_results = vec![
         ("", ExprErrorKind::EmptyExpr),
         ("()", ExprErrorKind::EmptyExpr),

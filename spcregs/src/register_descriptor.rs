@@ -2,8 +2,8 @@ use crate::bit_range::{BitRange, ByteOrder};
 use crate::register::MAX_BIT_COUNT;
 use serde::Deserialize;
 
-use std::fmt;
 use std::borrow::Cow;
+use std::fmt;
 
 static BIT_RANGE_SEP: &str = ":";
 
@@ -19,7 +19,6 @@ pub struct RegisterDescriptor<'a> {
     bit_ranges: Vec<BitRange<'a>>,
 }
 
-
 // -- Try this for table style struct initialization using macro.
 //macro_rules! gen_struct {
 //    ($name:ident, $($param:ident),*) => {
@@ -34,7 +33,6 @@ pub struct RegisterDescriptor<'a> {
 //fn foo() {
 //    let s = MyStruct { foo: true, bar: false };
 //}
-
 
 #[derive(Debug)]
 pub enum BitRangeElement {
@@ -52,7 +50,7 @@ impl<'a> RegisterDescriptor<'a> {
         desc: Cow<'a, str>,
         bit_count: usize,
         byte_order: ByteOrder,
-        bit_ranges: Vec<BitRange<'a>>
+        bit_ranges: Vec<BitRange<'a>>,
     ) -> Result<Self, RegisterDescriptorError> {
         if arch.is_empty() {
             return Err(RegisterDescriptorError::MissingArch);
@@ -71,7 +69,7 @@ impl<'a> RegisterDescriptor<'a> {
         }
 
         if bit_ranges.is_empty() {
-           return Err(RegisterDescriptorError::MissingBitRanges)
+            return Err(RegisterDescriptorError::MissingBitRanges);
         }
 
         // Check if the number of bits in the register is within supported limits
@@ -80,15 +78,15 @@ impl<'a> RegisterDescriptor<'a> {
             return Err(RegisterDescriptorError::InvalidBitCount);
         }
 
-        let mut bitpos:Vec<_> = (0..bit_count).collect(); // Vector of valid bit positions to check overlap in bit ranges.
+        let mut bitpos: Vec<_> = (0..bit_count).collect(); // Vector of valid bit positions to check overlap in bit ranges.
         let mut prev_range_end: Option<usize> = None;
         for bit_range in &bit_ranges {
             if bit_range.name.is_empty() {
-               return Err(RegisterDescriptorError::MissingBitName);
+                return Err(RegisterDescriptorError::MissingBitName);
             }
 
             if bit_range.short.is_empty() {
-               return Err(RegisterDescriptorError::MissingBitRangeDescription);
+                return Err(RegisterDescriptorError::MissingBitRangeDescription);
             }
 
             // Check if the bit range is within supported limits (note: end() is inclusive bound)
@@ -101,10 +99,10 @@ impl<'a> RegisterDescriptor<'a> {
             // each range in the description. If the removed items contains a poisoned
             // value it implies some previous range already existed causing an overlap.
             // E.g. If MAX_BIT_COUNT is 64, bitpos is (0..=63) and poison value is 64.
-            let end = *bit_range.span.end() + 1;    // Exclusive bound.
-            let start = *bit_range.span.start();    // Inclusive bound.
+            let end = *bit_range.span.end() + 1; // Exclusive bound.
+            let start = *bit_range.span.start(); // Inclusive bound.
             let poison = vec![MAX_BIT_COUNT; end - start];
-            let removed:Vec<_> = bitpos.splice(start..end, poison).collect();
+            let removed: Vec<_> = bitpos.splice(start..end, poison).collect();
             if removed.contains(&MAX_BIT_COUNT) {
                 return Err(RegisterDescriptorError::OverlappingBitRange);
             }
@@ -112,7 +110,8 @@ impl<'a> RegisterDescriptor<'a> {
             // Check that bit ranges are always in ascending order e.g, [0, 1, 2-12, 13-31].
             // [0, 2-12, 1, 13-31] would be an error.
             if let Some(end) = prev_range_end
-                && *bit_range.span.end() < end {
+                && *bit_range.span.end() < end
+            {
                 return Err(RegisterDescriptorError::InvalidBitRangeOrder);
             }
 
@@ -164,7 +163,9 @@ impl<'a> RegisterDescriptor<'a> {
                     }
                 }
                 if has_ranges {
-                    col_len = format!("{end}{sep}{start}", end=MAX_BIT_COUNT, sep=BIT_RANGE_SEP, start=MAX_BIT_COUNT).len();
+                    col_len =
+                        format!("{end}{sep}{start}", end = MAX_BIT_COUNT, sep = BIT_RANGE_SEP, start = MAX_BIT_COUNT)
+                            .len();
                 } else {
                     col_len = MAX_BIT_COUNT.to_string().len();
                 }
@@ -225,9 +226,11 @@ impl<'a> fmt::Display for RegisterDescriptor<'a> {
                 bit = bitpos,
                 bits_w = bits_width,
                 sep0 = COL_SEP,
-                name = bit_range.name, name_w = name_width,
+                name = bit_range.name,
+                name_w = name_width,
                 sep1 = COL_SEP,
-                short = bit_range.short, short_w = short_width,
+                short = bit_range.short,
+                short_w = short_width,
                 sep2 = COL_SEP,
                 long = bit_range.long
             );

@@ -1,19 +1,19 @@
-use crate::evaluator::{parse_num, parse_expr, evaluate_expr, ExprErrorKind};
-use crate::operators::{OPERS, OperKind, OperAssoc};
+use crate::evaluator::{ExprErrorKind, evaluate_expr, parse_expr, parse_num};
 use crate::functions::{FUNCS, MAX_FN_PARAMS};
+use crate::operators::{OPERS, OperAssoc, OperKind};
 
 #[test]
 fn parse_invalid_nums() {
     // Number prefixes and improper decimals shouldn't be parsed as valid numbers.
     let mut vec_nums = vec![
         "",
-        "x" ,
-        "X" ,
-        "o" ,
-        "O" ,
-        "n" ,
-        "N" ,
-        "." ,
+        "x",
+        "X",
+        "o",
+        "O",
+        "n",
+        "N",
+        ".",
         "0.",
         "1.",
         "2.",
@@ -33,7 +33,7 @@ fn parse_invalid_nums() {
         "2.5ee++4",
         "2.5e--5",
         "2..5",
-        "0b11111111111111111111111111111111111111111111111111111111111111111",  // tests 1 more than 64 1's.
+        "0b11111111111111111111111111111111111111111111111111111111111111111", // tests 1 more than 64 1's.
     ];
     // Make sure we never parse operators as valid numbers.
     for i in 0..OPERS.len() {
@@ -189,34 +189,78 @@ fn is_oper_table_valid() {
     let mut close_paren_count = 0;
     let mut param_sep_count = 0;
     for (idx, oper) in OPERS.iter().enumerate() {
-        assert!(oper.params < 3, "Oper '{}' at {} has {} parameters. \
-                Opers can have at most 2 parameters.", oper.name, idx, oper.params);
-        assert!(oper.kind != OperKind::Regular || oper.params > 0,
-                "Regular operator '{}' at {} cannot have 0 parameters.", oper.name, idx);
-        assert!(oper.assoc != OperAssoc::Right || oper.params == 1,
-                "operator '{}' at {} must have only 1 parameter.", oper.name, idx);
+        assert!(
+            oper.params < 3,
+            "Oper '{}' at {} has {} parameters. \
+                Opers can have at most 2 parameters.",
+            oper.name,
+            idx,
+            oper.params
+        );
+        assert!(
+            oper.kind != OperKind::Regular || oper.params > 0,
+            "Regular operator '{}' at {} cannot have 0 parameters.",
+            oper.name,
+            idx
+        );
+        assert!(
+            oper.assoc != OperAssoc::Right || oper.params == 1,
+            "operator '{}' at {} must have only 1 parameter.",
+            oper.name,
+            idx
+        );
 
-        assert_eq!(oper.name.chars().all(|x| x.is_digit(10)), false,
-                   "Oper '{}' invalid. Name cannot contain digits.", oper.name);
-        assert_eq!(oper.name.chars().all(|x| x == '_'), false,
-                   "Oper '{}' invalid. Name cannot contain '_' character.", oper.name);
-        assert_eq!(oper.name.chars().all(|x| x == 'x'), false,
-                   "Oper '{}' invalid. Name cannot contain 'x' hexadecimal prefix character.", oper.name);
-        assert_eq!(oper.name.chars().all(|x| x == 'n'), false,
-                   "Oper '{}' invalid. Name cannot contain 'n' binary prefix character.", oper.name);
-        assert_eq!(oper.name.chars().all(|x| x == 'o'), false,
-                   "Oper '{}' invalid. Name cannot contain 'o' octal prefix character.", oper.name);
+        assert_eq!(
+            oper.name.chars().all(|x| x.is_digit(10)),
+            false,
+            "Oper '{}' invalid. Name cannot contain digits.",
+            oper.name
+        );
+        assert_eq!(
+            oper.name.chars().all(|x| x == '_'),
+            false,
+            "Oper '{}' invalid. Name cannot contain '_' character.",
+            oper.name
+        );
+        assert_eq!(
+            oper.name.chars().all(|x| x == 'x'),
+            false,
+            "Oper '{}' invalid. Name cannot contain 'x' hexadecimal prefix character.",
+            oper.name
+        );
+        assert_eq!(
+            oper.name.chars().all(|x| x == 'n'),
+            false,
+            "Oper '{}' invalid. Name cannot contain 'n' binary prefix character.",
+            oper.name
+        );
+        assert_eq!(
+            oper.name.chars().all(|x| x == 'o'),
+            false,
+            "Oper '{}' invalid. Name cannot contain 'o' octal prefix character.",
+            oper.name
+        );
 
         // Ensure open and close parenthesis operators have Nil associativity.
         match oper.kind {
             OperKind::OpenParen => {
-                assert_eq!(oper.assoc, OperAssoc::Nil,
-                           "Open parenthesis operator '{}' at {} must have no associativity.", oper.name, idx);
+                assert_eq!(
+                    oper.assoc,
+                    OperAssoc::Nil,
+                    "Open parenthesis operator '{}' at {} must have no associativity.",
+                    oper.name,
+                    idx
+                );
                 open_paren_count += 1;
             }
             OperKind::CloseParen => {
-                assert_eq!(oper.assoc, OperAssoc::Nil,
-                           "Close parenthesis operator '{}' at {} must have no associativity.", oper.name, idx);
+                assert_eq!(
+                    oper.assoc,
+                    OperAssoc::Nil,
+                    "Close parenthesis operator '{}' at {} must have no associativity.",
+                    oper.name,
+                    idx
+                );
                 close_paren_count += 1;
             }
             OperKind::ParamSep => param_sep_count += 1,
@@ -227,8 +271,13 @@ fn is_oper_table_valid() {
             if idxcmp != idx {
                 // Ensure no duplicate operators.
                 // They can have the same name but must differ in associativity.
-                assert!(oper.assoc != opercmp.assoc || oper.name != opercmp.name,
-                        "Duplicate operator '{}' at {} and {}", oper.name, idx, idxcmp);
+                assert!(
+                    oper.assoc != opercmp.assoc || oper.name != opercmp.name,
+                    "Duplicate operator '{}' at {} and {}",
+                    oper.name,
+                    idx,
+                    idxcmp
+                );
 
                 // Ensure that operators with the same name (but differ in associativity),
                 // are ordered such that the one with more parameters is first.
@@ -237,15 +286,23 @@ fn is_oper_table_valid() {
                 // pre-increment "++", then we don't care about order.
                 if oper.name == opercmp.name && oper.params != opercmp.params {
                     if oper.params > opercmp.params {
-                        assert!(idx < idxcmp,
-                                "Invalid ordering of '{}' at {} and {}.\
+                        assert!(
+                            idx < idxcmp,
+                            "Invalid ordering of '{}' at {} and {}.\
                                 The one with more parameters must be sorted higher.",
-                                oper.name, idx, idxcmp)
+                            oper.name,
+                            idx,
+                            idxcmp
+                        )
                     } else {
-                        assert!(idx > idxcmp,
-                                "Invalid ordering of '{}' at {} and {}.\
+                        assert!(
+                            idx > idxcmp,
+                            "Invalid ordering of '{}' at {} and {}.\
                                 The one with more parameters must be sorted higher.",
-                                oper.name, idx, idxcmp)
+                            oper.name,
+                            idx,
+                            idxcmp
+                        )
                     }
                 }
             }
@@ -261,25 +318,38 @@ fn is_oper_table_valid() {
 #[test]
 fn is_func_table_valid() {
     for (idx, func) in FUNCS.iter().enumerate() {
-        assert!(!func.params.contains(&MAX_FN_PARAMS),
-                "Function '{}' at {} exceeds maximum parameters of {}. Use/alter the maximum.",
-                func.name, idx, MAX_FN_PARAMS);
-        assert!(!func.params.is_empty(),
-                "Function '{}' at {} must have at least 1 parameter. Use/alter the maximum.",
-                func.name, idx);
+        assert!(
+            !func.params.contains(&MAX_FN_PARAMS),
+            "Function '{}' at {} exceeds maximum parameters of {}. Use/alter the maximum.",
+            func.name,
+            idx,
+            MAX_FN_PARAMS
+        );
+        assert!(
+            !func.params.is_empty(),
+            "Function '{}' at {} must have at least 1 parameter. Use/alter the maximum.",
+            func.name,
+            idx
+        );
 
-        assert_eq!(func.name.is_empty(), false,
-                   "Function at {} invalid. Name cannot be 0 length.", idx);
-        assert_eq!(func.name.chars().nth(0).unwrap().is_digit(10), false,
-                   "Function '{}' invalid. Name cannot start with digits.", func.name);
-        assert_ne!(func.name.chars().nth(0).unwrap(), '_',
-                   "Function '{}' invalid. Name cannot start with an '_' character.", func.name);
+        assert_eq!(func.name.is_empty(), false, "Function at {} invalid. Name cannot be 0 length.", idx);
+        assert_eq!(
+            func.name.chars().nth(0).unwrap().is_digit(10),
+            false,
+            "Function '{}' invalid. Name cannot start with digits.",
+            func.name
+        );
+        assert_ne!(
+            func.name.chars().nth(0).unwrap(),
+            '_',
+            "Function '{}' invalid. Name cannot start with an '_' character.",
+            func.name
+        );
 
         // Ensure no duplicate FUNCS names.
         for (idxcmp, funccmp) in FUNCS.iter().enumerate() {
             if idxcmp != idx {
-                assert!(func.name != funccmp.name,
-                        "Duplicate function '{}' at {} and {}", func.name, idx, idxcmp);
+                assert!(func.name != funccmp.name, "Duplicate function '{}' at {} and {}", func.name, idx, idxcmp);
             }
         }
     }
@@ -296,12 +366,12 @@ fn test_valid_expr_but_eval_fail(str_expr: &str, expr_error_kind: ExprErrorKind)
     assert_eq!(expr_error_kind, res_eval.err().unwrap().kind, "{}", str_expr);
 }
 
-
 #[test]
 fn valid_exprs_eval_fail() {
     // These are expressions that are syntactically valid but guaranteed to fail during
     // evaluation. E.g "1/0" is perfectly valid syntax but fails due to division by zero.
     // These must never produce errors during the parsing phase.
+    #[rustfmt::skip]
     let expr_results = vec![
         ("0/0", ExprErrorKind::FailedEvaluation),
         ("1/0", ExprErrorKind::FailedEvaluation),

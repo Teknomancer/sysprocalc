@@ -48,55 +48,69 @@ pub static EFER: LazyLock<RegisterDescriptor> = LazyLock::new(|| {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::ops::RangeInclusive;
     use crate::{BitRange, BitRangeKind, ByteOrder};
     use std::borrow::Cow;
+    use std::ops::RangeInclusive;
 
     #[test]
     fn test_x86_cpu_efer() {
         let bits = Vec::from([
-            BitRange::new(RangeInclusive::new(0, 0),
-                          BitRangeKind::Normal,
-                          true,
-                          Cow::Borrowed("SCE"),
-                          Cow::Borrowed("SC Extensions"),
-                          Cow::Borrowed("System Call Extensions.")),
-            BitRange::new(RangeInclusive::new(8, 8),
-                          BitRangeKind::Normal,
-                          true,
-                          Cow::Borrowed("LME"),
-                          Cow::Borrowed("LM Enable"),
-                          Cow::Borrowed("Long Mode Enable.")),
-            BitRange::new(RangeInclusive::new(10, 10),
-                          BitRangeKind::Normal,
-                          true,
-                          Cow::Borrowed("LMA"),
-                          Cow::Borrowed("LM Active"),
-                          Cow::Borrowed("Long Mode Active.")),
-            BitRange::new(RangeInclusive::new(11, 11),
-                          BitRangeKind::Normal,
-                          true,
-                          Cow::Borrowed("NXE"),
-                          Cow::Borrowed("NX Enable"),
-                          Cow::Borrowed("No-Execute Enable.")),
-            BitRange::new(RangeInclusive::new(12, 12),
-                          BitRangeKind::Normal,
-                          true,
-                          Cow::Borrowed("SVME"),
-                          Cow::Borrowed("SVM Enable"),
-                          Cow::Borrowed("Secure Virtual Machine Enable (AMD).")),
-            BitRange::new(RangeInclusive::new(13, 13),
-                          BitRangeKind::Normal,
-                          true,
-                          Cow::Borrowed("LMSLE"),
-                          Cow::Borrowed("LMSL Enable"),
-                          Cow::Borrowed("Long Mode Segment Limit Enable (AMD).")),
-            BitRange::new(RangeInclusive::new(14, 14),
-                         BitRangeKind::Normal,
-                         true,
-                         Cow::Borrowed("FFXSR"),
-                         Cow::Borrowed("Fast FXSAVE/FXRSTOR"),
-                         Cow::Borrowed("Fast FXSAVE/FXRSTOR support.")),
+            BitRange::new(
+                RangeInclusive::new(0, 0),
+                BitRangeKind::Normal,
+                true,
+                Cow::Borrowed("SCE"),
+                Cow::Borrowed("SC Extensions"),
+                Cow::Borrowed("System Call Extensions."),
+            ),
+            BitRange::new(
+                RangeInclusive::new(8, 8),
+                BitRangeKind::Normal,
+                true,
+                Cow::Borrowed("LME"),
+                Cow::Borrowed("LM Enable"),
+                Cow::Borrowed("Long Mode Enable."),
+            ),
+            BitRange::new(
+                RangeInclusive::new(10, 10),
+                BitRangeKind::Normal,
+                true,
+                Cow::Borrowed("LMA"),
+                Cow::Borrowed("LM Active"),
+                Cow::Borrowed("Long Mode Active."),
+            ),
+            BitRange::new(
+                RangeInclusive::new(11, 11),
+                BitRangeKind::Normal,
+                true,
+                Cow::Borrowed("NXE"),
+                Cow::Borrowed("NX Enable"),
+                Cow::Borrowed("No-Execute Enable."),
+            ),
+            BitRange::new(
+                RangeInclusive::new(12, 12),
+                BitRangeKind::Normal,
+                true,
+                Cow::Borrowed("SVME"),
+                Cow::Borrowed("SVM Enable"),
+                Cow::Borrowed("Secure Virtual Machine Enable (AMD)."),
+            ),
+            BitRange::new(
+                RangeInclusive::new(13, 13),
+                BitRangeKind::Normal,
+                true,
+                Cow::Borrowed("LMSLE"),
+                Cow::Borrowed("LMSL Enable"),
+                Cow::Borrowed("Long Mode Segment Limit Enable (AMD)."),
+            ),
+            BitRange::new(
+                RangeInclusive::new(14, 14),
+                BitRangeKind::Normal,
+                true,
+                Cow::Borrowed("FFXSR"),
+                Cow::Borrowed("Fast FXSAVE/FXRSTOR"),
+                Cow::Borrowed("Fast FXSAVE/FXRSTOR support."),
+            ),
         ]);
 
         assert_eq!(EFER.arch(), "x86");

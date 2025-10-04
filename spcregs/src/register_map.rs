@@ -22,7 +22,7 @@ impl<'a> RegisterMap<'a> {
         }
         Self {
             // map: REGISTERS.iter().map(|k| (k.name(), *k)).collect() // I have no idea how many copies this might do
-            map
+            map,
         }
     }
 

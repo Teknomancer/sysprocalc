@@ -1,6 +1,6 @@
-use crate::{Number, ExprError, ExprErrorKind};
-use std::ops::Range;
+use crate::{ExprError, ExprErrorKind, Number};
 use std::convert::TryFrom;
+use std::ops::Range;
 
 const KB: u64 = 0x400;
 const MB: u64 = 0x100000;
@@ -163,10 +163,9 @@ pub struct Func<'a> {
     pub evalfn: PfnFunc,
 }
 
-fn func_sum__(nums: &[Number]) -> Result<Number, ExprError>
-{
+fn func_sum__(nums: &[Number]) -> Result<Number, ExprError> {
     let mut res = Number { integer: 0u64, float: 0f64 };
-    for arg in nums  {
+    for arg in nums {
         res.integer = res.integer.wrapping_add(arg.integer);
         res.float += arg.float;
     }
@@ -273,14 +272,19 @@ fn func_pow(func: &Func, idx_expr: usize, nums: &[Number]) -> Result<Number, Exp
         match u64::checked_pow(nums[0].integer, nums[1].integer as u32) {
             Some(integer) => Ok(Number { integer, float: integer as f64 }),
             None => {
-                let message = format!("for function '{}', {} power {} overflowed",
-                                  func.name, nums[0].integer, nums[1].integer);
+                let message =
+                    format!("for function '{}', {} power {} overflowed", func.name, nums[0].integer, nums[1].integer);
                 Err(ExprError::new(idx_expr, ExprErrorKind::FailedEvaluation, message))
             }
         }
     } else {
-        let message = format!("for function '{}', {} power {}, exponent overflowed (must be <= {})",
-                          func.name, nums[0].integer, nums[1].integer, u32::MAX);
+        let message = format!(
+            "for function '{}', {} power {}, exponent overflowed (must be <= {})",
+            func.name,
+            nums[0].integer,
+            nums[1].integer,
+            u32::MAX
+        );
         Err(ExprError::new(idx_expr, ExprErrorKind::FailedEvaluation, message))
     }
 }
@@ -292,8 +296,10 @@ fn func_bit(func: &Func, idx_expr: usize, nums: &[Number]) -> Result<Number, Exp
         let float = integer as f64;
         Ok(Number { integer, float })
     } else {
-        let message = format!("for function '{}' at {} due to invalid shift {} (must be 0..63)",
-                              func.name, idx_expr, nums[0].integer as i64);
+        let message = format!(
+            "for function '{}' at {} due to invalid shift {} (must be 0..63)",
+            func.name, idx_expr, nums[0].integer as i64
+        );
         Err(ExprError::new(idx_expr, ExprErrorKind::FailedEvaluation, message))
     }
 }
@@ -302,15 +308,17 @@ fn func_bits(func: &Func, idx_expr: usize, nums: &[Number]) -> Result<Number, Ex
     let min = std::cmp::min(nums[0].integer, nums[1].integer) as u32;
     let max = std::cmp::max(nums[0].integer, nums[1].integer) as u32;
     if (0..u64::BITS).contains(&min) && (0..u64::BITS).contains(&max) {
-        let mut integer : u64 = 0;
+        let mut integer: u64 = 0;
         for n in min..max + 1 {
             integer |= 1_u64.wrapping_shl(n);
         }
         let float = integer as f64;
         Ok(Number { integer, float })
     } else {
-        let message = format!("for function '{}' at {} due to invalid bit range ({}, {}) (must be 0..63)",
-                              func.name, idx_expr, nums[0].integer as i64, nums[1].integer as i64);
+        let message = format!(
+            "for function '{}' at {} due to invalid bit range ({}, {}) (must be 0..63)",
+            func.name, idx_expr, nums[0].integer as i64, nums[1].integer as i64
+        );
         Err(ExprError::new(idx_expr, ExprErrorKind::FailedEvaluation, message))
     }
 }
@@ -323,6 +331,5 @@ fn func_is_pow_of_two(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result
         0
     };
     let float = integer as f64;
-    Ok (Number { integer, float })
+    Ok(Number { integer, float })
 }
-
