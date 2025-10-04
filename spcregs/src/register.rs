@@ -6,7 +6,7 @@ use std::fmt;
 // The type that can hold the maximum value supported in a register
 // and the maximum number of bits supported in a register.
 pub type RegisterValue = u64;
-pub static MAX_BIT_COUNT: usize = RegisterValue::BITS as usize;
+pub static MAX_BIT_COUNT: u16 = RegisterValue::BITS as u16;
 
 pub struct Register<'a, T: BitRegister> {
     value: Option<T>,
@@ -31,8 +31,8 @@ impl<'a, T: BitRegister> Register<'a, T> {
     }
 
     #[inline(always)]
-    const fn bit_capacity() -> usize {
-        T::BITS as usize
+    const fn bit_capacity() -> u16 {
+        T::BITS as u16
     }
 
     pub fn get_descriptor(&self) -> &RegisterDescriptor<'_> {
@@ -114,7 +114,7 @@ impl<'a, T: BitRegister> fmt::Display for Register<'a, T> {
                             horiz_char,
                             name = bit_range_row.name,
                             namewidth = self.descriptor.column_width(BitRangeElement::Name),
-                            bitnum = *bit_range_row.span.start(),
+                            bitnum = bit_range_row.span.first,
                             bitwidth = self.descriptor.column_width(BitRangeElement::Bits),
                             bit_is_set = is_set_indicator
                         )?;
