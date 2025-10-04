@@ -1,6 +1,5 @@
-use crate::{BitRange, BitRangeKind, ByteOrder, MAX_BIT_COUNT, RegisterDescriptor, RegisterDescriptorError};
+use crate::{BitRange, BitRangeKind, BitSpan, ByteOrder, MAX_BIT_COUNT, RegisterDescriptor, RegisterDescriptorError};
 use std::borrow::Cow;
-use std::ops::RangeInclusive;
 
 #[test]
 fn test_valid_register_descriptor() {
@@ -9,11 +8,11 @@ fn test_valid_register_descriptor() {
         Cow::from("cpu"),
         Cow::from("generic"),
         Cow::from("description"),
-        u64::BITS as usize,
+        u64::BITS as u16,
         ByteOrder::LittleEndian,
         vec![
             BitRange::new(
-                RangeInclusive::new(0, 0),
+                BitSpan::new(0, 0),
                 BitRangeKind::Normal,
                 true,
                 Cow::from("Gen 0"),
@@ -21,7 +20,7 @@ fn test_valid_register_descriptor() {
                 Cow::from("Generic Bit 0"),
             ),
             BitRange::new(
-                RangeInclusive::new(8, 8),
+                BitSpan::new(8, 8),
                 BitRangeKind::Normal,
                 true,
                 Cow::from("Gen 1"),
@@ -41,11 +40,11 @@ fn test_invalid_register_descriptor() {
         Cow::from("cpu"),
         Cow::from("generic"),
         Cow::from("description"),
-        u64::BITS as usize,
+        u64::BITS as u16,
         ByteOrder::LittleEndian,
         vec![
             BitRange::new(
-                RangeInclusive::new(0, 5),
+                BitSpan::new(0, 5),
                 BitRangeKind::Normal,
                 true,
                 Cow::from("Inv 0"),
@@ -53,7 +52,7 @@ fn test_invalid_register_descriptor() {
                 Cow::from("Inv Bit 0"),
             ),
             BitRange::new(
-                RangeInclusive::new(5, 7),
+                BitSpan::new(5, 7),
                 BitRangeKind::Normal,
                 true,
                 Cow::from("Inv 1"),
@@ -70,11 +69,11 @@ fn test_invalid_register_descriptor() {
         Cow::from("cpu"),
         Cow::from("generic"),
         Cow::from("description"),
-        u64::BITS as usize,
+        u64::BITS as u16,
         ByteOrder::LittleEndian,
         vec![
             BitRange::new(
-                RangeInclusive::new(63, 63),
+                BitSpan::new(63, 63),
                 BitRangeKind::Normal,
                 true,
                 Cow::from("Inv 1"),
@@ -82,7 +81,7 @@ fn test_invalid_register_descriptor() {
                 Cow::from("Inv Bit 1"),
             ),
             BitRange::new(
-                RangeInclusive::new(32, 63),
+                BitSpan::new(32, 63),
                 BitRangeKind::Normal,
                 true,
                 Cow::from("Inv 0"),
@@ -99,10 +98,10 @@ fn test_invalid_register_descriptor() {
         Cow::from("cpu"),
         Cow::from("generic"),
         Cow::from("description"),
-        u64::BITS as usize,
+        u64::BITS as u16,
         ByteOrder::LittleEndian,
         vec![BitRange::new(
-            RangeInclusive::new(1, 0),
+            BitSpan::new(1, 0),
             BitRangeKind::Normal,
             true,
             Cow::from("Inv 0"),
@@ -118,10 +117,10 @@ fn test_invalid_register_descriptor() {
         Cow::from("cpu"),
         Cow::from("generic"),
         Cow::from("description"),
-        u64::BITS as usize,
+        u64::BITS as u16,
         ByteOrder::LittleEndian,
         vec![BitRange::new(
-            RangeInclusive::new(0, MAX_BIT_COUNT),
+            BitSpan::new(0, MAX_BIT_COUNT),
             BitRangeKind::Normal,
             true,
             Cow::from("Inv 0"),
@@ -137,10 +136,10 @@ fn test_invalid_register_descriptor() {
         Cow::from("cpu"),
         Cow::from("generic"),
         Cow::from("description"),
-        u64::BITS as usize,
+        u64::BITS as u16,
         ByteOrder::LittleEndian,
         vec![BitRange::new(
-            RangeInclusive::new(64, 65),
+            BitSpan::new(64, 65),
             BitRangeKind::Normal,
             true,
             Cow::from("Inv 0"),
@@ -156,10 +155,10 @@ fn test_invalid_register_descriptor() {
         Cow::from("cpu"),
         Cow::from("generic"),
         Cow::from("description"),
-        u64::BITS as usize,
+        u64::BITS as u16,
         ByteOrder::LittleEndian,
         vec![BitRange::new(
-            RangeInclusive::new(64, 0),
+            BitSpan::new(64, 0),
             BitRangeKind::Normal,
             true,
             Cow::from("Inv 0"),
@@ -175,11 +174,11 @@ fn test_invalid_register_descriptor() {
         Cow::from("cpu"),
         Cow::from("generic"),
         Cow::from("description"),
-        u64::BITS as usize,
+        u64::BITS as u16,
         ByteOrder::LittleEndian,
         vec![
             BitRange::new(
-                RangeInclusive::new(2, 63),
+                BitSpan::new(2, 63),
                 BitRangeKind::Normal,
                 true,
                 Cow::from("Inv 0"),
@@ -187,7 +186,7 @@ fn test_invalid_register_descriptor() {
                 Cow::from("Inv Bit 0"),
             ),
             BitRange::new(
-                RangeInclusive::new(0, 1),
+                BitSpan::new(0, 1),
                 BitRangeKind::Normal,
                 true,
                 Cow::from("Inv 0"),
@@ -204,11 +203,11 @@ fn test_invalid_register_descriptor() {
         Cow::from("cpu"),
         Cow::from("generic"),
         Cow::from("description"),
-        u64::BITS as usize,
+        u64::BITS as u16,
         ByteOrder::LittleEndian,
         vec![
             BitRange::new(
-                RangeInclusive::new(0, 0),
+                BitSpan::new(0, 0),
                 BitRangeKind::Normal,
                 true,
                 Cow::from("Inv 0"),
@@ -216,7 +215,7 @@ fn test_invalid_register_descriptor() {
                 Cow::from("Inv Bit 0"),
             ),
             BitRange::new(
-                RangeInclusive::new(33, 63),
+                BitSpan::new(33, 63),
                 BitRangeKind::Normal,
                 true,
                 Cow::from("Inv 0"),
@@ -224,7 +223,7 @@ fn test_invalid_register_descriptor() {
                 Cow::from("Inv Bit 0"),
             ),
             BitRange::new(
-                RangeInclusive::new(1, 32),
+                BitSpan::new(1, 32),
                 BitRangeKind::Normal,
                 true,
                 Cow::from("Inv 0"),
@@ -241,7 +240,7 @@ fn test_invalid_register_descriptor() {
         Cow::from("cpu"),
         Cow::from("generic"),
         Cow::from("description"),
-        u64::BITS as usize,
+        u64::BITS as u16,
         ByteOrder::LittleEndian,
         vec![],
     );
@@ -253,10 +252,10 @@ fn test_invalid_register_descriptor() {
         Cow::from("cpu"),
         Cow::from("generic"),
         Cow::from("description"),
-        u64::BITS as usize,
+        u64::BITS as u16,
         ByteOrder::LittleEndian,
         vec![BitRange::new(
-            RangeInclusive::new(0, 5),
+            BitSpan::new(0, 5),
             BitRangeKind::Normal,
             true,
             Cow::from("Inv 0"),
@@ -272,10 +271,10 @@ fn test_invalid_register_descriptor() {
         Cow::from(""),
         Cow::from("generic"),
         Cow::from("description"),
-        u64::BITS as usize,
+        u64::BITS as u16,
         ByteOrder::LittleEndian,
         vec![BitRange::new(
-            RangeInclusive::new(0, 5),
+            BitSpan::new(0, 5),
             BitRangeKind::Normal,
             true,
             Cow::from("Inv 0"),
@@ -291,10 +290,10 @@ fn test_invalid_register_descriptor() {
         Cow::from("cpu"),
         Cow::from(""),
         Cow::from("description"),
-        u64::BITS as usize,
+        u64::BITS as u16,
         ByteOrder::LittleEndian,
         vec![BitRange::new(
-            RangeInclusive::new(0, 5),
+            BitSpan::new(0, 5),
             BitRangeKind::Normal,
             true,
             Cow::from("Inv 0"),
@@ -310,10 +309,10 @@ fn test_invalid_register_descriptor() {
         Cow::from("cpu"),
         Cow::from("generic"),
         Cow::from(""),
-        u64::BITS as usize,
+        u64::BITS as u16,
         ByteOrder::LittleEndian,
         vec![BitRange::new(
-            RangeInclusive::new(0, 5),
+            BitSpan::new(0, 5),
             BitRangeKind::Normal,
             true,
             Cow::from("Inv 0"),

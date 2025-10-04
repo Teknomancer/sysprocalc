@@ -4,7 +4,7 @@ mod register_descriptor;
 mod register_map;
 pub mod utils;
 
-pub use bit_range::{BitRange, BitRangeKind, ByteOrder};
+pub use bit_range::{BitRange, BitRangeKind, BitSpan, ByteOrder};
 pub use register::{MAX_BIT_COUNT, Register};
 pub use register_descriptor::{RegisterDescriptor, RegisterDescriptorError};
 pub use register_map::RegisterMap;

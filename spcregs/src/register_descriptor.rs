@@ -18,7 +18,7 @@ pub struct RegisterDescriptor<'a> {
     name: Cow<'a, str>,
     #[serde(borrow)]
     desc: Cow<'a, str>,
-    bit_count: usize,
+    bit_count: u16,
     byte_order: ByteOrder,
     bit_ranges: Vec<BitRange<'a>>,
 }
@@ -52,7 +52,7 @@ impl<'a> RegisterDescriptor<'a> {
         device: Cow<'a, str>,
         name: Cow<'a, str>,
         desc: Cow<'a, str>,
-        bit_count: usize,
+        bit_count: u16,
         byte_order: ByteOrder,
         bit_ranges: Vec<BitRange<'a>>,
     ) -> Result<Self, RegisterDescriptorError> {
@@ -83,7 +83,7 @@ impl<'a> RegisterDescriptor<'a> {
         }
 
         let mut bitpos: Vec<_> = (0..bit_count).collect(); // Vector of valid bit positions to check overlap in bit ranges.
-        let mut prev_range_end: Option<usize> = None;
+        let mut prev_range_end: Option<u16> = None;
         for bit_range in &bit_ranges {
             if bit_range.name.is_empty() {
                 return Err(RegisterDescriptorError::MissingBitName);
@@ -93,8 +93,8 @@ impl<'a> RegisterDescriptor<'a> {
                 return Err(RegisterDescriptorError::MissingBitRangeDescription);
             }
 
-            // Check if the bit range is within supported limits (note: end() is inclusive bound)
-            if bit_range.span.is_empty() || *bit_range.span.end() >= bit_count {
+            // Check if the bit range is within supported limits (note: 'last' is inclusive)
+            if bit_range.span.is_empty() || bit_range.span.last >= bit_count {
                 return Err(RegisterDescriptorError::InvalidBitRange);
             }
 
@@ -103,8 +103,8 @@ impl<'a> RegisterDescriptor<'a> {
             // each range in the description. If the removed items contains a poisoned
             // value it implies some previous range already existed causing an overlap.
             // E.g. If MAX_BIT_COUNT is 64, bitpos is (0..=63) and poison value is 64.
-            let end = *bit_range.span.end() + 1; // Exclusive bound.
-            let start = *bit_range.span.start(); // Inclusive bound.
+            let start: usize = bit_range.span.first as usize; // Inclusive bound.
+            let end: usize = bit_range.span.last as usize + 1; // Exclusive bound.
             let poison = vec![MAX_BIT_COUNT; end - start];
             let removed: Vec<_> = bitpos.splice(start..end, poison).collect();
             if removed.contains(&MAX_BIT_COUNT) {
@@ -114,12 +114,12 @@ impl<'a> RegisterDescriptor<'a> {
             // Check that bit ranges are always in ascending order e.g, [0, 1, 2-12, 13-31].
             // [0, 2-12, 1, 13-31] would be an error.
             if let Some(end) = prev_range_end
-                && *bit_range.span.end() < end
+                && bit_range.span.last < end
             {
                 return Err(RegisterDescriptorError::InvalidBitRangeOrder);
             }
 
-            prev_range_end = Some(*bit_range.span.end() + 1);
+            prev_range_end = Some(bit_range.span.last + 1);
         }
 
         Ok(Self { name, arch, device, desc, bit_count, byte_order, bit_ranges })
@@ -141,7 +141,7 @@ impl<'a> RegisterDescriptor<'a> {
         &self.arch
     }
 
-    pub fn bit_count(&self) -> usize {
+    pub fn bit_count(&self) -> u16 {
         self.bit_count
     }
 
@@ -159,7 +159,7 @@ impl<'a> RegisterDescriptor<'a> {
             BitRangeElement::Bits => {
                 let mut has_ranges = false;
                 for bit_range in &self.bit_ranges {
-                    let bits_in_range = bit_range.span.end() + 1 - bit_range.span.start();
+                    let bits_in_range = bit_range.span.last + 1 - bit_range.span.first;
                     debug_assert!(bits_in_range >= 1);
                     if bits_in_range > 1 {
                         has_ranges = true;
@@ -196,7 +196,7 @@ impl<'a> RegisterDescriptor<'a> {
         col_len
     }
 
-    pub fn has_bit(&self, bit: &usize) -> bool {
+    pub fn has_bit(&self, bit: &u16) -> bool {
         for bit_range in &self.bit_ranges {
             if bit_range.span.contains(bit) {
                 return true;
@@ -217,8 +217,8 @@ impl<'a> fmt::Display for RegisterDescriptor<'a> {
         // Format the bit ranges
         let mut out = String::from("");
         for bit_range in self.bit_ranges.iter().rev() {
-            let end = bit_range.span.end();
-            let start = bit_range.span.start();
+            let start = bit_range.span.first;
+            let end = bit_range.span.last;
             let bitpos = if end == start {
                 format!("{}", start)
             } else {
