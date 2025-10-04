@@ -1,3 +1,4 @@
+# Run using: cargo +nightly fmt --all
 edition = "2024"
 style_edition = "2024" # see https://doc.rust-lang.org/edition-guide/rust-2024/rustfmt-formatting-fixes.html
 max_width = 120
