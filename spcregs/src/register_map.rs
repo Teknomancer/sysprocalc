@@ -8,6 +8,12 @@ pub struct RegisterMap<'a> {
     map: HashMap<&'a str, &'a RegisterDescriptor<'a>>,
 }
 
+impl<'a> Default for RegisterMap<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<'a> RegisterMap<'a> {
     pub fn new() -> Self {
         let mut map: HashMap<&str, &RegisterDescriptor> = HashMap::with_capacity(REGISTERS.len());
@@ -20,7 +26,7 @@ impl<'a> RegisterMap<'a> {
         }
     }
 
-    pub fn insert(&mut self, name: &'a str, reg: &'a RegisterDescriptor) -> Option<&RegisterDescriptor> {
+    pub fn insert(&mut self, name: &'a str, reg: &'a RegisterDescriptor) -> Option<&RegisterDescriptor<'_>> {
         self.map.insert(name, reg)
     }
 
@@ -28,13 +34,17 @@ impl<'a> RegisterMap<'a> {
         self.map.len()
     }
 
-    pub fn get(&self, name: &'a str) -> Option<&&RegisterDescriptor> {
+    pub fn is_empty(&self) -> bool {
+        self.map.is_empty()
+    }
+
+    pub fn get(&self, name: &'a str) -> Option<&&RegisterDescriptor<'_>> {
         self.map.get(name)
     }
 }
 
 #[rustfmt::skip]
-static REGISTERS: LazyLock<[&RegisterDescriptor; 2]> = LazyLock::new(|| { [
+static REGISTERS: LazyLock<[&RegisterDescriptor; 2]> = LazyLock::new(|| {[
     &x86::CR0,
     &x86::EFER,
 ]});

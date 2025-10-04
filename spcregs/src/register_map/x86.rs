@@ -1,6 +1,5 @@
 use crate::RegisterDescriptor;
 use std::sync::LazyLock;
-use std::borrow::Cow;
 
 pub static CR0: LazyLock<RegisterDescriptor> = LazyLock::new(|| {
     toml::from_str(r#"
@@ -51,6 +50,7 @@ mod tests {
     use super::*;
     use std::ops::RangeInclusive;
     use crate::{BitRange, BitRangeKind, ByteOrder};
+    use std::borrow::Cow;
 
     #[test]
     fn test_x86_cpu_efer() {

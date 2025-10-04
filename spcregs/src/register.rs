@@ -35,7 +35,7 @@ impl<'a, T: BitRegister> Register<'a, T> {
         T::BITS as usize
     }
 
-    pub fn get_descriptor(&self) -> &RegisterDescriptor {
+    pub fn get_descriptor(&self) -> &RegisterDescriptor<'_> {
         self.descriptor
     }
 }

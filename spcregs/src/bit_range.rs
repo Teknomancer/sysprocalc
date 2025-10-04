@@ -24,11 +24,8 @@ pub struct BitRange<'a> {
     pub span: RangeInclusive<usize>,
     pub kind: BitRangeKind,
     pub show: bool,
-    #[serde(borrow)]
     pub name: Cow<'a, str>,
-    #[serde(borrow)]
     pub short: Cow<'a, str>,
-    #[serde(borrow)]
     pub long: Cow<'a, str>,
 }
 
