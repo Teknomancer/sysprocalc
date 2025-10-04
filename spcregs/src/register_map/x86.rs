@@ -2,6 +2,7 @@ use crate::RegisterDescriptor;
 use std::sync::LazyLock;
 
 pub static CR0: LazyLock<RegisterDescriptor> = LazyLock::new(|| {
+    // replace with VarZeroVec::from()?
     toml::from_str(r#"
         arch       = "x86"
         device     = "cpu"
