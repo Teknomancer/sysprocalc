@@ -30,10 +30,7 @@ pub struct BitSpan {
 
 impl BitSpan {
     pub fn new(first: u16, last: u16) -> Self {
-        Self {
-            first,
-            last,
-        }
+        Self { first, last }
     }
 
     pub fn contains(&self, item: &u16) -> bool {
