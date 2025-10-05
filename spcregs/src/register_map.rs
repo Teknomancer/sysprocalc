@@ -44,7 +44,8 @@ impl<'a> RegisterMap<'a> {
 }
 
 #[rustfmt::skip]
-static REGISTERS: LazyLock<[&RegisterDescriptor; 2]> = LazyLock::new(|| {[
+static REGISTERS: LazyLock<[&RegisterDescriptor; 3]> = LazyLock::new(|| {[
     &x86::CR0,
+    &x86::CR4,
     &x86::EFER,
 ]});
