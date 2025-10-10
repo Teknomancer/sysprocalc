@@ -55,6 +55,21 @@ impl<'z> zerofrom::ZeroFrom<'z, BitRange<'_>> for BitRange<'z> {
     }
 }
 
+// This works;
+// use std::convert::From;
+// impl<'a> From<(u16, u16, BitRangeKind, bool, &'static str, &'static str, &'static str)> for BitRange<'a> {
+//     fn from(t: (u16, u16, BitRangeKind, bool, &'static str, &'static str, &'static str)) -> BitRange<'a> {
+//         BitRange { span: BitSpan::new(t.0, t.1), kind: t.2, show: t.3, name: Cow::Borrowed(t.4), short: Cow::Borrowed(t.5), long: Cow::Borrowed(t.6) }
+//     }
+// }
+
+// use std::sync::LazyLock;
+// static te: LazyLock<BitRange> = LazyLock::new(|| {
+//     let s: BitRange = (0, 0, BitRangeKind::Normal, true, "name", "short", "long").into();
+//     s
+// });
+
+
 #[zerovec::make_varule(BitRangeULE)]
 #[zerovec::derive(Deserialize)]
 #[derive(Deserialize, Debug, PartialEq, Clone, Ord, PartialOrd, Eq)]
