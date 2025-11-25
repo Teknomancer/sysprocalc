@@ -102,8 +102,8 @@ struct OperToken {
 
 impl fmt::Debug for OperToken {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.idx_oper < OPERS.len() {
-            write!(f, "'{}'", OPERS[self.idx_oper].name)
+        if let Some(oper) = OPERS.get(self.idx_oper) {
+            write!(f, "'{}'", oper.name)
         } else {
             write!(f, "Invalid Index {}", self.idx_oper)
         }
@@ -119,8 +119,8 @@ struct FuncToken {
 
 impl fmt::Debug for FuncToken {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.idx_func < FUNCS.len() {
-            write!(f, "'{}'", &FUNCS[self.idx_func].name)
+        if let Some(func) = FUNCS.get(self.idx_func) {
+            write!(f, "'{}'", func.name)
         } else {
             write!(f, "Invalid Index {}", self.idx_func)
         }
