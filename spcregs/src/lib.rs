@@ -7,7 +7,7 @@ pub mod utils;
 pub use bit_range::{BitRange, BitRangeKind, BitSpan, ByteOrder};
 pub use register::{MAX_BIT_COUNT, Register};
 pub use register_descriptor::{RegisterDescriptor, RegisterDescriptorError};
-pub use register_map::RegisterMap;
+pub use register_map::{REGISTERMAP, RegisterMap};
 
 // Re-export externals
 pub use bitvec::mem::BitRegister;

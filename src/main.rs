@@ -255,7 +255,7 @@ fn main() -> std::io::Result<()> {
 
     let mut stdout = SpcIo { stream: StandardStream::stdout(color), color };
     let args: Vec<String> = env::args().collect();
-    let reg_map = RegisterMap::new();
+    let reg_map = &spcregs::REGISTERMAP;
 
     if args.len() > 1 {
         evaluate_input(&mut stdout, &reg_map, args.get(1).unwrap(), AppMode::CommandLine)

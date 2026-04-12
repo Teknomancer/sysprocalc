@@ -49,3 +49,5 @@ static REGISTERS: LazyLock<[&RegisterDescriptor; 3]> = LazyLock::new(|| {[
     &x86::CR4,
     &x86::EFER,
 ]});
+
+pub static REGISTERMAP: LazyLock<RegisterMap> = LazyLock::new(|| RegisterMap::new());
