@@ -45,4 +45,5 @@ static REGISTERS: LazyLock<[&RegisterDescriptor; 3]> = LazyLock::new(|| {[
     &x86::EFER,
 ]});
 
+// Can't we push this to the consumer?
 pub static REGISTERMAP: LazyLock<RegisterMap> = LazyLock::new(|| RegisterMap::new());
