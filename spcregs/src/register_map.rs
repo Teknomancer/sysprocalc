@@ -16,13 +16,8 @@ impl<'a> Default for RegisterMap<'a> {
 
 impl<'a> RegisterMap<'a> {
     pub fn new() -> Self {
-        let mut map: HashMap<&str, &RegisterDescriptor> = HashMap::with_capacity(REGISTERS.len());
-        for desc in REGISTERS.iter() {
-            map.insert(desc.name(), desc);
-        }
         Self {
-            // map: REGISTERS.iter().map(|k| (k.name(), *k)).collect() // I have no idea how many copies this might do
-            map,
+            map: REGISTERS.iter().map(|k| (k.name(), *k)).collect()
         }
     }
 
