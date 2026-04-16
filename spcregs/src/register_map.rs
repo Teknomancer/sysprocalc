@@ -17,7 +17,8 @@ impl<'a> Default for RegisterMap<'a> {
 impl<'a> RegisterMap<'a> {
     pub fn new() -> Self {
         Self {
-            map: REGISTERS.iter().map(|k| (k.name(), *k)).collect()
+            map: REGISTERS.iter().map(|k| (k.name(), *k)).collect() // this still allocates on the heap
+            // we'd have to swap HashMap for a non-dynamic collection like static array of (key, value)
         }
     }
 
