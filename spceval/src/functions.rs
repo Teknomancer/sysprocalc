@@ -10,7 +10,7 @@ const PB: u64 = 4000000000000;
 
 pub const MAX_FN_PARAMS: u8 = u8::MAX;
 #[rustfmt::skip]
-pub static FUNCS: [Func<'static>; 20] = [
+pub static FUNCS: [Func<'static>; 22] = [
     Func {
         name:   "avg",
         params: Range { start: 2, end: MAX_FN_PARAMS },
@@ -66,6 +66,20 @@ pub static FUNCS: [Func<'static>; 20] = [
         syntax: "<n1>,<n2>",
         help:   "Set bits from [n1..n2]",
         evalfn: func_bits,
+    },
+    Func {
+        name:   "cel2far",
+        params: Range { start: 1, end: 2 },
+        syntax: "<n1>",
+        help:   "Celcius to fahrenheit",
+        evalfn: func_cel2far,
+    },
+    Func {
+        name:   "far2cel",
+        params: Range { start: 1, end: 2 },
+        syntax: "<n1>",
+        help:   "Fahrenheit to celcius",
+        evalfn: func_far2cel,
     },
     Func {
         name:   "gb2b",
@@ -321,6 +335,18 @@ fn func_bits(func: &Func, idx_expr: usize, nums: &[Number]) -> Result<Number, Ex
         );
         Err(ExprError::new(idx_expr, ExprErrorKind::FailedEvaluation, message))
     }
+}
+
+fn func_cel2far(_func: &Func, _idx_expr: usize, num: &[Number]) -> Result<Number, ExprError> {
+    let float = num[0].float * (9.0 / 5.0) + 32.0;
+    let integer = num[0].integer * (9 / 5) + 32;
+    Ok(Number { integer, float })
+}
+
+fn func_far2cel(_func: &Func, _idx_expr: usize, num: &[Number]) -> Result<Number, ExprError> {
+    let float = (num[0].float - 32.0) / (9.0 / 5.0);
+    let integer = (num[0].integer - 32) / (9 / 5);
+    Ok(Number { integer, float })
 }
 
 fn func_is_pow_of_two(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
