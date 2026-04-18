@@ -339,13 +339,13 @@ fn func_bits(func: &Func, idx_expr: usize, nums: &[Number]) -> Result<Number, Ex
 
 fn func_cel2far(_func: &Func, _idx_expr: usize, num: &[Number]) -> Result<Number, ExprError> {
     let float = num[0].float * (9.0 / 5.0) + 32.0;
-    let integer = num[0].integer * (9 / 5) + 32;
+    let integer = float as u64;
     Ok(Number { integer, float })
 }
 
 fn func_far2cel(_func: &Func, _idx_expr: usize, num: &[Number]) -> Result<Number, ExprError> {
     let float = (num[0].float - 32.0) / (9.0 / 5.0);
-    let integer = (num[0].integer - 32) / (9 / 5);
+    let integer = float as u64;
     Ok(Number { integer, float })
 }
 

@@ -6,7 +6,8 @@ fn test_valid_expr(str_expr: &str, num_expected: &Number) {
     assert!(res_eval.is_ok(), "{} err={}", str_expr, res_eval.err().unwrap());
     let num_computed = res_eval.unwrap();
     assert_eq!(num_expected.integer, num_computed.integer, "{}", str_expr);
-    assert_eq!(num_expected.float, num_computed.float, "{}", str_expr);
+    let epsilon = f64::EPSILON;
+    assert!((num_expected.float - num_computed.float) < epsilon, "{}", str_expr);
 }
 
 #[inline(always)]
@@ -295,6 +296,16 @@ fn valid_exprs_funcs() {
         ("sum(-1,4)", Number { integer: 3, float: 3 as f64 }),
         ("sum(-5,-5,10)", Number { integer: 0, float: 0 as f64 }),
         ("sum(10,5) * sum(1,2)", Number { integer: 45, float: 45.0 }),
+
+        // cel2far
+        ("cel2far(32)",  Number { integer: 89, float: 89.6 }),
+        ("cel2far(0)",   Number { integer: 32, float: 32.0 }),
+        ("cel2far(-32)", Number { integer: 0, float: -25.6 }),
+
+        // far2cel
+        ("far2cel(32)",  Number { integer: 0, float: 0.0 }),
+        ("far2cel(0)",   Number { integer: 0, float: -17.78 }),
+        ("far2cel(-32)", Number { integer: 0, float: -35.556 }),
     ];
     for expr_res in expr_results {
         test_valid_expr(&expr_res.0, &expr_res.1);
