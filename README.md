@@ -30,6 +30,18 @@ When the project reaches a mature state, binary downloads may be made available.
    
    To build a release target, append `--release` to each of the above `cargo` commands.
 
+### Fuzz testing
+
+1. Install the nightly build of Rust and change default to use the nightly version:
+   ```
+   rustup install nightly
+   rustup default nightly
+   ```
+2. Cargo-fuzz doesn't work properly when link-time optimization (LTO) is enabled ([see](https://github.com/rust-fuzz/cargo-fuzz/issues/384)), so temporarily disable LTO while fuzzing:
+   ```
+   CARGO_PROFILE_RELEASE_LTO=false cargo fuzz run fuzz_target_spceval
+   ```
+
 ### License
 
 Licensed under either of
