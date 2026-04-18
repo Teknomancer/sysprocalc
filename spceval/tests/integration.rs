@@ -317,7 +317,7 @@ fn valid_exprs() {
     // paranthesis, operator priority etc.
 
     const MAX_VALID_PARENS: usize = spceval::max_sub_expressions() - 1;
-    debug_assert!((1..u8::max as usize).contains(&MAX_VALID_PARENS)); // Sanity, arbitrary bounds check before str::repeat().
+    debug_assert!((u8::MIN as usize ..= u8::MAX as usize).contains(&MAX_VALID_PARENS)); // Sanity, arbitrary bounds check before str::repeat().
     let open_parens = "(".repeat(MAX_VALID_PARENS);
     let close_parens = ")".repeat(MAX_VALID_PARENS);
     let num_max_sub_expr = 0xf0e1d2c3b4a59687;
