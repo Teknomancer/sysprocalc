@@ -713,10 +713,11 @@ fn parse_expr(str_expr: &str) -> Result<ExprCtx, ExprError> {
             opt_prev_token = Some(Token::Oper(oper_token));
         } else if let Some(idx_func) = parse_function(str_subexpr, &FUNCS) {
             debug_assert!(idx_func < FUNCS.len());
-            // If the previous token was a function or a number, we have an invalid expression.
-            // E.g "avg avg" or "5 bit(2)"
+            // If the previous token was a function or a number or a closing paren,
+            // we have an invalid expression. E.g "avg avg" or "5 bit(2)" or "bit(3)bit(2)"
             check_prev_token_not_function(&opt_prev_token)?;
             check_prev_token_not_number(&opt_prev_token)?;
+            check_prev_token_not_close_paren(&opt_prev_token)?;
             trace!("function: {}", &FUNCS[idx_func].name);
             let func_token = FuncToken { idx_func, idx_expr: idx, params: 0 };
             expr_ctx.stack_op.push(Token::Func(func_token));
