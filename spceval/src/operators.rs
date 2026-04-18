@@ -172,12 +172,17 @@ fn oper_div(idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     }
 }
 
-fn oper_rem(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
-    let lhs = nums[0];
+fn oper_rem(idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
     let rhs = nums[1];
-    let integer = lhs.integer.wrapping_rem(rhs.integer);
-    let float = lhs.float % rhs.float;
-    Ok(Number { integer, float })
+    if rhs.integer != 0 && !cmp_eq_f64(rhs.float, 0f64) {
+        let lhs = nums[0];
+        let integer = lhs.integer.wrapping_rem(rhs.integer);
+        let float = lhs.float % rhs.float;
+        Ok(Number { integer, float })
+    } else {
+        let message = format!("due to remainder by 0 for operator at {}", idx_expr);
+        Err(ExprError::new(idx_expr, ExprErrorKind::FailedEvaluation, message))    
+    }
 }
 
 fn oper_bit_lshift(_idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
