@@ -132,7 +132,7 @@ pub static FUNCS: [Func<'static>; 20] = [
     },
     Func {
         name:   "pow",
-        params: Range { start: 1, end: 3 },
+        params: Range { start: 2, end: 3 },
         syntax: "<n1>,<n2>",
         help:   "Raise <n1> to power of <n2>",
         evalfn: func_pow,
