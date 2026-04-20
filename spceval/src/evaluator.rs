@@ -344,10 +344,17 @@ impl ExprCtx {
             // If a function preceeds the open parenthesis, increment its parameter count by 2
             // and re-push the function and the previously popped open parenthesis back to the op stack.
             if let Some(mut func_token) = self.pop_func_from_op_stack() {
-                func_token.params += 2;
-                self.stack_op.push(Token::Func(func_token));
-                self.stack_op.push(paren_token);
-                Ok(())
+                if let Some(params) = func_token.params.checked_add(2) {
+                    func_token.params = params;
+                    self.stack_op.push(Token::Func(func_token));
+                    self.stack_op.push(paren_token);
+                    Ok(())
+                } else {
+                    // Too many parameters!
+                    let message = format!("for function '{}' at {} params {}", &FUNCS[func_token.idx_func].name, func_token.idx_expr, func_token.params);
+                    trace!("{:?} {}", ExprErrorKind::InvalidParamCount, message);
+                    Err(ExprError { idx_expr: func_token.idx_expr, kind: ExprErrorKind::InvalidParamCount, message })
+                }
             } else {
                 // No function preceeding open parenthesis for a parameter separator, e.g. "(32,5)"
                 let message = format!("for parameter separator '{}' at {}", oper.name, oper_token.idx_expr);

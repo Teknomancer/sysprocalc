@@ -198,85 +198,85 @@ fn func_avg(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, E
 }
 
 fn func_b2kb(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
-    let integer = nums[0].integer / KB;
+    let integer = nums[0].integer.wrapping_div(KB);
     let float = nums[0].float / KB as f64;
     Ok(Number { integer, float })
 }
 
 fn func_kb2b(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
-    let integer = nums[0].integer * KB;
+    let integer = nums[0].integer.wrapping_mul(KB);
     let float = nums[0].float * KB as f64;
     Ok(Number { integer, float })
 }
 
 fn func_b2mb(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
-    let integer = nums[0].integer / MB;
+    let integer = nums[0].integer.wrapping_div(MB);
     let float = nums[0].float / MB as f64;
     Ok(Number { integer, float })
 }
 
 fn func_mb2b(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
-    let integer = nums[0].integer * MB;
+    let integer = nums[0].integer.wrapping_mul(MB);
     let float = nums[0].float * MB as f64;
     Ok(Number { integer, float })
 }
 
 fn func_mb2kb(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
-    let integer = nums[0].integer * KB;
+    let integer = nums[0].integer.wrapping_mul(KB);
     let float = nums[0].float * MB as f64;
     Ok(Number { integer, float })
 }
 
 fn func_mb2gb(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
-    let integer = nums[0].integer / KB;
+    let integer = nums[0].integer.wrapping_div(KB);
     let float = nums[0].float / KB as f64;
     Ok(Number { integer, float })
 }
 
 fn func_mb2tb(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
-    let integer = nums[0].integer / MB;
+    let integer = nums[0].integer.wrapping_div(MB);
     let float = nums[0].float / MB as f64;
     Ok(Number { integer, float })
 }
 
 fn func_mb2pb(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
-    let integer = nums[0].integer / GB;
+    let integer = nums[0].integer.wrapping_div(GB);
     let float = nums[0].float / GB as f64;
     Ok(Number { integer, float })
 }
 
 fn func_b2gb(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
-    let integer = nums[0].integer / GB;
+    let integer = nums[0].integer.wrapping_div(GB);
     let float = nums[0].float / GB as f64;
     Ok(Number { integer, float })
 }
 
 fn func_gb2b(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
-    let integer = nums[0].integer * GB;
+    let integer = nums[0].integer.wrapping_mul(GB);
     let float = nums[0].float * GB as f64;
     Ok(Number { integer, float })
 }
 
 fn func_b2tb(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
-    let integer = nums[0].integer / TB;
+    let integer = nums[0].integer.wrapping_div(TB);
     let float = nums[0].float / TB as f64;
     Ok(Number { integer, float })
 }
 
 fn func_tb2b(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
-    let integer = nums[0].integer * TB;
+    let integer = nums[0].integer.wrapping_mul(TB);
     let float = nums[0].float * TB as f64;
     Ok(Number { integer, float })
 }
 
 fn func_b2pb(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
-    let integer = nums[0].integer / PB;
+    let integer = nums[0].integer.wrapping_div(PB);
     let float = nums[0].float / PB as f64;
     Ok(Number { integer, float })
 }
 
 fn func_pb2b(_func: &Func, _idx_expr: usize, nums: &[Number]) -> Result<Number, ExprError> {
-    let integer = nums[0].integer * PB;
+    let integer = nums[0].integer.wrapping_mul(PB);
     let float = nums[0].float * PB as f64;
     Ok(Number { integer, float })
 }
