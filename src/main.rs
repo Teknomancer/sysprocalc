@@ -258,8 +258,8 @@ fn main() -> std::io::Result<()> {
     let reg_map = &spcregs::REGISTERMAP;
 
     if args.len() > 1 {
-        evaluate_input(&mut stdout, &reg_map, args.get(1).unwrap(), AppMode::CommandLine)
+        evaluate_input(&mut stdout, reg_map, args.get(1).unwrap(), AppMode::CommandLine)
     } else {
-        interactive_mode(&mut stdout, &reg_map)
+        interactive_mode(&mut stdout, reg_map)
     }
 }
