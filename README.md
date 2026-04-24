@@ -7,7 +7,7 @@ sysprocalc (system programmer's calculator) is an interactive, command-line expr
 
 Basic expression parsing and evaluation works. There's also decent test coverage using GitHub continuous integration for Windows, macOS and Linux. This helps identify regressions while modifying core functionality.
 
-Variables/constants and x86-register descriptions aren't supported yet but are planned to be implemented in the future.
+Variables and constants aren't supported yet but are planned to be implemented in the future.
 
 ### Executable and Library
 
