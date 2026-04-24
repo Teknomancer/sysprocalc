@@ -25,6 +25,7 @@ bench = false
 [workspace]
 members = [
   "spceval",
+  "spcregs",
   "fuzz"
 ]
 
